@@ -1,0 +1,21 @@
+[toolchain]
+package_manager = "npm"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+tip_jar = "C2bM3p1Cco4bDj6gQe29k7UWcepxLCrVgiPPoidh549P"
+
+[programs.devnet]
+tip_jar = "C2bM3p1Cco4bDj6gQe29k7UWcepxLCrVgiPPoidh549P"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "cargo test"
+
+[hooks]
