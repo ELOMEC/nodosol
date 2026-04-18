@@ -8,6 +8,10 @@ export const SUBSCRIPTION_PROGRAM_ID = new PublicKey(
   "8G2hbD1qJUcaVAEdfVxaHfbCgxyEzQdrpjhDMM9pSL4w"
 );
 
+export const EVENTS_PROGRAM_ID = new PublicKey(
+  "4q4KxCcvY7vswq3tXgr448ghXWBtz4PzNfoddZu282Ax"
+);
+
 // Devnet USDC-Dev mint (6 decimals).
 // Override at runtime with NEXT_PUBLIC_USDC_MINT.
 export const DEFAULT_USDC_MINT = new PublicKey(

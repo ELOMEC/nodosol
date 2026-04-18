@@ -1,6 +1,10 @@
 import { PublicKey } from "@solana/web3.js";
 
-import { SUBSCRIPTION_PROGRAM_ID, TIP_JAR_PROGRAM_ID } from "./constants";
+import {
+  EVENTS_PROGRAM_ID,
+  SUBSCRIPTION_PROGRAM_ID,
+  TIP_JAR_PROGRAM_ID,
+} from "./constants";
 
 export function creatorProfilePda(owner: PublicKey): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
@@ -44,5 +48,34 @@ export function subscriptionPda(
   return PublicKey.findProgramAddressSync(
     [Buffer.from("subscription"), plan.toBuffer(), subscriber.toBuffer()],
     SUBSCRIPTION_PROGRAM_ID
+  );
+}
+
+export function eventPda(
+  creator: PublicKey,
+  eventId: bigint
+): [PublicKey, number] {
+  const eventIdBuf = Buffer.alloc(8);
+  eventIdBuf.writeBigUInt64LE(eventId);
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("event"), creator.toBuffer(), eventIdBuf],
+    EVENTS_PROGRAM_ID
+  );
+}
+
+export function eventVaultPda(event: PublicKey): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("vault"), event.toBuffer()],
+    EVENTS_PROGRAM_ID
+  );
+}
+
+export function ticketPda(
+  event: PublicKey,
+  attendee: PublicKey
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("ticket"), event.toBuffer(), attendee.toBuffer()],
+    EVENTS_PROGRAM_ID
   );
 }

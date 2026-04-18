@@ -8,10 +8,12 @@ skip-lint = false
 [programs.localnet]
 tip_jar = "C2bM3p1Cco4bDj6gQe29k7UWcepxLCrVgiPPoidh549P"
 subscription = "8G2hbD1qJUcaVAEdfVxaHfbCgxyEzQdrpjhDMM9pSL4w"
+events = "4q4KxCcvY7vswq3tXgr448ghXWBtz4PzNfoddZu282Ax"
 
 [programs.devnet]
 tip_jar = "C2bM3p1Cco4bDj6gQe29k7UWcepxLCrVgiPPoidh549P"
 subscription = "8G2hbD1qJUcaVAEdfVxaHfbCgxyEzQdrpjhDMM9pSL4w"
+events = "4q4KxCcvY7vswq3tXgr448ghXWBtz4PzNfoddZu282Ax"
 
 [provider]
 cluster = "localnet"

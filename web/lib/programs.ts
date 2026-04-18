@@ -9,6 +9,7 @@ import {
 
 import tipJarIdl from "../idl/tip_jar.json";
 import subscriptionIdl from "../idl/subscription.json";
+import eventsIdl from "../idl/events.json";
 import { getRpcUrl } from "./constants";
 
 export function getConnection(): Connection {
@@ -51,6 +52,7 @@ export function getReadProvider(): AnchorProvider {
 
 export type TipJarProgram = Program;
 export type SubscriptionProgram = Program;
+export type EventsProgram = Program;
 
 export function tipJarProgram(provider = getReadProvider()): TipJarProgram {
   return new Program(tipJarIdl as never, provider);
@@ -60,6 +62,10 @@ export function subscriptionProgram(
   provider = getReadProvider()
 ): SubscriptionProgram {
   return new Program(subscriptionIdl as never, provider);
+}
+
+export function eventsProgram(provider = getReadProvider()): EventsProgram {
+  return new Program(eventsIdl as never, provider);
 }
 
 export { web3, PublicKey };

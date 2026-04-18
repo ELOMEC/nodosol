@@ -37,6 +37,9 @@ export default function HomePage() {
         </p>
         <pre>{tipExample}</pre>
         <pre style={{ marginTop: "0.75rem" }}>{subExample}</pre>
+        <pre style={{ marginTop: "0.75rem" }}>
+          {`${appUrl}/api/actions/ticket/<creator-wallet>/<event-id>`}
+        </pre>
       </section>
 
       <section style={{ marginTop: "3rem", color: "#6a6a6a", fontSize: "0.9rem" }}>
