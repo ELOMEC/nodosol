@@ -18,3 +18,9 @@ pub const MIN_PERIOD_SECONDS: i64 = 3_600;
 /// lifetime offers should use the tip_jar program or a one-shot NFT.
 #[constant]
 pub const MAX_PERIOD_SECONDS: i64 = 63_072_000;
+
+#[constant]
+pub const CONFIG_SEED: &[u8] = b"config";
+
+pub const MAX_FEE_BPS: u16 = 1_000;
+pub const BPS_DENOMINATOR: u64 = 10_000;

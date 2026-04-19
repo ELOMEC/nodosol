@@ -64,6 +64,16 @@ impl TestCtx {
         Pubkey::find_program_address(&[b"vault", creator_profile.as_ref()], &self.program_id)
     }
 
+    pub fn config_pda(&self) -> (Pubkey, u8) {
+        Pubkey::find_program_address(&[b"config"], &self.program_id)
+    }
+
+    pub fn get_config(&self, config: &Pubkey) -> tip_jar::state::Config {
+        use anchor_lang::AccountDeserialize;
+        let account = self.svm.get_account(config).unwrap();
+        tip_jar::state::Config::try_deserialize(&mut &account.data[..]).unwrap()
+    }
+
     pub fn create_usdc_mint(&mut self, authority: &Keypair) -> Pubkey {
         CreateMint::new(&mut self.svm, authority)
             .token_program_id(&self.token_program)
@@ -129,6 +139,8 @@ pub fn send_tip_ix(
     tipper_token_account: &Pubkey,
     creator_profile: &Pubkey,
     vault: &Pubkey,
+    config: &Pubkey,
+    treasury: &Pubkey,
     mint: &Pubkey,
     token_program: &Pubkey,
     amount: u64,
@@ -140,11 +152,50 @@ pub fn send_tip_ix(
             tipper_token_account: *tipper_token_account,
             creator_profile: *creator_profile,
             vault: *vault,
+            config: *config,
+            treasury: *treasury,
             mint: *mint,
             token_program: *token_program,
         }
         .to_account_metas(None),
         data: tip_jar::instruction::SendTip { amount }.data(),
+    }
+}
+
+pub fn initialize_config_ix(
+    program_id: &Pubkey,
+    authority: &Pubkey,
+    config: &Pubkey,
+    treasury: &Pubkey,
+    fee_bps: u16,
+) -> Instruction {
+    Instruction {
+        program_id: *program_id,
+        accounts: tip_jar::accounts::InitializeConfig {
+            authority: *authority,
+            config: *config,
+            treasury: *treasury,
+            system_program: anchor_lang::system_program::ID,
+        }
+        .to_account_metas(None),
+        data: tip_jar::instruction::InitializeConfig { fee_bps }.data(),
+    }
+}
+
+pub fn update_fee_bps_ix(
+    program_id: &Pubkey,
+    authority: &Pubkey,
+    config: &Pubkey,
+    new_fee_bps: u16,
+) -> Instruction {
+    Instruction {
+        program_id: *program_id,
+        accounts: tip_jar::accounts::UpdateFeeBps {
+            authority: *authority,
+            config: *config,
+        }
+        .to_account_metas(None),
+        data: tip_jar::instruction::UpdateFeeBps { new_fee_bps }.data(),
     }
 }
 
@@ -191,6 +242,8 @@ pub fn update_elgamal_pubkey_ix(
 }
 
 /// Common fixture: creator + tipper, USDC mint, tipper funded with USDC.
+/// Also initializes the program Config with a treasury ATA so send_tip
+/// has the accounts it needs. Defaults to fee_bps = 0.
 pub struct Fixture {
     pub ctx: TestCtx,
     pub mint_authority: Keypair,
@@ -200,15 +253,38 @@ pub struct Fixture {
     pub vault: Pubkey,
     pub tipper: Keypair,
     pub tipper_ata: Pubkey,
+    pub config_authority: Keypair,
+    pub config: Pubkey,
+    pub treasury_owner: Keypair,
+    pub treasury: Pubkey,
 }
 
 impl Fixture {
     pub fn new(tipper_starting_balance: u64) -> Self {
+        Self::new_with_fee(tipper_starting_balance, 0)
+    }
+
+    pub fn new_with_fee(tipper_starting_balance: u64, fee_bps: u16) -> Self {
         let mut ctx = TestCtx::new();
 
         let mint_authority = Keypair::new();
         ctx.fund(&mint_authority.pubkey(), 5_000_000_000);
         let mint = ctx.create_usdc_mint(&mint_authority);
+
+        // Platform config: authority + treasury ATA on the shared mint.
+        let config_authority = Keypair::new();
+        ctx.fund(&config_authority.pubkey(), 5_000_000_000);
+        let treasury_owner = Keypair::new();
+        let treasury = ctx.create_ata(&config_authority, &treasury_owner.pubkey(), &mint);
+        let (config, _) = ctx.config_pda();
+        let init_cfg = initialize_config_ix(
+            &ctx.program_id,
+            &config_authority.pubkey(),
+            &config,
+            &treasury,
+            fee_bps,
+        );
+        ctx.send(init_cfg, &config_authority, &[]).unwrap();
 
         let creator = Keypair::new();
         ctx.fund(&creator.pubkey(), 5_000_000_000);
@@ -242,6 +318,10 @@ impl Fixture {
             vault,
             tipper,
             tipper_ata,
+            config_authority,
+            config,
+            treasury_owner,
+            treasury,
         }
     }
 }

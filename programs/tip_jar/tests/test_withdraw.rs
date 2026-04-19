@@ -13,6 +13,8 @@ fn tip(fx: &mut Fixture, amount: u64) {
         &fx.tipper_ata,
         &fx.creator_profile,
         &fx.vault,
+        &fx.config,
+        &fx.treasury,
         &fx.mint,
         &fx.ctx.token_program,
         amount,

@@ -4,10 +4,10 @@ use anchor_spl::token_interface::{
 };
 
 use crate::{
-    constants::{PLAN_SEED, SUBSCRIPTION_SEED, VAULT_SEED},
+    constants::{BPS_DENOMINATOR, CONFIG_SEED, PLAN_SEED, SUBSCRIPTION_SEED, VAULT_SEED},
     error::SubscriptionError,
     events::Subscribed,
-    state::{Subscription, SubscriptionPlan, SubscriptionStatus},
+    state::{Config, Subscription, SubscriptionPlan, SubscriptionStatus},
 };
 
 #[derive(Accounts)]
@@ -50,6 +50,19 @@ pub struct Subscribe<'info> {
     )]
     pub subscription: Box<Account<'info, Subscription>>,
 
+    #[account(
+        seeds = [CONFIG_SEED],
+        bump = config.bump,
+    )]
+    pub config: Box<Account<'info, Config>>,
+
+    #[account(
+        mut,
+        address = config.treasury @ SubscriptionError::TreasuryMismatch,
+        token::mint = mint,
+    )]
+    pub treasury: Box<InterfaceAccount<'info, TokenAccount>>,
+
     pub mint: Box<InterfaceAccount<'info, Mint>>,
 
     pub token_program: Interface<'info, TokenInterface>,
@@ -66,16 +79,16 @@ pub fn handle_subscribe(ctx: Context<Subscribe>, approve_amount: u64) -> Result<
     let clock = Clock::get()?;
     let now = clock.unix_timestamp;
 
+    // Subscriber grants the plan PDA delegate authority up to
+    // approve_amount so future charges can pull without requiring a
+    // second signature.
     let approve_cpi = Approve {
         to: ctx.accounts.subscriber_token_account.to_account_info(),
         delegate: ctx.accounts.plan.to_account_info(),
         authority: ctx.accounts.subscriber.to_account_info(),
     };
     token_interface::approve(
-        CpiContext::new(
-            ctx.accounts.token_program.key(),
-            approve_cpi,
-        ),
+        CpiContext::new(ctx.accounts.token_program.key(), approve_cpi),
         approve_amount,
     )?;
 
@@ -90,7 +103,34 @@ pub fn handle_subscribe(ctx: Context<Subscribe>, approve_amount: u64) -> Result<
         &[plan_bump],
     ]];
 
-    let transfer_cpi = TransferChecked {
+    let fee_bps = ctx.accounts.config.fee_bps as u64;
+    let fee = price
+        .checked_mul(fee_bps)
+        .and_then(|v| v.checked_div(BPS_DENOMINATOR))
+        .ok_or(SubscriptionError::ArithmeticOverflow)?;
+    let creator_amount = price
+        .checked_sub(fee)
+        .ok_or(SubscriptionError::ArithmeticOverflow)?;
+
+    if fee > 0 {
+        let fee_cpi = TransferChecked {
+            from: ctx.accounts.subscriber_token_account.to_account_info(),
+            mint: ctx.accounts.mint.to_account_info(),
+            to: ctx.accounts.treasury.to_account_info(),
+            authority: ctx.accounts.plan.to_account_info(),
+        };
+        token_interface::transfer_checked(
+            CpiContext::new_with_signer(
+                ctx.accounts.token_program.key(),
+                fee_cpi,
+                signer_seeds,
+            ),
+            fee,
+            decimals,
+        )?;
+    }
+
+    let creator_cpi = TransferChecked {
         from: ctx.accounts.subscriber_token_account.to_account_info(),
         mint: ctx.accounts.mint.to_account_info(),
         to: ctx.accounts.vault.to_account_info(),
@@ -99,10 +139,10 @@ pub fn handle_subscribe(ctx: Context<Subscribe>, approve_amount: u64) -> Result<
     token_interface::transfer_checked(
         CpiContext::new_with_signer(
             ctx.accounts.token_program.key(),
-            transfer_cpi,
+            creator_cpi,
             signer_seeds,
         ),
-        price,
+        creator_amount,
         decimals,
     )?;
 
@@ -117,7 +157,7 @@ pub fn handle_subscribe(ctx: Context<Subscribe>, approve_amount: u64) -> Result<
     subscription.last_charged_at = now;
     subscription.next_charge_at = next_charge_at;
     subscription.charge_count = 1;
-    subscription.total_paid = price;
+    subscription.total_paid = creator_amount;
     subscription.status = SubscriptionStatus::Active;
     subscription.cancelled_at = 0;
     subscription.bump = ctx.bumps.subscription;
@@ -130,14 +170,14 @@ pub fn handle_subscribe(ctx: Context<Subscribe>, approve_amount: u64) -> Result<
         .ok_or(SubscriptionError::ArithmeticOverflow)?;
     plan.total_collected = plan
         .total_collected
-        .checked_add(price)
+        .checked_add(creator_amount)
         .ok_or(SubscriptionError::ArithmeticOverflow)?;
 
     emit!(Subscribed {
         plan: plan.key(),
         subscription: subscription.key(),
         subscriber: subscription.subscriber,
-        first_charge_amount: price,
+        first_charge_amount: creator_amount,
         next_charge_at,
         timestamp: now,
     });

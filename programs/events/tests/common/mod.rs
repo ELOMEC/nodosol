@@ -97,6 +97,16 @@ impl TestCtx {
         )
     }
 
+    pub fn config_pda(&self) -> (Pubkey, u8) {
+        Pubkey::find_program_address(&[b"config"], &self.program_id)
+    }
+
+    pub fn get_config(&self, config: &Pubkey) -> events::state::Config {
+        use anchor_lang::AccountDeserialize;
+        let account = self.svm.get_account(config).unwrap();
+        events::state::Config::try_deserialize(&mut &account.data[..]).unwrap()
+    }
+
     pub fn create_usdc_mint(&mut self, authority: &Keypair) -> Pubkey {
         CreateMint::new(&mut self.svm, authority)
             .token_program_id(&self.token_program)
@@ -183,6 +193,8 @@ pub fn buy_ticket_ix(
     event: &Pubkey,
     vault: &Pubkey,
     ticket: &Pubkey,
+    config: &Pubkey,
+    treasury: &Pubkey,
     mint: &Pubkey,
     token_program: &Pubkey,
 ) -> Instruction {
@@ -194,12 +206,51 @@ pub fn buy_ticket_ix(
             event: *event,
             vault: *vault,
             ticket: *ticket,
+            config: *config,
+            treasury: *treasury,
             mint: *mint,
             token_program: *token_program,
             system_program: anchor_lang::system_program::ID,
         }
         .to_account_metas(None),
         data: events::instruction::BuyTicket {}.data(),
+    }
+}
+
+pub fn initialize_config_ix(
+    program_id: &Pubkey,
+    authority: &Pubkey,
+    config: &Pubkey,
+    treasury: &Pubkey,
+    fee_bps: u16,
+) -> Instruction {
+    Instruction {
+        program_id: *program_id,
+        accounts: events::accounts::InitializeConfig {
+            authority: *authority,
+            config: *config,
+            treasury: *treasury,
+            system_program: anchor_lang::system_program::ID,
+        }
+        .to_account_metas(None),
+        data: events::instruction::InitializeConfig { fee_bps }.data(),
+    }
+}
+
+pub fn update_fee_bps_ix(
+    program_id: &Pubkey,
+    authority: &Pubkey,
+    config: &Pubkey,
+    new_fee_bps: u16,
+) -> Instruction {
+    Instruction {
+        program_id: *program_id,
+        accounts: events::accounts::UpdateFeeBps {
+            authority: *authority,
+            config: *config,
+        }
+        .to_account_metas(None),
+        data: events::instruction::UpdateFeeBps { new_fee_bps }.data(),
     }
 }
 
@@ -247,7 +298,8 @@ pub fn withdraw_revenue_ix(
 }
 
 /// Creator + event fixture. By default creates a $5 event with
-/// unlimited capacity starting now, ending in 7 days.
+/// unlimited capacity starting now, ending in 7 days. Also initialises
+/// the program Config (fee_bps = 0) so BuyTicket has all accounts.
 pub struct EventFixture {
     pub ctx: TestCtx,
     pub mint_authority: Keypair,
@@ -257,11 +309,19 @@ pub struct EventFixture {
     pub price: u64,
     pub event: Pubkey,
     pub vault: Pubkey,
+    pub config_authority: Keypair,
+    pub config: Pubkey,
+    pub treasury_owner: Keypair,
+    pub treasury: Pubkey,
 }
 
 impl EventFixture {
     pub fn new(price: u64, capacity: u64) -> Self {
-        Self::new_with_window(price, capacity, 0, DAY * 7)
+        Self::new_with_window_and_fee(price, capacity, 0, DAY * 7, 0)
+    }
+
+    pub fn new_with_fee(price: u64, capacity: u64, fee_bps: u16) -> Self {
+        Self::new_with_window_and_fee(price, capacity, 0, DAY * 7, fee_bps)
     }
 
     pub fn new_with_window(
@@ -270,11 +330,35 @@ impl EventFixture {
         starts_offset: i64,
         duration: i64,
     ) -> Self {
+        Self::new_with_window_and_fee(price, capacity, starts_offset, duration, 0)
+    }
+
+    pub fn new_with_window_and_fee(
+        price: u64,
+        capacity: u64,
+        starts_offset: i64,
+        duration: i64,
+        fee_bps: u16,
+    ) -> Self {
         let mut ctx = TestCtx::new();
 
         let mint_authority = Keypair::new();
         ctx.fund(&mint_authority.pubkey(), 5_000_000_000);
         let mint = ctx.create_usdc_mint(&mint_authority);
+
+        let config_authority = Keypair::new();
+        ctx.fund(&config_authority.pubkey(), 5_000_000_000);
+        let treasury_owner = Keypair::new();
+        let treasury = ctx.create_ata(&config_authority, &treasury_owner.pubkey(), &mint);
+        let (config, _) = ctx.config_pda();
+        let init_cfg = initialize_config_ix(
+            &ctx.program_id,
+            &config_authority.pubkey(),
+            &config,
+            &treasury,
+            fee_bps,
+        );
+        ctx.send(init_cfg, &config_authority, &[]).unwrap();
 
         let creator = Keypair::new();
         ctx.fund(&creator.pubkey(), 5_000_000_000);
@@ -312,6 +396,10 @@ impl EventFixture {
             price,
             event,
             vault,
+            config_authority,
+            config,
+            treasury_owner,
+            treasury,
         }
     }
 
@@ -340,6 +428,8 @@ impl EventFixture {
             &self.event,
             &self.vault,
             ticket,
+            &self.config,
+            &self.treasury,
             &self.mint,
             &self.ctx.token_program,
         );

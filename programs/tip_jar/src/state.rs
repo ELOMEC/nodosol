@@ -15,3 +15,15 @@ pub struct CreatorProfile {
     pub vault_bump: u8,
     pub reserved: [u8; 64],
 }
+
+/// Global program config — singleton PDA at seeds=[b"config"].
+/// Controls the platform fee split applied to every send_tip.
+#[account]
+#[derive(InitSpace)]
+pub struct Config {
+    pub authority: Pubkey,
+    pub treasury: Pubkey,
+    pub fee_bps: u16,
+    pub bump: u8,
+    pub reserved: [u8; 64],
+}

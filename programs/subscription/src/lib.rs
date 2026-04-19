@@ -18,6 +18,25 @@ declare_id!("8G2hbD1qJUcaVAEdfVxaHfbCgxyEzQdrpjhDMM9pSL4w");
 pub mod subscription {
     use super::*;
 
+    pub fn initialize_config(
+        ctx: Context<InitializeConfig>,
+        fee_bps: u16,
+    ) -> Result<()> {
+        handle_initialize_config(ctx, fee_bps)
+    }
+
+    pub fn update_fee_bps(ctx: Context<UpdateFeeBps>, new_fee_bps: u16) -> Result<()> {
+        handle_update_fee_bps(ctx, new_fee_bps)
+    }
+
+    pub fn update_treasury(ctx: Context<UpdateTreasury>) -> Result<()> {
+        handle_update_treasury(ctx)
+    }
+
+    pub fn update_config_authority(ctx: Context<UpdateConfigAuthority>) -> Result<()> {
+        handle_update_authority(ctx)
+    }
+
     pub fn create_plan(
         ctx: Context<CreatePlan>,
         plan_id: u64,

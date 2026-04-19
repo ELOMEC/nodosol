@@ -28,6 +28,16 @@ pub struct Event {
 
 #[account]
 #[derive(InitSpace)]
+pub struct Config {
+    pub authority: Pubkey,
+    pub treasury: Pubkey,
+    pub fee_bps: u16,
+    pub bump: u8,
+    pub reserved: [u8; 64],
+}
+
+#[account]
+#[derive(InitSpace)]
 pub struct Ticket {
     pub event: Pubkey,
     pub attendee: Pubkey,

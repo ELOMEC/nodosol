@@ -16,4 +16,10 @@ pub enum TipJarError {
     ArithmeticOverflow,
     #[msg("Vault must be empty before the profile can be closed")]
     VaultNotEmpty,
+    #[msg("Fee basis points exceed the maximum allowed")]
+    FeeBpsTooHigh,
+    #[msg("Treasury token account does not match the config")]
+    TreasuryMismatch,
+    #[msg("Treasury token account mint does not match")]
+    TreasuryMintMismatch,
 }

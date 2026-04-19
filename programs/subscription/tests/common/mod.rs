@@ -97,6 +97,16 @@ impl TestCtx {
         )
     }
 
+    pub fn config_pda(&self) -> (Pubkey, u8) {
+        Pubkey::find_program_address(&[b"config"], &self.program_id)
+    }
+
+    pub fn get_config(&self, config: &Pubkey) -> subscription::state::Config {
+        use anchor_lang::AccountDeserialize;
+        let account = self.svm.get_account(config).unwrap();
+        subscription::state::Config::try_deserialize(&mut &account.data[..]).unwrap()
+    }
+
     pub fn create_usdc_mint(&mut self, authority: &Keypair) -> Pubkey {
         CreateMint::new(&mut self.svm, authority)
             .token_program_id(&self.token_program)
@@ -177,6 +187,8 @@ pub fn subscribe_ix(
     plan: &Pubkey,
     vault: &Pubkey,
     subscription_account: &Pubkey,
+    config: &Pubkey,
+    treasury: &Pubkey,
     mint: &Pubkey,
     token_program: &Pubkey,
     approve_amount: u64,
@@ -189,12 +201,51 @@ pub fn subscribe_ix(
             plan: *plan,
             vault: *vault,
             subscription: *subscription_account,
+            config: *config,
+            treasury: *treasury,
             mint: *mint,
             token_program: *token_program,
             system_program: anchor_lang::system_program::ID,
         }
         .to_account_metas(None),
         data: subscription::instruction::Subscribe { approve_amount }.data(),
+    }
+}
+
+pub fn initialize_config_ix(
+    program_id: &Pubkey,
+    authority: &Pubkey,
+    config: &Pubkey,
+    treasury: &Pubkey,
+    fee_bps: u16,
+) -> Instruction {
+    Instruction {
+        program_id: *program_id,
+        accounts: subscription::accounts::InitializeConfig {
+            authority: *authority,
+            config: *config,
+            treasury: *treasury,
+            system_program: anchor_lang::system_program::ID,
+        }
+        .to_account_metas(None),
+        data: subscription::instruction::InitializeConfig { fee_bps }.data(),
+    }
+}
+
+pub fn update_fee_bps_ix(
+    program_id: &Pubkey,
+    authority: &Pubkey,
+    config: &Pubkey,
+    new_fee_bps: u16,
+) -> Instruction {
+    Instruction {
+        program_id: *program_id,
+        accounts: subscription::accounts::UpdateFeeBps {
+            authority: *authority,
+            config: *config,
+        }
+        .to_account_metas(None),
+        data: subscription::instruction::UpdateFeeBps { new_fee_bps }.data(),
     }
 }
 
@@ -223,6 +274,8 @@ pub fn charge_ix(
     subscription_account: &Pubkey,
     subscriber_token_account: &Pubkey,
     vault: &Pubkey,
+    config: &Pubkey,
+    treasury: &Pubkey,
     mint: &Pubkey,
     token_program: &Pubkey,
 ) -> Instruction {
@@ -234,6 +287,8 @@ pub fn charge_ix(
             subscription: *subscription_account,
             subscriber_token_account: *subscriber_token_account,
             vault: *vault,
+            config: *config,
+            treasury: *treasury,
             mint: *mint,
             token_program: *token_program,
         }
@@ -242,7 +297,7 @@ pub fn charge_ix(
     }
 }
 
-/// Creates a creator + plan fixture.
+/// Creates a creator + plan fixture, plus program Config (default fee_bps = 0).
 pub struct PlanFixture {
     pub ctx: TestCtx,
     pub mint_authority: Keypair,
@@ -253,15 +308,37 @@ pub struct PlanFixture {
     pub period: i64,
     pub plan: Pubkey,
     pub vault: Pubkey,
+    pub config_authority: Keypair,
+    pub config: Pubkey,
+    pub treasury_owner: Keypair,
+    pub treasury: Pubkey,
 }
 
 impl PlanFixture {
     pub fn new(price: u64, period: i64) -> Self {
+        Self::new_with_fee(price, period, 0)
+    }
+
+    pub fn new_with_fee(price: u64, period: i64, fee_bps: u16) -> Self {
         let mut ctx = TestCtx::new();
 
         let mint_authority = Keypair::new();
         ctx.fund(&mint_authority.pubkey(), 5_000_000_000);
         let mint = ctx.create_usdc_mint(&mint_authority);
+
+        let config_authority = Keypair::new();
+        ctx.fund(&config_authority.pubkey(), 5_000_000_000);
+        let treasury_owner = Keypair::new();
+        let treasury = ctx.create_ata(&config_authority, &treasury_owner.pubkey(), &mint);
+        let (config, _) = ctx.config_pda();
+        let init_cfg = initialize_config_ix(
+            &ctx.program_id,
+            &config_authority.pubkey(),
+            &config,
+            &treasury,
+            fee_bps,
+        );
+        ctx.send(init_cfg, &config_authority, &[]).unwrap();
 
         let creator = Keypair::new();
         ctx.fund(&creator.pubkey(), 5_000_000_000);
@@ -293,6 +370,10 @@ impl PlanFixture {
             period,
             plan,
             vault,
+            config_authority,
+            config,
+            treasury_owner,
+            treasury,
         }
     }
 
@@ -322,6 +403,8 @@ impl PlanFixture {
             &self.plan,
             &self.vault,
             subscription_account,
+            &self.config,
+            &self.treasury,
             &self.mint,
             &self.ctx.token_program,
             approve_amount,

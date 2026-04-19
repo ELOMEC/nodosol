@@ -14,3 +14,9 @@ pub const MAX_METADATA_URI_LEN: usize = 200;
 
 /// Sentinel value meaning "unlimited capacity".
 pub const UNLIMITED_CAPACITY: u64 = 0;
+
+#[constant]
+pub const CONFIG_SEED: &[u8] = b"config";
+
+pub const MAX_FEE_BPS: u16 = 1_000;
+pub const BPS_DENOMINATOR: u64 = 10_000;

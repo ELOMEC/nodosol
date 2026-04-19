@@ -1,11 +1,19 @@
 pub mod close_creator_profile;
+pub mod initialize_config;
 pub mod initialize_creator;
 pub mod send_tip;
+pub mod update_authority;
 pub mod update_elgamal_pubkey;
+pub mod update_fee_bps;
+pub mod update_treasury;
 pub mod withdraw;
 
 pub use close_creator_profile::*;
+pub use initialize_config::*;
 pub use initialize_creator::*;
 pub use send_tip::*;
+pub use update_authority::*;
 pub use update_elgamal_pubkey::*;
+pub use update_fee_bps::*;
+pub use update_treasury::*;
 pub use withdraw::*;

@@ -55,3 +55,32 @@ pub struct EventClosed {
     pub creator: Pubkey,
     pub timestamp: i64,
 }
+
+#[event]
+pub struct ConfigInitialized {
+    pub authority: Pubkey,
+    pub treasury: Pubkey,
+    pub fee_bps: u16,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct FeeBpsUpdated {
+    pub previous_bps: u16,
+    pub new_bps: u16,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct TreasuryUpdated {
+    pub previous_treasury: Pubkey,
+    pub new_treasury: Pubkey,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct ConfigAuthorityUpdated {
+    pub previous_authority: Pubkey,
+    pub new_authority: Pubkey,
+    pub timestamp: i64,
+}
