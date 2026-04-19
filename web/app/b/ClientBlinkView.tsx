@@ -7,21 +7,27 @@ import {
   useWallet,
 } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { useEffect } from "react";
+import { useState } from "react";
 
 export function ClientBlinkView({ actionUrl }: { actionUrl: string }) {
   const { connection } = useConnection();
-  const { connected } = useWallet();
+  const { publicKey } = useWallet();
   const { adapter } = useBlinkSolanaWalletAdapter(connection);
   const { action, isLoading } = useAction({ url: actionUrl });
 
-  // Re-bind the adapter whenever the connection / wallet changes so the
-  // signing path always points at the active wallet.
-  useEffect(() => {
-    // The adapter closes over the current wallet context; nothing to do
-    // explicitly here beyond the hook re-render, but keep this for the
-    // chat-level invariant.
-  }, [connected]);
+  const [copied, setCopied] = useState(false);
+  const fullAddress = publicKey?.toBase58() ?? null;
+
+  const copyAddress = async () => {
+    if (!fullAddress) return;
+    try {
+      await navigator.clipboard.writeText(fullAddress);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // Ignore clipboard errors (e.g. insecure context); UI stays unchanged.
+    }
+  };
 
   return (
     <div style={styles.wrap}>
@@ -31,6 +37,22 @@ export function ClientBlinkView({ actionUrl }: { actionUrl: string }) {
         </a>
         <WalletMultiButton />
       </header>
+
+      {fullAddress ? (
+        <div style={styles.addressCard}>
+          <div style={styles.addressLabel}>Your devnet wallet</div>
+          <div style={styles.addressRow}>
+            <code style={styles.addressValue}>{fullAddress}</code>
+            <button onClick={copyAddress} style={styles.copyBtn}>
+              {copied ? "Copied" : "Copy"}
+            </button>
+          </div>
+          <div style={styles.addressHint}>
+            Share this with nodosol to get devnet mock USDC minted for
+            testing.
+          </div>
+        </div>
+      ) : null}
 
       {isLoading ? (
         <p style={styles.muted}>Loading action…</p>
@@ -42,7 +64,12 @@ export function ClientBlinkView({ actionUrl }: { actionUrl: string }) {
         </p>
       ) : (
         <div style={styles.blinkFrame}>
-          <Blink blink={action} adapter={adapter} stylePreset="x-dark" />
+          <Blink
+            blink={action}
+            adapter={adapter}
+            stylePreset="x-dark"
+            securityLevel="all"
+          />
         </div>
       )}
     </div>
@@ -77,5 +104,47 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 12,
     padding: 8,
     border: "1px solid #222",
+  },
+  addressCard: {
+    background: "#121212",
+    border: "1px solid #222",
+    borderRadius: 10,
+    padding: "0.75rem 1rem",
+    display: "flex",
+    flexDirection: "column",
+    gap: "0.35rem",
+  },
+  addressLabel: {
+    fontSize: "0.7rem",
+    textTransform: "uppercase",
+    letterSpacing: 1.4,
+    color: "#7a7a7a",
+  },
+  addressRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "0.5rem",
+  },
+  addressValue: {
+    flex: 1,
+    color: "#e8e8e8",
+    fontSize: "0.78rem",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+  },
+  copyBtn: {
+    background: "#1f1f1f",
+    color: "#e8e8e8",
+    border: "1px solid #2a2a2a",
+    borderRadius: 6,
+    padding: "0.35rem 0.7rem",
+    fontSize: "0.8rem",
+    cursor: "pointer",
+  },
+  addressHint: {
+    color: "#6a6a6a",
+    fontSize: "0.75rem",
+    lineHeight: 1.4,
   },
 };
