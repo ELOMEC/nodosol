@@ -14,4 +14,6 @@ pub enum TipJarError {
     MintMismatch,
     #[msg("Arithmetic overflow updating creator statistics")]
     ArithmeticOverflow,
+    #[msg("Vault must be empty before the profile can be closed")]
+    VaultNotEmpty,
 }

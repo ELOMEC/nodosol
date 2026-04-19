@@ -12,6 +12,7 @@ pub struct SubscriptionPlan {
     pub active: bool,
     pub subscriber_count: u64,
     pub total_collected: u64,
+    pub total_withdrawn: u64,
     pub created_at: i64,
     pub bump: u8,
     pub vault_bump: u8,

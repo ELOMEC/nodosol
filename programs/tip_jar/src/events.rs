@@ -34,3 +34,9 @@ pub struct ElgamalPubkeyUpdated {
     pub new_pubkey: [u8; 32],
     pub timestamp: i64,
 }
+
+#[event]
+pub struct CreatorProfileClosed {
+    pub creator: Pubkey,
+    pub timestamp: i64,
+}

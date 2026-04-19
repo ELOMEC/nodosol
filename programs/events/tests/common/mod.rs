@@ -67,6 +67,10 @@ impl TestCtx {
         payer: &Keypair,
         extra_signers: &[&Keypair],
     ) -> litesvm::types::TransactionResult {
+        // Rotate the blockhash on every send so that repeating the same
+        // instruction payload (e.g. pause → resume → retry-buy) does not
+        // hit AlreadyProcessed.
+        self.svm.expire_blockhash();
         let blockhash = self.svm.latest_blockhash();
         let msg = Message::new_with_blockhash(&[ix], Some(&payer.pubkey()), &blockhash);
         let mut signers: Vec<&Keypair> = vec![payer];

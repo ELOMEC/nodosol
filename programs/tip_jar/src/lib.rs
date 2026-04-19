@@ -36,4 +36,8 @@ pub mod tip_jar {
     ) -> Result<()> {
         handle_update_elgamal_pubkey(ctx, new_pubkey)
     }
+
+    pub fn close_creator_profile(ctx: Context<CloseCreatorProfile>) -> Result<()> {
+        handle_close_creator_profile(ctx)
+    }
 }

@@ -38,4 +38,22 @@ pub mod subscription {
     pub fn charge(ctx: Context<Charge>) -> Result<()> {
         handle_charge(ctx)
     }
+
+    pub fn withdraw_plan_revenue(
+        ctx: Context<WithdrawPlanRevenue>,
+        amount: u64,
+    ) -> Result<()> {
+        handle_withdraw_plan_revenue(ctx, amount)
+    }
+
+    pub fn update_plan_status(
+        ctx: Context<UpdatePlanStatus>,
+        active: bool,
+    ) -> Result<()> {
+        handle_update_plan_status(ctx, active)
+    }
+
+    pub fn close_plan(ctx: Context<ClosePlan>) -> Result<()> {
+        handle_close_plan(ctx)
+    }
 }

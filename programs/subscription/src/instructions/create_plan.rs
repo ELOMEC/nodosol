@@ -64,6 +64,7 @@ pub fn handle_create_plan(
     plan.active = true;
     plan.subscriber_count = 0;
     plan.total_collected = 0;
+    plan.total_withdrawn = 0;
     plan.created_at = clock.unix_timestamp;
     plan.bump = ctx.bumps.plan;
     plan.vault_bump = ctx.bumps.vault;

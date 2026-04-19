@@ -41,4 +41,15 @@ pub mod events {
     pub fn withdraw_revenue(ctx: Context<WithdrawRevenue>, amount: u64) -> Result<()> {
         handle_withdraw_revenue(ctx, amount)
     }
+
+    pub fn update_event_status(
+        ctx: Context<UpdateEventStatus>,
+        active: bool,
+    ) -> Result<()> {
+        handle_update_event_status(ctx, active)
+    }
+
+    pub fn close_event(ctx: Context<CloseEvent>) -> Result<()> {
+        handle_close_event(ctx)
+    }
 }

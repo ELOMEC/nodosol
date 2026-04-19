@@ -20,4 +20,12 @@ pub enum SubscriptionError {
     ArithmeticOverflow,
     #[msg("Clock value is invalid")]
     InvalidClock,
+    #[msg("Withdrawal amount must be greater than zero")]
+    InvalidWithdrawAmount,
+    #[msg("Vault balance is insufficient for this withdrawal")]
+    InsufficientVaultBalance,
+    #[msg("Plan has active subscribers and cannot be closed")]
+    PlanHasSubscribers,
+    #[msg("Vault must be empty before the plan can be closed")]
+    VaultNotEmpty,
 }

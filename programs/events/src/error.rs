@@ -28,4 +28,6 @@ pub enum EventsError {
     MintMismatch,
     #[msg("Arithmetic overflow updating counters")]
     ArithmeticOverflow,
+    #[msg("Vault must be empty before the event can be closed")]
+    VaultNotEmpty,
 }
