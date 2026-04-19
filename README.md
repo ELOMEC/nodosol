@@ -110,6 +110,25 @@ https://dial.to/?action=solana-action:https://<your-app>/api/actions/tip/<creato
 
 into a browser. Phantom / dial.to will render the Action, and clicking "Tip $5" signs + submits the transaction the endpoint returned.
 
+## Devnet demo (live)
+
+The three programs are deployed to Solana devnet with seeded demo data.
+
+- Creator wallet: `3E8ZZJBkz82RmLSSmMZJBGuwrtkJDoCsX5UZVj26rqBr`
+- Mock USDC mint: `73w3ocXSe2yDMWTHj1kwQxrbNjUY9tBJP9HYDkcpmh7h` (6 decimals, Token-2022)
+- Subscription plan id: `1` — $5 USDC / month, 12 cycles pre-approved on subscribe
+- Event id: `1` — $10 USDC, 100-ticket capacity, 30-day window
+
+After `cd web && npm run dev`, the landing page at `http://localhost:3000` renders live Blink URLs with `Open in dial.to` buttons. Drop any of these into a Blink-aware wallet or a tweet:
+
+```
+http://localhost:3000/api/actions/tip/3E8ZZJBkz82RmLSSmMZJBGuwrtkJDoCsX5UZVj26rqBr
+http://localhost:3000/api/actions/subscribe/3E8ZZJBkz82RmLSSmMZJBGuwrtkJDoCsX5UZVj26rqBr/1
+http://localhost:3000/api/actions/ticket/3E8ZZJBkz82RmLSSmMZJBGuwrtkJDoCsX5UZVj26rqBr/1
+```
+
+Deploy the `web/` package to any host (Vercel, Railway, Fly) and update `NEXT_PUBLIC_APP_URL` for a public shareable demo.
+
 ## Privacy roadmap
 
 - **V1 (now)**: Standard Token-2022 USDC. Account schemas reserve ElGamal pubkey fields.
@@ -117,4 +136,4 @@ into a browser. Phantom / dial.to will render the Action, and clicking "Tip $5" 
 
 ## Status
 
-Pre-launch. Investor demo MVP in progress (April 2026).
+Devnet live, investor demo MVP (April 2026).

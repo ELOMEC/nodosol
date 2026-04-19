@@ -9,13 +9,8 @@
  * Run:  npm run init-demo
  */
 
-import {
-  AnchorProvider,
-  BN,
-  Program,
-  Wallet,
-  web3,
-} from "@coral-xyz/anchor";
+import pkg from "@coral-xyz/anchor";
+const { AnchorProvider, BN, Program, Wallet, web3 } = pkg;
 import {
   TOKEN_2022_PROGRAM_ID,
   createAssociatedTokenAccountIdempotentInstruction,

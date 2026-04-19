@@ -2,8 +2,21 @@ import { getAppUrl } from "@/lib/constants";
 
 export default function HomePage() {
   const appUrl = getAppUrl();
-  const tipExample = `${appUrl}/api/actions/tip/<creator-wallet>`;
-  const subExample = `${appUrl}/api/actions/subscribe/<creator-wallet>/<plan-id>`;
+  const demoCreator = process.env.NEXT_PUBLIC_DEMO_CREATOR ?? "";
+  const demoPlanId = process.env.NEXT_PUBLIC_DEMO_PLAN_ID ?? "1";
+  const demoEventId = process.env.NEXT_PUBLIC_DEMO_EVENT_ID ?? "1";
+
+  const hasDemo = demoCreator.length > 0;
+  const creatorSlug = hasDemo ? demoCreator : "<creator-wallet>";
+  const planSlug = hasDemo ? demoPlanId : "<plan-id>";
+  const eventSlug = hasDemo ? demoEventId : "<event-id>";
+
+  const tipUrl = `${appUrl}/api/actions/tip/${creatorSlug}`;
+  const subUrl = `${appUrl}/api/actions/subscribe/${creatorSlug}/${planSlug}`;
+  const ticketUrl = `${appUrl}/api/actions/ticket/${creatorSlug}/${eventSlug}`;
+
+  const dialLink = (url: string) =>
+    `https://dial.to/?action=solana-action:${encodeURIComponent(url)}`;
 
   return (
     <main
@@ -22,32 +35,85 @@ export default function HomePage() {
 
       <section style={{ marginTop: "3rem" }}>
         <h2 style={{ fontSize: "1.25rem", marginBottom: "0.75rem" }}>
-          Solana Actions endpoints
+          {hasDemo ? "Live demo Blinks (devnet)" : "Solana Actions endpoints"}
         </h2>
         <p style={{ color: "#9a9a9a", marginBottom: "1rem" }}>
-          Paste either URL into{" "}
-          <a
-            href="https://dial.to/"
-            target="_blank"
-            rel="noreferrer"
-          >
-            dial.to
-          </a>{" "}
-          or a Blink-aware wallet to preview the interaction.
+          {hasDemo ? (
+            <>
+              Open a URL below in{" "}
+              <a href="https://dial.to/" target="_blank" rel="noreferrer">
+                dial.to
+              </a>{" "}
+              (or any Blink-aware wallet) to sign with Phantom / Backpack.
+              Creator <code>{demoCreator}</code> is seeded with a $5/month
+              plan and a $10 event.
+            </>
+          ) : (
+            <>
+              Paste either URL into{" "}
+              <a href="https://dial.to/" target="_blank" rel="noreferrer">
+                dial.to
+              </a>{" "}
+              or a Blink-aware wallet to preview the interaction.
+            </>
+          )}
         </p>
-        <pre>{tipExample}</pre>
-        <pre style={{ marginTop: "0.75rem" }}>{subExample}</pre>
-        <pre style={{ marginTop: "0.75rem" }}>
-          {`${appUrl}/api/actions/ticket/<creator-wallet>/<event-id>`}
-        </pre>
+
+        <BlinkRow label="Tip" url={tipUrl} live={hasDemo} dial={dialLink(tipUrl)} />
+        <BlinkRow
+          label="Subscribe"
+          url={subUrl}
+          live={hasDemo}
+          dial={dialLink(subUrl)}
+        />
+        <BlinkRow
+          label="Ticket"
+          url={ticketUrl}
+          live={hasDemo}
+          dial={dialLink(ticketUrl)}
+        />
       </section>
 
-      <section style={{ marginTop: "3rem", color: "#6a6a6a", fontSize: "0.9rem" }}>
+      <section
+        style={{ marginTop: "3rem", color: "#6a6a6a", fontSize: "0.9rem" }}
+      >
         <p>
-          Programs deployed on devnet. USDC refers to the devnet mint; swap{" "}
-          <code>NEXT_PUBLIC_USDC_MINT</code> for mainnet use.
+          Programs deployed on devnet. Set{" "}
+          <code>NEXT_PUBLIC_DEMO_CREATOR</code> in <code>.env</code> after
+          running <code>npm run init-demo</code> to surface live URLs here.
         </p>
       </section>
     </main>
+  );
+}
+
+function BlinkRow({
+  label,
+  url,
+  live,
+  dial,
+}: {
+  label: string;
+  url: string;
+  live: boolean;
+  dial: string;
+}) {
+  return (
+    <div style={{ marginBottom: "0.75rem" }}>
+      <div style={{ color: "#7a7a7a", fontSize: "0.75rem", letterSpacing: 1 }}>
+        {label.toUpperCase()}
+      </div>
+      <pre style={{ marginTop: "0.25rem" }}>{url}</pre>
+      {live ? (
+        <a
+          href={dial}
+          target="_blank"
+          rel="noreferrer"
+          style={{ fontSize: "0.85rem" }}
+        >
+          Open in dial.to →
+        </a>
+      ) : null}
+    </div>
   );
 }
