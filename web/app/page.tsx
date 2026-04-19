@@ -15,6 +15,10 @@ export default function HomePage() {
   const subUrl = `${appUrl}/api/actions/subscribe/${creatorSlug}/${planSlug}`;
   const ticketUrl = `${appUrl}/api/actions/ticket/${creatorSlug}/${eventSlug}`;
 
+  const nativeTip = `/b/tip/${creatorSlug}`;
+  const nativeSub = `/b/subscribe/${creatorSlug}/${planSlug}`;
+  const nativeTicket = `/b/ticket/${creatorSlug}/${eventSlug}`;
+
   const dialLink = (url: string) =>
     `https://dial.to/?action=solana-action:${encodeURIComponent(url)}`;
 
@@ -59,17 +63,25 @@ export default function HomePage() {
           )}
         </p>
 
-        <BlinkRow label="Tip" url={tipUrl} live={hasDemo} dial={dialLink(tipUrl)} />
+        <BlinkRow
+          label="Tip"
+          url={tipUrl}
+          live={hasDemo}
+          native={nativeTip}
+          dial={dialLink(tipUrl)}
+        />
         <BlinkRow
           label="Subscribe"
           url={subUrl}
           live={hasDemo}
+          native={nativeSub}
           dial={dialLink(subUrl)}
         />
         <BlinkRow
           label="Ticket"
           url={ticketUrl}
           live={hasDemo}
+          native={nativeTicket}
           dial={dialLink(ticketUrl)}
         />
       </section>
@@ -91,28 +103,35 @@ function BlinkRow({
   label,
   url,
   live,
+  native,
   dial,
 }: {
   label: string;
   url: string;
   live: boolean;
+  native: string;
   dial: string;
 }) {
   return (
-    <div style={{ marginBottom: "0.75rem" }}>
+    <div style={{ marginBottom: "1rem" }}>
       <div style={{ color: "#7a7a7a", fontSize: "0.75rem", letterSpacing: 1 }}>
         {label.toUpperCase()}
       </div>
       <pre style={{ marginTop: "0.25rem" }}>{url}</pre>
       {live ? (
-        <a
-          href={dial}
-          target="_blank"
-          rel="noreferrer"
-          style={{ fontSize: "0.85rem" }}
+        <div
+          style={{
+            display: "flex",
+            gap: "1rem",
+            marginTop: "0.4rem",
+            fontSize: "0.85rem",
+          }}
         >
-          Open in dial.to →
-        </a>
+          <a href={native}>Open on nodosol →</a>
+          <a href={dial} target="_blank" rel="noreferrer">
+            Open in dial.to →
+          </a>
+        </div>
       ) : null}
     </div>
   );
