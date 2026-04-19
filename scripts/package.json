@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "init-demo": "tsx init-demo.ts",
-    "fund-user": "tsx fund-user.ts"
+    "fund-user": "tsx fund-user.ts --"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
