@@ -16,6 +16,7 @@ import {
 } from "@solana/web3.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { ChatPanel } from "@/components/ChatPanel";
 import { getUsdcMint, USDC_UNIT } from "@/lib/constants";
 import {
   DealStatusKey,
@@ -105,6 +106,7 @@ export function OtcView() {
   const [proposeOpen, setProposeOpen] = useState(false);
   const [busyDeal, setBusyDeal] = useState<string | null>(null);
   const [feeBps, setFeeBps] = useState<number>(300);
+  const [chatFor, setChatFor] = useState<DealRow | null>(null);
 
   const reload = useCallback(async () => {
     if (!publicKey) return;
@@ -503,6 +505,7 @@ export function OtcView() {
               viewerIsSeller={tab === "as_seller"}
               onAccept={() => void acceptDeal(d)}
               onCancel={() => void cancelDeal(d)}
+              onChat={() => setChatFor(d)}
               busy={busyDeal === d.address}
             />
           ))}
@@ -518,6 +521,17 @@ export function OtcView() {
             await proposeDeal(form);
             setProposeOpen(false);
           }}
+        />
+      ) : null}
+
+      {chatFor && publicKey ? (
+        <ChatPanel
+          memoHash={chatFor.memoHash}
+          sellerPubkey={chatFor.seller}
+          buyerPubkey={chatFor.buyer}
+          dealAddress={chatFor.address}
+          viewerPubkey={publicKey.toBase58()}
+          onClose={() => setChatFor(null)}
         />
       ) : null}
     </>
@@ -733,12 +747,14 @@ function DealCard({
   viewerIsSeller,
   onAccept,
   onCancel,
+  onChat,
   busy,
 }: {
   deal: DealRow;
   viewerIsSeller: boolean;
   onAccept: () => void;
   onCancel: () => void;
+  onChat: () => void;
   busy: boolean;
 }) {
   const gradient = CATEGORY_GRADIENT[deal.assetCategory ?? "other"] ?? CATEGORY_GRADIENT.other;
@@ -791,6 +807,9 @@ function DealCard({
         </div>
       </div>
       <div style={{ display: "flex", gap: "0.4rem" }}>
+        <button style={{ ...btnSecondary, padding: "0.5rem 0.85rem" }} onClick={onChat}>
+          Chat
+        </button>
         {deal.status === "proposed" ? (
           viewerIsSeller ? (
             <button style={{ ...btnSecondary, padding: "0.5rem 0.95rem" }} onClick={onCancel} disabled={busy}>
@@ -801,9 +820,7 @@ function DealCard({
               {busy ? "…" : "Accept"}
             </button>
           )
-        ) : (
-          <span style={{ fontSize: "0.78rem", color: "#9ca3af" }}>—</span>
-        )}
+        ) : null}
       </div>
     </div>
   );
