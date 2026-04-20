@@ -4,9 +4,9 @@ import { LandingProviders } from "../LandingProviders";
 import { TelemetryStrip } from "../TelemetryStrip";
 
 export const metadata = {
-  title: "nodosol — Solana super-app for compliant RWA + creator economy",
+  title: "nodosol — Solana super-app for compliant RWA + creator payments",
   description:
-    "Nodosol is building the only Solana super-app that combines licenced real-world-asset tokenisation with a creator-payments rail. Seven Anchor programs live on devnet with end-to-end fee infrastructure.",
+    "Nodosol is a Solana super-app combining licenced RWA tokenisation with a creator-payments rail. UAE-incorporated, built by a founder who already ships sports-data infrastructure to Balkan federations and operates a 178K+ monthly-views distribution channel.",
 };
 
 export default function PitchPage() {
@@ -18,8 +18,9 @@ export default function PitchPage() {
           <span style={{ fontSize: "1.05rem", fontWeight: 600 }}>nodosol</span>
         </Link>
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <Link href="/stats" style={navLinkStyle}>Live stats</Link>
           <Link href="/marketplace" style={navLinkStyle}>Open app</Link>
-          <a href="mailto:office@nodosol.com" style={ctaStyle}>
+          <a href="mailto:office@nodosol.com?subject=nodosol%20—%20investor%20intro" style={ctaStyle}>
             Request intro
           </a>
         </div>
@@ -28,14 +29,19 @@ export default function PitchPage() {
       <section style={{ marginBottom: "4rem" }}>
         <Eyebrow>Seed pitch · 2026</Eyebrow>
         <h1 style={h1Style}>
-          The Solana super-app for <span style={{ color: "#9a9a9a" }}>licenced RWA</span> and creator payments.
+          A Solana super-app for <span style={{ color: "#9a9a9a" }}>licenced RWA</span> and creator payments —
+          built by a founder who already ships production sports infrastructure to Balkan federations.
         </h1>
         <p style={leadStyle}>
-          Nodosol combines two rails that share the same USDC-native Solana fee infrastructure:
+          Nodosol combines two rails on one on-chain fee infrastructure:
           a <strong style={{ color: "#fff" }}>compliant RWA marketplace</strong> for tokenised
           commodities, debt, and real estate; and a <strong style={{ color: "#fff" }}>creator
-          payments stack</strong> (tip jars, subscriptions, cNFT event tickets).
-          Seven Anchor programs are live on devnet today, end-to-end flows with atomic settlement.
+          payments stack</strong> (tip jars, subscriptions, cNFT event tickets) with
+          atomic USDC settlement.
+          <br />
+          <br />
+          Seven Anchor programs are live on devnet today — full end-to-end flows,
+          110+ LiteSVM tests passing. Incorporated as a UAE free-zone company.
         </p>
         <div style={{ display: "flex", gap: "0.8rem", marginTop: "2rem", flexWrap: "wrap" }}>
           <a href="mailto:office@nodosol.com?subject=nodosol%20—%20investor%20intro" style={ctaPrimaryStyle}>
@@ -49,7 +55,7 @@ export default function PitchPage() {
 
       <section style={sectionStyle}>
         <Eyebrow>The opportunity</Eyebrow>
-        <h2 style={h2Style}>RWA tokenisation is the next trillion-dollar narrative — nobody has shipped a compliant Solana-native stack.</h2>
+        <h2 style={h2Style}>RWA tokenisation is the next trillion-dollar narrative — and nobody has shipped a compliant Solana-native stack at retail scale.</h2>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "1.5rem" }}>
           <DataPoint headline="$30T" blurb="addressable RWA market size by 2030 per BCG / Citi estimates" />
           <DataPoint headline="<$10B" blurb="currently tokenised on-chain across all chains (0.03% penetration)" />
@@ -79,10 +85,10 @@ export default function PitchPage() {
 
       <section style={sectionStyle}>
         <Eyebrow>Why Solana</Eyebrow>
-        <h2 style={h2Style}>RWA needs the cheapest clearing layer. Solana is the only L1 where atomic fee-splitting + cNFT issuance stays economical at retail scale.</h2>
+        <h2 style={h2Style}>RWA needs the cheapest clearing layer. Solana is the only L1 where atomic fee-splitting and cNFT issuance stay economical at retail scale.</h2>
         <ul style={listStyle}>
-          <li><strong style={{ color: "#fff" }}>Settlement cost:</strong> $0.0001 per tx vs. $5–50 on Ethereum mainnet. A $10 ticket pays out 99.999%.</li>
-          <li><strong style={{ color: "#fff" }}>Finality:</strong> &lt;1 s. Merchants never have to wait for confirmations.</li>
+          <li><strong style={{ color: "#fff" }}>Settlement cost:</strong> ~$0.0001 per tx vs. $5–50 on Ethereum mainnet. A $10 ticket pays out 99.999%.</li>
+          <li><strong style={{ color: "#fff" }}>Finality:</strong> &lt;1 s. Merchants never wait for confirmations.</li>
           <li><strong style={{ color: "#fff" }}>Token-2022 + Bubblegum:</strong> native compressed NFTs and transfer-hook extensions make RWA issuance + secondary markets first-class.</li>
           <li><strong style={{ color: "#fff" }}>Helius / Triton / Jito:</strong> production-grade RPC + MEV infra at commodity pricing.</li>
         </ul>
@@ -90,18 +96,21 @@ export default function PitchPage() {
 
       <section style={{ ...sectionStyle, background: "rgba(99,102,241,0.05)", border: "1px solid rgba(99,102,241,0.2)", borderRadius: 14, padding: "1.75rem 2rem" }}>
         <Eyebrow>The moat — regulatory</Eyebrow>
-        <h2 style={h2Style}>We are acquiring a licenced entity in a Balkan jurisdiction with active commodities-tokenisation permits.</h2>
+        <h2 style={h2Style}>UAE operating company for scale. Balkan licensed subsidiary for RWA tokenisation.</h2>
         <p style={paragraphStyle}>
-          Most Solana RWA plays hand-wave the legal layer. We are not. Nodosol&apos;s
-          on-chain issuer registry whitelists wallets by jurisdiction × asset class;
-          only Active issuers can mint. The underlying licensed entity becomes the
-          primary anchor issuer at mainnet launch. Additional issuers onboard one at
-          a time after KYC.
+          Most Solana RWA plays hand-wave the legal layer. We are not. The
+          operating company is incorporated in the UAE — giving us clean
+          international contracting, low-friction banking, and a predictable
+          tax base. For the regulated RWA issuance layer we are in the process
+          of acquiring a Balkan-based licensed entity with active
+          commodities-tokenisation permits; that subsidiary becomes the
+          primary anchor issuer at mainnet launch.
         </p>
         <p style={paragraphStyle}>
-          This gives us a structural defensibility other Solana dApps don&apos;t
-          have: <strong style={{ color: "#fff" }}>regulated supply</strong>. You
-          cannot fork the licence. The registry enforces jurisdiction gating at the
+          On-chain, Nodosol&apos;s <code style={inlineCode}>rwa_registry</code>{" "}
+          whitelists issuers by jurisdiction × asset class; only Active issuers
+          can mint. Additional issuers onboard one at a time after KYC. You
+          cannot fork the licence — jurisdiction gating is enforced at the
           transaction level.
         </p>
       </section>
@@ -115,20 +124,21 @@ export default function PitchPage() {
           </LandingProviders>
         </div>
         <p style={{ fontSize: "0.85rem", color: "#8a8a8a", marginTop: "0.75rem" }}>
-          Counts refresh on each page load via <code style={inlineCode}>getProgramAccounts</code>.
+          Counts refresh on each page load via <code style={inlineCode}>getProgramAccounts</code>. Full on-chain activity feed at{" "}
+          <Link href="/stats" style={{ color: "#7b9cff" }}>/stats</Link>.
         </p>
       </section>
 
       <section style={sectionStyle}>
         <Eyebrow>Architecture</Eyebrow>
-        <h2 style={h2Style}>Pure on-chain state + a thin web / mobile client. No backend mutates user funds.</h2>
+        <h2 style={h2Style}>Pure on-chain state + a thin web client. No backend mutates user funds.</h2>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "1.5rem" }}>
-          <ProgramCard label="tip_jar" role="Creator tips" high="Config + fee split + ElGamal-reserve for V2 confidential transfers" />
+          <ProgramCard label="tip_jar" role="Creator tips" high="Config + fee split + ElGamal slot reserved for V2 confidential transfers" />
           <ProgramCard label="subscription" role="Recurring billing" high="SPL token delegate pre-approves N cycles — one-click subscribe" />
           <ProgramCard label="events (legacy)" role="PDA-based tickets" high="Non-transferable; superseded by event_tickets" />
-          <ProgramCard label="rwa_registry" role="Licenced issuer list" high="Status machine (Pending → Active ↔ Suspended → Revoked); jurisdiction tags; asset class bitmap" />
+          <ProgramCard label="rwa_registry" role="Licenced issuer list" high="State machine (Pending → Active ↔ Suspended → Revoked); jurisdiction tags; asset class bitmap" />
           <ProgramCard label="rwa_mint" role="Asset tokenisation" high="Token-2022 fixed supply. Cross-program issuer check via seeds::program" />
-          <ProgramCard label="marketplace" role="Public listings" high="Escrow vault pattern; atomic buy with fee split; listing price updates" />
+          <ProgramCard label="marketplace" role="Public listings" high="Escrow vault pattern; atomic buy with fee split; live price updates" />
           <ProgramCard label="otc_deals" role="Bilateral escrow" high="Counter-party-specific proposal; 1-min to 30-day expiry; permissionless expire crank" />
           <ProgramCard label="event_tickets" role="Compressed NFT tickets" high="Bubblegum CPI — mint_v1 + create_tree. Event PDA is tree delegate" />
         </div>
@@ -150,44 +160,113 @@ export default function PitchPage() {
         </div>
         <p style={paragraphStyle}>
           Fees are programmable per Config PDA via the admin dashboard, capped at
-          10% on-chain. Treasury is a dedicated USDC ATA under multi-sig control at
-          mainnet. Revenue scales linearly with marketplace volume; the creator
-          rail adds long-tail steady-state cash flow.
+          10% on-chain. Treasury is a dedicated USDC ATA under multisig control
+          at mainnet. Revenue scales linearly with marketplace volume; the
+          creator rail adds long-tail steady-state cash flow.
+        </p>
+      </section>
+
+      <section style={{ ...sectionStyle, background: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 14, padding: "1.75rem 2rem" }}>
+        <Eyebrow>Distribution moat</Eyebrow>
+        <h2 style={h2Style}>The founder already owns a working sports-data + video distribution stack that plugs directly into Nodosol&apos;s creator rails.</h2>
+        <p style={paragraphStyle}>
+          Nodosol&apos;s creator payments (tip jars, subscriptions, cNFT tickets)
+          are not cold-starting a TAM. They plug into a pre-existing network the
+          founder already operates — live-scoring software embedded in federation
+          operations, a YouTube channel that is already growing fast, and
+          partnerships with federations that run real competitions.
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.9rem", marginTop: "1.5rem" }}>
+          <DataPoint headline="178K" blurb="YouTube views / 28-day rolling window on DIGITAL Score TV; ~100 matches/week streamed" />
+          <DataPoint headline="3.7K+" blurb="YouTube subscribers, growing from live-match traffic — fan base that lands directly in the creator rail" />
+          <DataPoint headline="5+" blurb="Balkan federations running production software built by the founder (basketball, volleyball, handball)" />
+        </div>
+        <p style={{ ...paragraphStyle, marginTop: "1.5rem" }}>
+          On Day 1 post-mainnet, the founder&apos;s sports stack becomes the
+          distribution funnel: federations sell cNFT tickets to their events,
+          live-scoring apps surface tip-jar Blinks for referees / commentators,
+          subscription plans monetise premium video + stats feeds. Zero
+          acquisition cost for the first thousand creators and tens of
+          thousands of fans.
         </p>
       </section>
 
       <section style={sectionStyle}>
-        <Eyebrow>Team</Eyebrow>
-        <h2 style={h2Style}>Founder-led. Pre-seed solo founder with 10+ years in shipping production web infrastructure.</h2>
+        <Eyebrow>Founder</Eyebrow>
+        <h2 style={h2Style}>Built by Mladen Rakić — 10+ years shipping production sports software used by federations, broadcasters, and licensing partners.</h2>
         <div style={{ background: "#0f0f0f", border: "1px solid #1a1a1a", borderRadius: 12, padding: "1.4rem 1.5rem", marginTop: "1rem" }}>
-          <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.35rem" }}>Mladen Rakić — Founder, CEO</h3>
-          <p style={{ fontSize: "0.9rem", color: "#b5b5b5", lineHeight: 1.6 }}>
-            Solo founder. Background in Laravel / PostgreSQL / TypeScript; shipping
-            production systems for a decade. Solana + Anchor since 2026. Warm
-            introductions into Solana Foundation network. Actively recruiting a
-            Rust-native co-founder as part of the seed raise.
+          <h3 style={{ fontSize: "1.02rem", fontWeight: 600, marginBottom: "0.55rem" }}>Mladen Rakić · Founder, CEO</h3>
+          <p style={{ fontSize: "0.92rem", color: "#b5b5b5", lineHeight: 1.65 }}>
+            Solo founder with a decade of production-grade SaaS experience —
+            Laravel / PostgreSQL / TypeScript / React / Next.js backbone,
+            recently extended to Solana + Anchor. Warm introductions into the
+            Solana Foundation network. Actively recruiting a Rust-native
+            co-founder as part of the seed raise.
           </p>
+          <h4 style={trackTitle}>Production systems already shipped and operating</h4>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.85rem", marginTop: "0.75rem" }}>
+            <TrackCard
+              label="DScore.live"
+              role="Live basketball scoring"
+              body="Live scoring + play-by-play + box-score API. Embedded in federation operations across the Balkans. Public data API at new-api.dscore.live, scoresheet API at scoresheet-api.ds2.app."
+            />
+            <TrackCard
+              label="DS2 (organizer.elomec.com)"
+              role="Multi-tenant federation platform"
+              body="FIBA-rules basketball federation SaaS: competitions, rosters, transfers, licensing, delegates, referees, scheduling, financials, discipline, integrations (Atrium, Genius Sports, Pixellot, YouTube)."
+            />
+            <TrackCard
+              label="Scoresheet"
+              role="Electronic scorer (web + mobile)"
+              body="basket-ds.elomec.com. React + Vite + Capacitor + Electron for court-side operation. WebSocket scoring feed. Runs on real matches every week."
+            />
+            <TrackCard
+              label="DS Scout"
+              role="Video intelligence platform"
+              body="ds-scout.com. 182+ matches indexed, auth, search, player profiles, video upload, clipping engine. Live streaming + OCR score detection on roadmap."
+            />
+            <TrackCard
+              label="Sport Stats Admin + Desktop"
+              role="Statistics pipeline"
+              body="stats.ds2.app — web admin. Desktop app pushes events via match-key endpoints for offline-first scoring. PBP + box-score aggregation, league config."
+            />
+            <TrackCard
+              label="Prediction-365"
+              role="AI sports predictions"
+              body="Basketball / volleyball / handball predictions. Laravel + Next.js + Python XGBoost ML engine; affiliate monetisation (Meridian, MaxBet, Mozzart, Bet365)."
+            />
+            <TrackCard
+              label="DIGITAL Score TV"
+              role="YouTube distribution"
+              body="178K views / 28-day window. 3.7K+ subscribers. ~100 matches per week streamed. Pre-existing distribution funnel for Nodosol's creator rails."
+            />
+            <TrackCard
+              label="Federation data contracts"
+              role="Sports data B2B"
+              body="Basketball (KSS M1/M2/F1/F2), volleyball (Sportradar non-compete expiring 2027), handball (ARKUS full rights). Direct commercial relationships with 5+ federations."
+            />
+          </div>
         </div>
       </section>
 
       <section style={{ ...sectionStyle, background: "#0f0f0f", border: "1px solid #1a1a1a", borderRadius: 14, padding: "1.75rem 2rem" }}>
         <Eyebrow>The ask</Eyebrow>
-        <h2 style={h2Style}>$5M Seed round to ship mainnet, close the licence acquisition, and onboard the first five issuers.</h2>
+        <h2 style={h2Style}>$5M Seed round to ship mainnet, close the Balkan licence acquisition, and onboard the first five issuers.</h2>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem", marginTop: "1.25rem" }}>
           <UseOfFunds
             percent="35%"
             title="Licence closing + legal"
-            body="Finalise acquisition of the Balkan licensed entity. Regulatory counsel in 3 secondary jurisdictions."
+            body="Finalise acquisition of the Balkan licensed entity under the UAE parent. Regulatory counsel in 2–3 secondary jurisdictions. UAE operating cost base keeps this efficient."
           />
           <UseOfFunds
             percent="30%"
             title="Engineering"
-            body="Rust co-founder + two senior engineers (mobile, infra). External security audit across seven programs."
+            body="Rust co-founder + two senior engineers (Solana mobile, data infra). External security audit across seven programs before mainnet."
           />
           <UseOfFunds
             percent="20%"
-            title="Issuer BD"
-            body="First five anchor issuers (ag commodities, real estate, debt). On-boarding + KYC operational work."
+            title="Issuer + federation BD"
+            body="First five anchor issuers (ag commodities, real estate, debt). Formalise federation partnerships so the sports creator rail switches on at mainnet."
           />
           <UseOfFunds
             percent="15%"
@@ -204,15 +283,18 @@ export default function PitchPage() {
           <a href="mailto:office@nodosol.com?subject=nodosol%20—%20investor%20intro" style={ctaPrimaryStyle}>
             office@nodosol.com
           </a>
-          <a href="https://www.nodosol.com/marketplace" style={ctaSecondaryStyle}>
-            www.nodosol.com/marketplace
-          </a>
+          <Link href="/stats" style={ctaSecondaryStyle}>
+            Live on-chain stats
+          </Link>
+          <Link href="/marketplace" style={ctaSecondaryStyle}>
+            See the product
+          </Link>
         </div>
       </section>
 
       <footer style={{ borderTop: "1px solid #222", paddingTop: "2rem", marginTop: "2.5rem", fontSize: "0.8rem", color: "#6a6a6a", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
-        <div>© 2026 Nodosol · Built on Solana</div>
-        <div>Last updated 2026-04-20</div>
+        <div>© 2026 Nodosol · Incorporated in the UAE · Built on Solana</div>
+        <div>Last updated 2026-04-21</div>
       </footer>
     </main>
   );
@@ -251,8 +333,8 @@ function DataPoint({ headline, blurb }: { headline: string; blurb: string }) {
         padding: "1.2rem 1.3rem",
       }}
     >
-      <div style={{ fontSize: "1.9rem", fontWeight: 600, letterSpacing: "-0.03em", marginBottom: "0.35rem" }}>{headline}</div>
-      <div style={{ color: "#9a9a9a", fontSize: "0.9rem", lineHeight: 1.55 }}>{blurb}</div>
+      <div style={{ fontSize: "1.85rem", fontWeight: 600, letterSpacing: "-0.03em", marginBottom: "0.35rem" }}>{headline}</div>
+      <div style={{ color: "#9a9a9a", fontSize: "0.88rem", lineHeight: 1.55 }}>{blurb}</div>
     </div>
   );
 }
@@ -290,6 +372,25 @@ function ProgramCard({ label, role, high }: { label: string; role: string; high:
         <span style={{ fontSize: "0.78rem", color: "#8a8a8a" }}>{role}</span>
       </div>
       <div style={{ fontSize: "0.82rem", color: "#b5b5b5", lineHeight: 1.55 }}>{high}</div>
+    </div>
+  );
+}
+
+function TrackCard({ label, role, body }: { label: string; role: string; body: string }) {
+  return (
+    <div
+      style={{
+        background: "#141414",
+        border: "1px solid #1f1f1f",
+        borderRadius: 10,
+        padding: "0.9rem 1.05rem",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "baseline", gap: "0.5rem", marginBottom: "0.3rem", flexWrap: "wrap" }}>
+        <span style={{ fontSize: "0.9rem", fontWeight: 600, color: "#fff" }}>{label}</span>
+        <span style={{ fontSize: "0.74rem", color: "#8a8a8a" }}>{role}</span>
+      </div>
+      <div style={{ fontSize: "0.8rem", color: "#9a9a9a", lineHeight: 1.55 }}>{body}</div>
     </div>
   );
 }
@@ -357,8 +458,8 @@ const ctaStyle: React.CSSProperties = {
 };
 
 const h1Style: React.CSSProperties = {
-  fontSize: "clamp(2.3rem, 5vw, 3.5rem)",
-  lineHeight: 1.05,
+  fontSize: "clamp(2.2rem, 4.5vw, 3.2rem)",
+  lineHeight: 1.1,
   letterSpacing: "-0.035em",
   fontWeight: 600,
   marginBottom: "1.25rem",
@@ -428,4 +529,13 @@ const inlineCode: React.CSSProperties = {
   borderRadius: 4,
   fontSize: "0.82em",
   fontFamily: "'SF Mono', Menlo, monospace",
+};
+
+const trackTitle: React.CSSProperties = {
+  fontSize: "0.72rem",
+  color: "#8a8a8a",
+  letterSpacing: 1,
+  textTransform: "uppercase",
+  fontWeight: 600,
+  marginTop: "1.5rem",
 };
