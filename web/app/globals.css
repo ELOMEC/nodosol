@@ -43,3 +43,39 @@ pre {
   font-size: 0.85rem;
   color: #c0c0c0;
 }
+
+/* App shell theme tokens — consumed only by MarketplaceShell + child views.
+   Public dark pages (landing, pitch, stats, welcome) keep their own colours. */
+:root {
+  --shell-bg: #f7f8fa;
+  --shell-fg: #111827;
+  --shell-muted: #6b7280;
+  --shell-faint: #9ca3af;
+  --shell-card: #ffffff;
+  --shell-card-alt: #fafbfc;
+  --shell-border: #eef0f3;
+  --shell-border-strong: #e5e7eb;
+  --shell-input-bg: #ffffff;
+  --shell-pill-bg: #f7f8fa;
+  --shell-divider: #f3f4f6;
+  --shell-active-bg: #eef2ff;
+  --shell-active-fg: #4338ca;
+  --shell-link: #4338ca;
+}
+
+[data-theme="dark"] {
+  --shell-bg: #0b0d11;
+  --shell-fg: #ececef;
+  --shell-muted: #a1a1aa;
+  --shell-faint: #71717a;
+  --shell-card: #15171c;
+  --shell-card-alt: #1a1d24;
+  --shell-border: #23262d;
+  --shell-border-strong: #2a2e36;
+  --shell-input-bg: #1a1d24;
+  --shell-pill-bg: #1a1d24;
+  --shell-divider: #1f2128;
+  --shell-active-bg: rgba(99, 102, 241, 0.18);
+  --shell-active-fg: #c7d2fe;
+  --shell-link: #a5b4fc;
+}

@@ -46,7 +46,7 @@ export default function HomePage() {
             Investors
           </Link>
           <Link
-            href="/marketplace"
+            href="/welcome"
             style={{
               ...navLinkStyle(),
               background: "#7b9cff",
@@ -54,7 +54,7 @@ export default function HomePage() {
               fontWeight: 600,
             }}
           >
-            Open app →
+            Get started →
           </Link>
         </div>
       </nav>

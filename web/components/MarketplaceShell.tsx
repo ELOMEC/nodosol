@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { NotificationsBell } from "./NotificationsBell";
+import { ThemeToggle } from "./ThemeToggle";
 import { WalletPill } from "./WalletPill";
 
 type NavItem = { href: string; label: string; icon: ReactNode; active?: boolean };
@@ -49,16 +51,16 @@ export function MarketplaceShell({
         minHeight: "100vh",
         display: "grid",
         gridTemplateColumns: "260px 1fr",
-        background: "#f7f8fa",
-        color: "#111827",
+        background: "var(--shell-bg)",
+        color: "var(--shell-fg)",
         fontFamily:
           "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       }}
     >
       <aside
         style={{
-          borderRight: "1px solid #eef0f3",
-          background: "#ffffff",
+          borderRight: "1px solid var(--shell-border)",
+          background: "var(--shell-card)",
           padding: "1.75rem 1rem",
           position: "sticky",
           top: 0,
@@ -75,7 +77,7 @@ export function MarketplaceShell({
             gap: "0.55rem",
             padding: "0 0.5rem",
             marginBottom: "2rem",
-            color: "#111827",
+            color: "var(--shell-fg)",
             textDecoration: "none",
           }}
         >
@@ -140,8 +142,8 @@ export function MarketplaceShell({
           style={{
             marginTop: "auto",
             padding: "0.85rem",
-            background: "#f7f8fa",
-            border: "1px solid #eef0f3",
+            background: "var(--shell-pill-bg)",
+            border: "1px solid var(--shell-border)",
             borderRadius: 10,
           }}
         >
@@ -155,9 +157,9 @@ export function MarketplaceShell({
                 boxShadow: "0 0 0 3px rgba(16,185,129,0.18)",
               }}
             />
-            <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "#111827" }}>Devnet</span>
+            <span style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--shell-fg)" }}>Devnet</span>
           </div>
-          <div style={{ fontSize: "0.72rem", color: "#6b7280" }}>
+          <div style={{ fontSize: "0.72rem", color: "var(--shell-muted)" }}>
             Connected to Solana devnet cluster
           </div>
         </div>
@@ -176,8 +178,8 @@ function Topbar() {
     <header
       style={{
         height: 64,
-        borderBottom: "1px solid #eef0f3",
-        background: "#ffffff",
+        borderBottom: "1px solid var(--shell-border)",
+        background: "var(--shell-card)",
         padding: "0 2.25rem",
         display: "flex",
         alignItems: "center",
@@ -195,10 +197,10 @@ function Topbar() {
           alignItems: "center",
           gap: "0.5rem",
           padding: "0.5rem 0.85rem",
-          background: "#f7f8fa",
+          background: "var(--shell-pill-bg)",
           borderRadius: 8,
           width: 360,
-          color: "#6b7280",
+          color: "var(--shell-muted)",
           fontSize: "0.88rem",
         }}
       >
@@ -211,28 +213,14 @@ function Topbar() {
             background: "transparent",
             outline: "none",
             width: "100%",
-            color: "#111827",
+            color: "var(--shell-fg)",
             fontSize: "0.88rem",
           }}
         />
       </form>
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-        <button
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 8,
-            background: "#f7f8fa",
-            border: "1px solid #eef0f3",
-            color: "#4b5563",
-            cursor: "pointer",
-            display: "inline-flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          {IconBell()}
-        </button>
+        <ThemeToggle />
+        <NotificationsBell />
         <WalletPill />
       </div>
     </header>
@@ -244,7 +232,7 @@ function SectionLabel({ children }: { children: ReactNode }) {
     <div
       style={{
         fontSize: "0.68rem",
-        color: "#9ca3af",
+        color: "var(--shell-faint)",
         textTransform: "uppercase",
         letterSpacing: 1.2,
         margin: "0 0.5rem 0.5rem",
@@ -263,8 +251,8 @@ function navLinkStyle(active?: boolean): React.CSSProperties {
     gap: "0.65rem",
     padding: "0.6rem 0.75rem",
     borderRadius: 8,
-    color: active ? "#4338ca" : "#4b5563",
-    background: active ? "#eef2ff" : "transparent",
+    color: active ? "var(--shell-active-fg)" : "var(--shell-muted)",
+    background: active ? "var(--shell-active-bg)" : "transparent",
     textDecoration: "none",
     fontSize: "0.9rem",
     fontWeight: active ? 600 : 500,
