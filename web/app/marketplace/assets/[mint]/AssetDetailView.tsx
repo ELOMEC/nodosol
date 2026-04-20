@@ -71,6 +71,11 @@ type ListingDoc = {
   paymentMint: string;
 };
 
+type AssetMediaDoc = {
+  image: string | null;
+  description: string | null;
+};
+
 type FetchState =
   | { kind: "loading" }
   | {
@@ -78,6 +83,7 @@ type FetchState =
       asset: AssetDoc | null;
       issuer: IssuerDoc | null;
       listings: ListingDoc[];
+      media: AssetMediaDoc | null;
     }
   | { kind: "error"; message: string };
 
@@ -256,7 +262,26 @@ export function AssetDetailView({ mint }: { mint: string }) {
           return order(a.status) - order(b.status) || a.priceUsdc - b.priceUsdc;
         });
 
-      setState({ kind: "ready", asset, issuer, listings });
+      let media: AssetMediaDoc | null = null;
+      if (asset?.metadataUri) {
+        const httpUri = asset.metadataUri.startsWith("ipfs://")
+          ? asset.metadataUri.replace(/^ipfs:\/\//, "https://ipfs.io/ipfs/")
+          : asset.metadataUri;
+        try {
+          const resp = await fetch(httpUri, { cache: "no-store" });
+          if (resp.ok) {
+            const ct = resp.headers.get("content-type") ?? "";
+            if (ct.includes("application/json") || httpUri.endsWith(".json")) {
+              const json = (await resp.json()) as { image?: string; description?: string };
+              media = { image: json.image ?? null, description: json.description ?? null };
+            }
+          }
+        } catch {
+          // metadata fetch is best-effort; leave media null
+        }
+      }
+
+      setState({ kind: "ready", asset, issuer, listings, media });
     } catch (err) {
       console.error(err);
       setState({
@@ -367,7 +392,7 @@ export function AssetDetailView({ mint }: { mint: string }) {
     );
   }
 
-  const { asset, issuer, listings } = state;
+  const { asset, issuer, listings, media } = state;
   const circulating = asset.quantity - asset.burned;
   const activeListings = listings.filter((l) => l.status === "active");
   const cheapest = activeListings[0] ?? null;
@@ -383,13 +408,28 @@ export function AssetDetailView({ mint }: { mint: string }) {
         <div>
           <div
             style={{
-              background: gradient,
-              height: 200,
+              background: media?.image ? "#111" : gradient,
+              height: media?.image ? 340 : 200,
               borderRadius: 14,
               marginBottom: "1.25rem",
               position: "relative",
+              overflow: "hidden",
             }}
           >
+            {media?.image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={media.image}
+                alt={asset.name}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                }}
+              />
+            ) : null}
             <div
               style={{
                 position: "absolute",
@@ -405,6 +445,14 @@ export function AssetDetailView({ mint }: { mint: string }) {
               <AssetStatusBadge status={asset.status} />
             </div>
           </div>
+
+          {media?.description ? (
+            <Panel title="Description">
+              <div style={{ fontSize: "0.9rem", color: "#374151", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                {media.description}
+              </div>
+            </Panel>
+          ) : null}
 
           <h1 style={{ fontSize: "1.85rem", fontWeight: 600, letterSpacing: "-0.02em", marginBottom: "0.3rem" }}>
             {asset.name || "(unnamed asset)"}

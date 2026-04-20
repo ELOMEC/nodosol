@@ -25,6 +25,38 @@ export function getSupabaseClient(): SupabaseClient {
   return clientSingleton;
 }
 
+export const ASSET_MEDIA_BUCKET = "asset-media";
+
+/**
+ * Uploads a file to the public asset-media bucket, returning its public URL.
+ * Caller chooses the key (e.g. `${timestamp}-${slug}.jpg`).
+ */
+export async function uploadAssetMedia(
+  key: string,
+  body: Blob | File | ArrayBuffer,
+  contentType: string
+): Promise<string> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.storage
+    .from(ASSET_MEDIA_BUCKET)
+    .upload(key, body, { contentType, upsert: false });
+  if (error) throw error;
+  const { data } = supabase.storage.from(ASSET_MEDIA_BUCKET).getPublicUrl(key);
+  return data.publicUrl;
+}
+
+export type AssetMetadataJson = {
+  name: string;
+  symbol: string;
+  description: string;
+  image: string;
+  attributes?: Array<{ trait_type: string; value: string | number }>;
+  properties?: {
+    category: string;
+    delivery_required: boolean;
+  };
+};
+
 export type ChatMessage = {
   id: number;
   thread_memo_hash: string;

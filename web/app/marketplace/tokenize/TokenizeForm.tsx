@@ -36,6 +36,7 @@ import {
   mintProgram,
   registryProgram,
 } from "@/lib/rwa";
+import { uploadAssetMedia, AssetMetadataJson } from "@/lib/supabase";
 
 type FormState = {
   name: string;
@@ -46,6 +47,7 @@ type FormState = {
   shortDesc: string;
   longDesc: string;
   metadataUri: string;
+  imageUrl: string;
 };
 
 const INITIAL: FormState = {
@@ -57,7 +59,13 @@ const INITIAL: FormState = {
   shortDesc: "",
   longDesc: "",
   metadataUri: "",
+  imageUrl: "",
 };
+
+type MediaState =
+  | { kind: "idle" }
+  | { kind: "uploading"; step: "image" | "metadata" }
+  | { kind: "error"; message: string };
 
 type SubmitState =
   | { kind: "idle" }
@@ -74,6 +82,7 @@ export function TokenizeForm() {
   const [form, setForm] = useState<FormState>(INITIAL);
   const [issuer, setIssuer] = useState<IssuerAccount | null | undefined>(undefined); // undefined = loading, null = not registered
   const [submit, setSubmit] = useState<SubmitState>({ kind: "idle" });
+  const [media, setMedia] = useState<MediaState>({ kind: "idle" });
 
   useEffect(() => {
     if (!publicKey) {
@@ -129,6 +138,56 @@ export function TokenizeForm() {
     if (!Number.isFinite(qty) || qty <= 0) return false;
     return submit.kind === "idle" || submit.kind === "error" || submit.kind === "success";
   })();
+
+  async function onMediaPicked(file: File) {
+    if (!form.name.trim() || !form.symbol.trim()) {
+      window.alert("Enter the asset name and symbol first — metadata JSON needs them.");
+      return;
+    }
+    const maxBytes = 5 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      window.alert("Image must be 5 MB or smaller.");
+      return;
+    }
+    setMedia({ kind: "uploading", step: "image" });
+    try {
+      const ts = Date.now();
+      const slug = slugify(form.symbol || form.name || "asset");
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "bin";
+      const imageKey = `${slug}/${ts}-image.${ext}`;
+      const imageUrl = await uploadAssetMedia(imageKey, file, file.type || "application/octet-stream");
+
+      setMedia({ kind: "uploading", step: "metadata" });
+      const metadata: AssetMetadataJson = {
+        name: form.name,
+        symbol: form.symbol,
+        description: form.longDesc || form.shortDesc || "",
+        image: imageUrl,
+        properties: {
+          category: form.category,
+          delivery_required: form.deliveryRequired,
+        },
+      };
+      const jsonKey = `${slug}/${ts}-metadata.json`;
+      const jsonBlob = new Blob([JSON.stringify(metadata, null, 2)], { type: "application/json" });
+      const metadataUrl = await uploadAssetMedia(jsonKey, jsonBlob, "application/json");
+
+      if (metadataUrl.length > 256) {
+        throw new Error(
+          `Metadata URL is ${metadataUrl.length} chars; on-chain limit is 256. Supabase URL unexpectedly long.`
+        );
+      }
+
+      setForm((prev) => ({ ...prev, imageUrl, metadataUri: metadataUrl }));
+      setMedia({ kind: "idle" });
+    } catch (err) {
+      console.error(err);
+      setMedia({
+        kind: "error",
+        message: err instanceof Error ? err.message : "Upload failed",
+      });
+    }
+  }
 
   async function onSubmit() {
     if (!publicKey || !issuer || issuer.status !== "active") return;
@@ -324,10 +383,21 @@ export function TokenizeForm() {
               onChange={(e) => setForm({ ...form, longDesc: e.target.value })}
             />
           </Field>
-          <Field label="Metadata URI (IPFS / Arweave, optional)">
+          <Field label="Image">
+            <MediaUploader
+              form={form}
+              media={media}
+              onPick={(file) => void onMediaPicked(file)}
+              onClear={() => {
+                setForm((prev) => ({ ...prev, imageUrl: "", metadataUri: "" }));
+                setMedia({ kind: "idle" });
+              }}
+            />
+          </Field>
+          <Field label="Metadata URI (auto-generated on upload)">
             <input
               style={inputStyle}
-              placeholder="ipfs://Qm…"
+              placeholder="Upload an image above, or paste an existing ipfs:// / https:// URL"
               value={form.metadataUri}
               onChange={(e) => setForm({ ...form, metadataUri: e.target.value })}
               maxLength={256}
@@ -621,6 +691,147 @@ function StatusPill({ status }: { status: IssuerStatusKey }) {
       <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.dot }} />
       {c.label}
     </span>
+  );
+}
+
+function slugify(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 32) || "asset";
+}
+
+function MediaUploader({
+  form,
+  media,
+  onPick,
+  onClear,
+}: {
+  form: { imageUrl: string; name: string; symbol: string };
+  media: MediaState;
+  onPick: (file: File) => void;
+  onClear: () => void;
+}) {
+  const busy = media.kind === "uploading";
+  const label =
+    media.kind === "uploading"
+      ? media.step === "image"
+        ? "Uploading image…"
+        : "Generating metadata…"
+      : "Drop an image, or click to browse";
+
+  if (form.imageUrl) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.85rem",
+          padding: "0.8rem",
+          background: "#f7f8fa",
+          border: "1px solid #eef0f3",
+          borderRadius: 10,
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={form.imageUrl}
+          alt="Asset"
+          style={{ width: 64, height: 64, borderRadius: 8, objectFit: "cover" }}
+        />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: "0.85rem", color: "#111827", fontWeight: 600, marginBottom: "0.15rem" }}>
+            Image uploaded
+          </div>
+          <div
+            style={{
+              fontSize: "0.74rem",
+              color: "#6b7280",
+              fontFamily: "'SF Mono', Menlo, monospace",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {form.imageUrl}
+          </div>
+        </div>
+        <button
+          onClick={onClear}
+          style={{
+            background: "#ffffff",
+            border: "1px solid #e5e7eb",
+            color: "#374151",
+            padding: "0.4rem 0.8rem",
+            borderRadius: 6,
+            fontSize: "0.8rem",
+            fontWeight: 500,
+            cursor: "pointer",
+          }}
+        >
+          Replace
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <label
+      htmlFor="asset-image-input"
+      onDragOver={(e) => {
+        e.preventDefault();
+      }}
+      onDrop={(e) => {
+        e.preventDefault();
+        if (busy) return;
+        const file = e.dataTransfer.files?.[0];
+        if (file && file.type.startsWith("image/")) onPick(file);
+      }}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "1.6rem 1rem",
+        background: "#f7f8fa",
+        border: "1px dashed #c7d2fe",
+        borderRadius: 10,
+        cursor: busy ? "not-allowed" : "pointer",
+        color: "#4b5563",
+        opacity: busy ? 0.7 : 1,
+        transition: "background 0.15s",
+      }}
+    >
+      <div style={{ fontSize: "1.55rem", marginBottom: "0.4rem" }}>
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <path d="M21 15l-5-5L5 21" />
+        </svg>
+      </div>
+      <div style={{ fontSize: "0.88rem", fontWeight: 500, color: "#111827" }}>{label}</div>
+      <div style={{ fontSize: "0.75rem", color: "#9ca3af", marginTop: "0.35rem" }}>
+        PNG / JPG / WebP up to 5 MB. Auto-generates Metaplex metadata JSON.
+      </div>
+      <input
+        id="asset-image-input"
+        type="file"
+        accept="image/*"
+        disabled={busy}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onPick(file);
+          e.target.value = "";
+        }}
+        style={{ display: "none" }}
+      />
+      {media.kind === "error" ? (
+        <div style={{ fontSize: "0.76rem", color: "#b91c1c", marginTop: "0.45rem", textAlign: "center" }}>
+          {media.message}
+        </div>
+      ) : null}
+    </label>
   );
 }
 
