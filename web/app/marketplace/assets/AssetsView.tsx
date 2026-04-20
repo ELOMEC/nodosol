@@ -28,6 +28,7 @@ import {
   marketplaceProgram,
   ListingStatusKey,
 } from "@/lib/marketplace";
+import { fetchImagesForUris, toHttp } from "@/lib/metadataImages";
 import { mintProgram } from "@/lib/rwa";
 
 type AssetRow = {
@@ -42,6 +43,7 @@ type AssetRow = {
   name: string;
   symbol: string;
   metadataUri: string;
+  imageUrl: string | null;
   createdAt: number;
 };
 
@@ -139,6 +141,10 @@ export function AssetsView() {
         },
       ];
       const items = await accountApi.all(ownerFilter);
+      const uris = items
+        .map((i) => i.account.metadataUri)
+        .filter((u): u is string => typeof u === "string" && u.length > 0);
+      const imageByUri = await fetchImagesForUris(uris);
       const rows: AssetRow[] = items.map(({ publicKey: addr, account }) => ({
         address: addr.toBase58(),
         mint: account.mint.toBase58(),
@@ -151,6 +157,7 @@ export function AssetsView() {
         name: account.name,
         symbol: account.symbol,
         metadataUri: account.metadataUri,
+        imageUrl: account.metadataUri ? imageByUri.get(account.metadataUri) ?? null : null,
         createdAt: account.createdAt.toNumber(),
       }));
       rows.sort((a, b) => b.createdAt - a.createdAt);
@@ -568,7 +575,16 @@ export function AssetsView() {
                 <tr key={r.address} style={{ borderTop: "1px solid #f1f2f4", opacity: busyAsset === r.address ? 0.5 : 1 }}>
                   <Td>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
-                      <div style={{ width: 38, height: 38, borderRadius: 8, background: CATEGORY_GRADIENT[r.category] ?? "#ccc" }} />
+                      {r.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={toHttp(r.imageUrl)}
+                          alt={r.name}
+                          style={{ width: 38, height: 38, borderRadius: 8, objectFit: "cover" }}
+                        />
+                      ) : (
+                        <div style={{ width: 38, height: 38, borderRadius: 8, background: CATEGORY_GRADIENT[r.category] ?? "#ccc" }} />
+                      )}
                       <div>
                         <div style={{ fontWeight: 600, color: "#111827" }}>{r.name || "(unnamed)"}</div>
                         <div style={{ fontSize: "0.74rem", color: "#9ca3af", fontFamily: "'SF Mono', Menlo, monospace" }}>

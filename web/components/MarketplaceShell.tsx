@@ -14,6 +14,7 @@ export function MarketplaceShell({
     | "tokenize"
     | "otc"
     | "events"
+    | "tickets"
     | "assets"
     | "portfolio"
     | "creator"
@@ -28,6 +29,7 @@ export function MarketplaceShell({
     { href: "/marketplace/tokenize", label: "Tokenize", icon: IconPlus(), active: active === "tokenize" },
     { href: "/marketplace/otc", label: "OTC deals", icon: IconHandshake(), active: active === "otc" },
     { href: "/marketplace/events", label: "Events", icon: IconTicket(), active: active === "events" },
+    { href: "/marketplace/tickets", label: "My tickets", icon: IconTicket(), active: active === "tickets" },
     { href: "/marketplace/assets", label: "My assets", icon: IconWallet(), active: active === "assets" },
     { href: "/marketplace/portfolio", label: "Portfolio", icon: IconChart(), active: active === "portfolio" },
   ];
@@ -185,7 +187,9 @@ function Topbar() {
         zIndex: 10,
       }}
     >
-      <div
+      <form
+        action="/search"
+        method="GET"
         style={{
           display: "flex",
           alignItems: "center",
@@ -200,7 +204,8 @@ function Topbar() {
       >
         <span style={{ display: "inline-flex" }}>{IconSearch()}</span>
         <input
-          placeholder="Search assets, issuers…"
+          name="q"
+          placeholder="Search assets, issuers, wallets…"
           style={{
             border: "none",
             background: "transparent",
@@ -210,7 +215,7 @@ function Topbar() {
             fontSize: "0.88rem",
           }}
         />
-      </div>
+      </form>
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
         <button
           style={{

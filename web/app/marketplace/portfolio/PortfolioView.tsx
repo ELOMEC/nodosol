@@ -10,6 +10,7 @@ import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { PublicKey } from "@solana/web3.js";
 import { useCallback, useEffect, useState } from "react";
 
+import { fetchImagesForUris, toHttp } from "@/lib/metadataImages";
 import { mintProgram, MINT_PROGRAM_ID } from "@/lib/rwa";
 
 type Holding = {
@@ -22,6 +23,8 @@ type Holding = {
   category: string | null;
   deliveryRequired: boolean | null;
   issuerOwner: string | null;
+  metadataUri: string | null;
+  imageUrl: string | null;
 };
 
 type FetchState =
@@ -79,6 +82,8 @@ export function PortfolioView() {
             category: null,
             deliveryRequired: null,
             issuerOwner: null,
+            metadataUri: null,
+            imageUrl: null,
           } as Holding;
         })
         .filter((h) => h.amount > 0);
@@ -98,6 +103,7 @@ export function PortfolioView() {
             symbol: string;
             deliveryRequired: boolean;
             issuerOwner: PublicKey;
+            metadataUri: string;
           };
         }>>;
       }>).asset.all());
@@ -105,6 +111,11 @@ export function PortfolioView() {
       for (const a of assets) {
         byMint.set(a.account.mint.toBase58(), a);
       }
+      // Fetch metadata images for the assets that match current holdings.
+      const urisForHoldings = all
+        .map((h) => byMint.get(h.mint)?.account.metadataUri)
+        .filter((u): u is string => typeof u === "string" && u.length > 0);
+      const imageByUri = await fetchImagesForUris(urisForHoldings);
       for (const h of all) {
         const match = byMint.get(h.mint);
         if (match) {
@@ -114,6 +125,10 @@ export function PortfolioView() {
           h.category = decodeCategory(match.account.category);
           h.deliveryRequired = match.account.deliveryRequired;
           h.issuerOwner = match.account.issuerOwner.toBase58();
+          h.metadataUri = match.account.metadataUri;
+          h.imageUrl = match.account.metadataUri
+            ? imageByUri.get(match.account.metadataUri) ?? null
+            : null;
         }
       }
 
@@ -261,7 +276,15 @@ function HoldingCard({ holding }: { holding: Holding }) {
         overflow: "hidden",
       }}
     >
-      <div style={{ background: gradient, height: 90, position: "relative" }}>
+      <div style={{ background: holding.imageUrl ? "#111" : gradient, height: 90, position: "relative", overflow: "hidden" }}>
+        {holding.imageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={toHttp(holding.imageUrl)}
+            alt={holding.name ?? "asset"}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
+          />
+        ) : null}
         <div
           style={{
             position: "absolute",
