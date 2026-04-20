@@ -9,12 +9,13 @@ export function MarketplaceShell({
   active,
   children,
 }: {
-  active: "marketplace" | "tokenize" | "assets" | "portfolio";
+  active: "marketplace" | "tokenize" | "otc" | "assets" | "portfolio";
   children: ReactNode;
 }) {
   const nav: NavItem[] = [
     { href: "/marketplace", label: "Marketplace", icon: IconGrid(), active: active === "marketplace" },
     { href: "/marketplace/tokenize", label: "Tokenize", icon: IconPlus(), active: active === "tokenize" },
+    { href: "/marketplace/otc", label: "OTC deals", icon: IconHandshake(), active: active === "otc" },
     { href: "/marketplace/assets", label: "My assets", icon: IconWallet(), active: active === "assets" },
     { href: "/marketplace/portfolio", label: "Portfolio", icon: IconChart(), active: active === "portfolio" },
   ];
@@ -252,6 +253,17 @@ function IconWallet() {
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 7a2 2 0 012-2h13a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
       <path d="M16 12h4" />
+    </svg>
+  );
+}
+
+function IconHandshake() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M11 17l2 2 4-4" />
+      <path d="M3 10l5-5 3 3" />
+      <path d="M21 10l-5-5-3 3" />
+      <path d="M3 10l6 6 3-3 3 3 6-6" />
     </svg>
   );
 }
