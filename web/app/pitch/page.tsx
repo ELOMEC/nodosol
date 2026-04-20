@@ -167,6 +167,62 @@ export default function PitchPage() {
       </section>
 
       <section style={sectionStyle}>
+        <Eyebrow>Competitive landscape</Eyebrow>
+        <h2 style={h2Style}>No single platform combines RWA tokenisation, creator payments, and OTC escrow today. Incumbents are each locked into one vertical.</h2>
+        <p style={paragraphStyle}>
+          Closest direct analogue is <strong style={{ color: "#fff" }}>INX</strong>{" "}
+          (tokenised securities marketplace) — but US-gated to accredited
+          investors, no creator rail, peaked around $150M market cap. Below
+          are the vertical leaders and what they miss.
+        </p>
+
+        <div style={{ marginTop: "1.5rem", display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+          <CompetitorBlock
+            label="RWA tokenisation"
+            body="INX, Ondo Finance, Centrifuge, Credix, Goldfinch, RealT, Arrived, Fundrise, ECX / NCX commodity exchanges."
+            gap="All gated to accredited investors, institutional-only, or locked web2 fund structures. No retail commodity tokenisation with instant liquidity. No Solana-native compliant stack."
+          />
+          <CompetitorBlock
+            label="Creator payments"
+            body="Patreon (5–12% fee), Substack (10%), OnlyFans (20%), Twitch (50% on subs), Buy Me a Coffee, Ko-fi."
+            gap="Per-platform processor, 2–3 day payouts, custodial balance risk, cross-border FX friction. Walled gardens — no interoperability between creator rails."
+          />
+          <CompetitorBlock
+            label="Event tickets"
+            body="Ticketmaster (20–30% take rate), Eventbrite (3.7% + $1.79 flat), StubHub, SeatGeek."
+            gap="No native secondary market. Scalper monopolies. No royalty to event organiser on resale. Web2 ticket formats have no wallet-native display."
+          />
+          <CompetitorBlock
+            label="OTC escrow"
+            body="Escrow.com for generic B2B; Alibaba Trade Assurance for wholesale goods; Paxful for crypto OTC."
+            gap="3-day clearing, $500+ minimums, manual dispute resolution, no atomic settlement. Crypto OTC is custodial and chain-fragmented."
+          />
+          <CompetitorBlock
+            label="Solana-native RWA"
+            body="Ondo, Maple (institutional lending), Helium (wireless tokenisation)."
+            gap="None combine RWA with a creator payments rail. None offer compliant retail tokenisation of commodities / debt with a licensed issuer registry."
+          />
+        </div>
+
+        <h3 style={{ fontSize: "1rem", fontWeight: 600, marginTop: "2.25rem", marginBottom: "0.75rem" }}>
+          What makes Nodosol structurally different
+        </h3>
+        <ul style={listStyle}>
+          <li><strong style={{ color: "#fff" }}>Atomic settlement.</strong> Every trade is a single Solana tx — no T+2 clearing, no custodian holding funds.</li>
+          <li><strong style={{ color: "#fff" }}>Retail-scale RWA, not accredited-only.</strong> Our licensed-issuer registry + jurisdiction gating is designed for public retail access from Day 1.</li>
+          <li><strong style={{ color: "#fff" }}>RWA + creator on one rail.</strong> No incumbent combines these. The same fee infrastructure routes USDC for commodities trades and for $5 tip jars.</li>
+          <li><strong style={{ color: "#fff" }}>cNFT tickets = built-in secondary market.</strong> Tensor / Magic Eden compatible from mainnet launch. Scalping becomes royalty-bearing for the event organiser.</li>
+          <li><strong style={{ color: "#fff" }}>USDC-native cross-border.</strong> No FX friction on international trades — relevant for commodities markets typically denominated in USD anyway.</li>
+        </ul>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.9rem", marginTop: "2rem" }}>
+          <DataPoint headline="$8B" blurb="Patreon annual GMV — one vertical we substitute" />
+          <DataPoint headline="$3.5B" blurb="Eventbrite annual GMV — one vertical we substitute" />
+          <DataPoint headline="$50B+" blurb="Retail commodity exchange activity addressable via compliant tokenisation" />
+        </div>
+      </section>
+
+      <section style={sectionStyle}>
         <Eyebrow>Founder</Eyebrow>
         <h2 style={h2Style}>Built by Mladen Rakić — 10+ years shipping production sports software used by federations, broadcasters, and licensing partners.</h2>
         <div style={{ background: "#0f0f0f", border: "1px solid #1a1a1a", borderRadius: 12, padding: "1.4rem 1.5rem", marginTop: "1rem" }}>
@@ -347,6 +403,48 @@ function ProgramCard({ label, role, high }: { label: string; role: string; high:
         <span style={{ fontSize: "0.78rem", color: "#8a8a8a" }}>{role}</span>
       </div>
       <div style={{ fontSize: "0.82rem", color: "#b5b5b5", lineHeight: 1.55 }}>{high}</div>
+    </div>
+  );
+}
+
+function CompetitorBlock({
+  label,
+  body,
+  gap,
+}: {
+  label: string;
+  body: string;
+  gap: string;
+}) {
+  return (
+    <div
+      style={{
+        background: "#0f0f0f",
+        border: "1px solid #1a1a1a",
+        borderRadius: 12,
+        padding: "1.1rem 1.25rem",
+        display: "grid",
+        gridTemplateColumns: "180px 1fr",
+        gap: "1rem",
+      }}
+    >
+      <div style={{ fontSize: "0.92rem", fontWeight: 600, color: "#fff" }}>{label}</div>
+      <div>
+        <div style={{ fontSize: "0.86rem", color: "#b5b5b5", lineHeight: 1.55, marginBottom: "0.45rem" }}>
+          <span style={{ color: "#8a8a8a", fontSize: "0.72rem", letterSpacing: 0.6, textTransform: "uppercase", fontWeight: 600 }}>
+            Today
+          </span>
+          <br />
+          {body}
+        </div>
+        <div style={{ fontSize: "0.86rem", color: "#a5b4fc", lineHeight: 1.55 }}>
+          <span style={{ color: "#a5b4fc", fontSize: "0.72rem", letterSpacing: 0.6, textTransform: "uppercase", fontWeight: 600 }}>
+            What they miss
+          </span>
+          <br />
+          {gap}
+        </div>
+      </div>
     </div>
   );
 }
