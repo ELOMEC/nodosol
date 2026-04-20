@@ -39,6 +39,12 @@ export default function HomePage() {
           <Link href="/marketplace/tokenize" style={navLinkStyle()}>
             Tokenize
           </Link>
+          <Link href="/stats" style={navLinkStyle()}>
+            Stats
+          </Link>
+          <Link href="/pitch" style={navLinkStyle()}>
+            Investors
+          </Link>
           <Link
             href="/marketplace"
             style={{
