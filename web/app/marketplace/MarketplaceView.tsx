@@ -426,7 +426,10 @@ function ListingCard({
         flexDirection: "column",
       }}
     >
-      <div style={{ background: gradient, height: 130, position: "relative" }}>
+<Link
+        href={`/marketplace/assets/${listing.assetMint}`}
+        style={{ background: gradient, height: 130, position: "relative", textDecoration: "none", display: "block" }}
+      >
         <div
           style={{
             position: "absolute",
@@ -459,11 +462,14 @@ function ListingCard({
             Physical delivery
           </div>
         ) : null}
-      </div>
+      </Link>
       <div style={{ padding: "0.95rem 1.05rem 1.05rem", display: "flex", flexDirection: "column", flex: 1 }}>
-        <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: "0.15rem", lineHeight: 1.3 }}>
+        <Link
+          href={`/marketplace/assets/${listing.assetMint}`}
+          style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: "0.15rem", lineHeight: 1.3, color: "#111827", textDecoration: "none" }}
+        >
           {listing.assetName ?? "(unnamed asset)"}
-        </div>
+        </Link>
         <div style={{ fontSize: "0.76rem", color: "#6b7280", marginBottom: "0.85rem" }}>
           {listing.assetSymbol ?? "—"} · seller {shorten(listing.seller)}
         </div>
