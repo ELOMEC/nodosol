@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "init-demo": "tsx init-demo.ts",
+    "init-fee-config": "tsx init-fee-config.ts",
     "fund-user": "tsx fund-user.ts --"
   },
   "dependencies": {

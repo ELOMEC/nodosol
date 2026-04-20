@@ -14,6 +14,7 @@ import {
 import { NextRequest, NextResponse } from "next/server";
 
 import { getAppUrl, USDC_UNIT } from "@/lib/constants";
+import { fetchConfig } from "@/lib/config";
 import { fetchPlan, formatPeriod } from "@/lib/plan";
 import { subscriptionPda } from "@/lib/pdas";
 import { getConnection, subscriptionProgram } from "@/lib/programs";
@@ -113,6 +114,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     plan.pricePerPeriod * DEFAULT_PERIODS_PREAPPROVED;
 
   const program = subscriptionProgram();
+  const config = await fetchConfig(program);
   const subscribeIx = await program.methods
     .subscribe(toBn(approveAmount))
     .accounts({
@@ -121,6 +123,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       plan: plan.address,
       vault: plan.vault,
       subscription: subscriptionAddress,
+      config: config.address,
+      treasury: config.treasury,
       mint: plan.mint,
       tokenProgram,
       systemProgram: SystemProgram.programId,

@@ -14,6 +14,7 @@ import {
 import { NextRequest, NextResponse } from "next/server";
 
 import { getAppUrl, USDC_UNIT } from "@/lib/constants";
+import { fetchConfig } from "@/lib/config";
 import { fetchEvent } from "@/lib/event";
 import { ticketPda } from "@/lib/pdas";
 import { eventsProgram, getConnection } from "@/lib/programs";
@@ -130,6 +131,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   const [ticketAddress] = ticketPda(event.address, attendee);
 
   const program = eventsProgram();
+  const config = await fetchConfig(program);
   const buyIx = await program.methods
     .buyTicket()
     .accounts({
@@ -138,6 +140,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       event: event.address,
       vault: event.vault,
       ticket: ticketAddress,
+      config: config.address,
+      treasury: config.treasury,
       mint: event.mint,
       tokenProgram,
       systemProgram: SystemProgram.programId,

@@ -14,6 +14,7 @@ import {
 import { NextRequest, NextResponse } from "next/server";
 
 import { getAppUrl, USDC_UNIT } from "@/lib/constants";
+import { fetchConfig } from "@/lib/config";
 import { fetchCreatorProfile } from "@/lib/creator";
 import { creatorProfilePda } from "@/lib/pdas";
 import { getConnection, tipJarProgram } from "@/lib/programs";
@@ -116,6 +117,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   const tipperAta = ata(tipper, profile.mint, tokenProgram);
 
   const program = tipJarProgram();
+  const config = await fetchConfig(program);
   const sendTipIx: TransactionInstruction = await program.methods
     .sendTip(toBn(amount))
     .accounts({
@@ -123,6 +125,8 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       tipperTokenAccount: tipperAta,
       creatorProfile: profile.address,
       vault: profile.vault,
+      config: config.address,
+      treasury: config.treasury,
       mint: profile.mint,
       tokenProgram,
     })

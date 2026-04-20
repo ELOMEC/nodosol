@@ -8,6 +8,140 @@
   },
   "instructions": [
     {
+      "name": "close_creator_profile",
+      "discriminator": [
+        201,
+        11,
+        99,
+        60,
+        75,
+        8,
+        140,
+        52
+      ],
+      "accounts": [
+        {
+          "name": "owner",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "creator_profile"
+          ]
+        },
+        {
+          "name": "creator_profile",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  114,
+                  101,
+                  97,
+                  116,
+                  111,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator_profile"
+              }
+            ]
+          },
+          "relations": [
+            "creator_profile"
+          ]
+        },
+        {
+          "name": "mint",
+          "relations": [
+            "creator_profile"
+          ]
+        },
+        {
+          "name": "token_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize_config",
+      "discriminator": [
+        208,
+        127,
+        21,
+        1,
+        194,
+        190,
+        196,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "treasury"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "fee_bps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
       "name": "initialize_creator",
       "discriminator": [
         29,
@@ -157,6 +291,28 @@
           ]
         },
         {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
           "name": "mint",
           "relations": [
             "creator_profile"
@@ -172,6 +328,54 @@
           "type": "u64"
         }
       ]
+    },
+    {
+      "name": "update_config_authority",
+      "discriminator": [
+        199,
+        198,
+        63,
+        111,
+        40,
+        225,
+        188,
+        116
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "new_authority",
+          "docs": [
+            "Ownership transfer is immediate."
+          ]
+        }
+      ],
+      "args": []
     },
     {
       "name": "update_elgamal_pubkey",
@@ -229,6 +433,98 @@
           }
         }
       ]
+    },
+    {
+      "name": "update_fee_bps",
+      "discriminator": [
+        43,
+        158,
+        104,
+        51,
+        236,
+        96,
+        178,
+        195
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "new_fee_bps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "update_treasury",
+      "discriminator": [
+        60,
+        16,
+        243,
+        66,
+        96,
+        59,
+        254,
+        131
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "new_treasury"
+        }
+      ],
+      "args": []
     },
     {
       "name": "withdraw",
@@ -323,6 +619,19 @@
   ],
   "accounts": [
     {
+      "name": "Config",
+      "discriminator": [
+        155,
+        12,
+        170,
+        224,
+        30,
+        250,
+        204,
+        130
+      ]
+    },
+    {
       "name": "CreatorProfile",
       "discriminator": [
         251,
@@ -338,6 +647,32 @@
   ],
   "events": [
     {
+      "name": "ConfigAuthorityUpdated",
+      "discriminator": [
+        42,
+        9,
+        207,
+        82,
+        40,
+        62,
+        33,
+        108
+      ]
+    },
+    {
+      "name": "ConfigInitialized",
+      "discriminator": [
+        181,
+        49,
+        200,
+        156,
+        19,
+        167,
+        178,
+        91
+      ]
+    },
+    {
       "name": "CreatorInitialized",
       "discriminator": [
         154,
@@ -348,6 +683,19 @@
         59,
         57,
         77
+      ]
+    },
+    {
+      "name": "CreatorProfileClosed",
+      "discriminator": [
+        175,
+        81,
+        187,
+        146,
+        228,
+        203,
+        187,
+        56
       ]
     },
     {
@@ -377,6 +725,19 @@
       ]
     },
     {
+      "name": "FeeBpsUpdated",
+      "discriminator": [
+        151,
+        59,
+        111,
+        165,
+        241,
+        143,
+        149,
+        117
+      ]
+    },
+    {
       "name": "TipSent",
       "discriminator": [
         124,
@@ -387,6 +748,19 @@
         65,
         132,
         235
+      ]
+    },
+    {
+      "name": "TreasuryUpdated",
+      "discriminator": [
+        80,
+        239,
+        54,
+        168,
+        43,
+        38,
+        85,
+        145
       ]
     }
   ],
@@ -420,9 +794,110 @@
       "code": 6005,
       "name": "ArithmeticOverflow",
       "msg": "Arithmetic overflow updating creator statistics"
+    },
+    {
+      "code": 6006,
+      "name": "VaultNotEmpty",
+      "msg": "Vault must be empty before the profile can be closed"
+    },
+    {
+      "code": 6007,
+      "name": "FeeBpsTooHigh",
+      "msg": "Fee basis points exceed the maximum allowed"
+    },
+    {
+      "code": 6008,
+      "name": "TreasuryMismatch",
+      "msg": "Treasury token account does not match the config"
+    },
+    {
+      "code": 6009,
+      "name": "TreasuryMintMismatch",
+      "msg": "Treasury token account mint does not match"
     }
   ],
   "types": [
+    {
+      "name": "Config",
+      "docs": [
+        "Global program config — singleton PDA at seeds=[b\"config\"].",
+        "Controls the platform fee split applied to every send_tip."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConfigAuthorityUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "previous_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConfigInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
     {
       "name": "CreatorInitialized",
       "type": {
@@ -510,6 +985,22 @@
       }
     },
     {
+      "name": "CreatorProfileClosed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "CreatorWithdrew",
       "type": {
         "kind": "struct",
@@ -563,6 +1054,26 @@
       }
     },
     {
+      "name": "FeeBpsUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "previous_bps",
+            "type": "u16"
+          },
+          {
+            "name": "new_bps",
+            "type": "u16"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
       "name": "TipSent",
       "type": {
         "kind": "struct",
@@ -597,9 +1108,34 @@
           }
         ]
       }
+    },
+    {
+      "name": "TreasuryUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "previous_treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "new_treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
     }
   ],
   "constants": [
+    {
+      "name": "CONFIG_SEED",
+      "type": "bytes",
+      "value": "[99, 111, 110, 102, 105, 103]"
+    },
     {
       "name": "CREATOR_SEED",
       "type": "bytes",
