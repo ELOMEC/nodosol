@@ -96,6 +96,11 @@ export function AssetsView() {
     qty: string;
     submitting: boolean;
   } | null>(null);
+  const [editPrice, setEditPrice] = useState<{
+    listing: ListingRow;
+    price: string;
+    submitting: boolean;
+  } | null>(null);
 
   const reload = useCallback(async () => {
     if (!publicKey) return;
@@ -246,6 +251,45 @@ export function AssetsView() {
       window.alert(err instanceof Error ? err.message : "Burn failed");
     } finally {
       setBusyAsset(null);
+    }
+  }
+
+  async function submitEditPrice() {
+    if (!editPrice || !publicKey) return;
+    const { listing, price } = editPrice;
+    const priceNum = Number(price);
+    if (!Number.isFinite(priceNum) || priceNum <= 0) {
+      window.alert("Invalid price");
+      return;
+    }
+    setEditPrice({ ...editPrice, submitting: true });
+    try {
+      const provider = new AnchorProvider(connection, wallet as unknown as Wallet, {
+        commitment: "confirmed",
+      });
+      const program = marketplaceProgram(provider);
+      const assetMint = new PublicKey(listing.assetMint);
+      const [listingAddr] = listingPda(publicKey, assetMint);
+      const priceBaseUnits = BigInt(Math.round(priceNum * USDC_UNIT));
+
+      const ix = await program.methods
+        .updateListingPrice(new BN(priceBaseUnits.toString()))
+        .accounts({
+          seller: publicKey,
+          listing: listingAddr,
+        })
+        .instruction();
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
+      tx.add(ix);
+      const sig = await wallet.sendTransaction(tx, connection);
+      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+      setEditPrice(null);
+      await reload();
+    } catch (err) {
+      console.error(err);
+      window.alert(err instanceof Error ? err.message : "Price update failed");
+      setEditPrice((prev) => (prev ? { ...prev, submitting: false } : null));
     }
   }
 
@@ -665,9 +709,18 @@ export function AssetsView() {
                     </Td>
                     <Td align="right">
                       {l.status === "active" ? (
-                        <button style={actBtn} onClick={() => void cancelListing(l)} disabled={busyAsset === l.address}>
-                          Cancel
-                        </button>
+                        <div style={{ display: "flex", gap: "0.35rem", justifyContent: "flex-end" }}>
+                          <button
+                            style={actBtn}
+                            onClick={() => setEditPrice({ listing: l, price: l.priceUsdc.toString(), submitting: false })}
+                            disabled={busyAsset === l.address}
+                          >
+                            Edit price
+                          </button>
+                          <button style={actBtn} onClick={() => void cancelListing(l)} disabled={busyAsset === l.address}>
+                            Cancel
+                          </button>
+                        </div>
                       ) : (
                         <span style={{ fontSize: "0.78rem", color: "#9ca3af" }}>—</span>
                       )}
@@ -689,6 +742,17 @@ export function AssetsView() {
           onChange={(patch) => setListModal({ ...listModal, ...patch })}
           onCancel={() => setListModal(null)}
           onSubmit={() => void submitListing()}
+        />
+      ) : null}
+
+      {editPrice ? (
+        <EditPriceModal
+          listing={editPrice.listing}
+          price={editPrice.price}
+          submitting={editPrice.submitting}
+          onChange={(v) => setEditPrice({ ...editPrice, price: v })}
+          onCancel={() => setEditPrice(null)}
+          onSubmit={() => void submitEditPrice()}
         />
       ) : null}
     </>
@@ -719,6 +783,120 @@ function ListingStatusPill({ status }: { status: ListingStatusKey }) {
       <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.dot }} />
       {c.label}
     </span>
+  );
+}
+
+function EditPriceModal({
+  listing,
+  price,
+  submitting,
+  onChange,
+  onCancel,
+  onSubmit,
+}: {
+  listing: ListingRow;
+  price: string;
+  submitting: boolean;
+  onChange: (v: string) => void;
+  onCancel: () => void;
+  onSubmit: () => void;
+}) {
+  const priceNum = Number(price) || 0;
+  return (
+    <div
+      role="dialog"
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(17,24,39,0.55)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 100,
+      }}
+      onClick={onCancel}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "#ffffff",
+          borderRadius: 14,
+          padding: "1.5rem 1.75rem",
+          width: 420,
+          maxWidth: "90vw",
+          boxShadow: "0 20px 50px rgba(0,0,0,0.2)",
+        }}
+      >
+        <h3 style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: "0.35rem" }}>Edit listing price</h3>
+        <p style={{ fontSize: "0.85rem", color: "#6b7280", marginBottom: "1.25rem" }}>
+          Update the price per token for <strong>{listing.assetName ?? listing.assetSymbol ?? "this listing"}</strong>.
+          Remaining {listing.remainingQuantity} of {listing.initialQuantity} tokens are still in escrow.
+        </p>
+
+        <label style={{ display: "block", fontSize: "0.78rem", color: "#374151", fontWeight: 500, marginBottom: "0.3rem" }}>
+          New price per token (USDC)
+        </label>
+        <input
+          type="number"
+          min={0}
+          step="0.01"
+          value={price}
+          onChange={(e) => onChange(e.target.value)}
+          style={{
+            width: "100%",
+            background: "#ffffff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 8,
+            color: "#111827",
+            padding: "0.6rem 0.8rem",
+            fontSize: "0.9rem",
+            outline: "none",
+            fontFamily: "inherit",
+          }}
+        />
+
+        <div style={{ fontSize: "0.78rem", color: "#6b7280", marginTop: "0.55rem" }}>
+          Current price: ${listing.priceUsdc.toFixed(2)} · Remaining revenue at new price: ${(priceNum * listing.remainingQuantity).toFixed(2)} USDC
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.6rem", marginTop: "1.25rem" }}>
+          <button
+            style={{
+              background: "#ffffff",
+              border: "1px solid #e5e7eb",
+              color: "#374151",
+              padding: "0.6rem 1.15rem",
+              borderRadius: 8,
+              fontSize: "0.88rem",
+              fontWeight: 600,
+              cursor: submitting ? "not-allowed" : "pointer",
+            }}
+            onClick={onCancel}
+            disabled={submitting}
+          >
+            Cancel
+          </button>
+          <button
+            style={{
+              background: "#4f46e5",
+              border: "none",
+              color: "#fff",
+              padding: "0.6rem 1.35rem",
+              borderRadius: 8,
+              fontSize: "0.88rem",
+              fontWeight: 600,
+              cursor: submitting || priceNum <= 0 ? "not-allowed" : "pointer",
+              opacity: submitting || priceNum <= 0 ? 0.6 : 1,
+              boxShadow: "0 1px 2px rgba(79,70,229,0.25)",
+            }}
+            onClick={onSubmit}
+            disabled={submitting || priceNum <= 0}
+          >
+            {submitting ? "Updating…" : "Update price"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

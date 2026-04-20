@@ -82,6 +82,10 @@ export function MarketplaceView() {
     submitting: boolean;
   } | null>(null);
   const [feeBps, setFeeBps] = useState<number>(250);
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [deliveryFilter, setDeliveryFilter] = useState<"all" | "physical" | "digital">("all");
+  const [sortKey, setSortKey] = useState<"newest" | "price_asc" | "price_desc" | "supply">("newest");
+  const [search, setSearch] = useState<string>("");
 
   const reload = useCallback(async () => {
     setState({ kind: "loading" });
@@ -252,8 +256,40 @@ export function MarketplaceView() {
     }
   }
 
-  const listings = state.kind === "ready" ? state.listings : [];
-  const totalVolume = listings.reduce((s, l) => s + l.priceUsdc * l.initialQuantity, 0);
+  const allListings = state.kind === "ready" ? state.listings : [];
+  const totalVolume = allListings.reduce((s, l) => s + l.priceUsdc * l.initialQuantity, 0);
+  const availableCategories = Array.from(
+    new Set(allListings.map((l) => l.assetCategory ?? "other"))
+  );
+
+  const searchLower = search.trim().toLowerCase();
+  const listings = allListings
+    .filter((l) => {
+      if (categoryFilter !== "all" && (l.assetCategory ?? "other") !== categoryFilter) return false;
+      if (deliveryFilter === "physical" && !l.assetDelivery) return false;
+      if (deliveryFilter === "digital" && l.assetDelivery) return false;
+      if (searchLower) {
+        const hay = [l.assetName, l.assetSymbol, l.seller, l.assetMint]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(searchLower)) return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      switch (sortKey) {
+        case "price_asc":
+          return a.priceUsdc - b.priceUsdc;
+        case "price_desc":
+          return b.priceUsdc - a.priceUsdc;
+        case "supply":
+          return b.remainingQuantity - a.remainingQuantity;
+        case "newest":
+        default:
+          return b.createdAt - a.createdAt;
+      }
+    });
 
   return (
     <>
@@ -284,12 +320,12 @@ export function MarketplaceView() {
       </header>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
-        <StatCard label="Active listings" value={listings.length.toString()} sub="Live from on-chain" />
+        <StatCard label="Active listings" value={allListings.length.toString()} sub="Live from on-chain" />
         <StatCard
           label="Floor price"
           value={
-            listings.length > 0
-              ? `$${Math.min(...listings.map((l) => l.priceUsdc)).toFixed(2)}`
+            allListings.length > 0
+              ? `$${Math.min(...allListings.map((l) => l.priceUsdc)).toFixed(2)}`
               : "—"
           }
           sub="Lowest price/token"
@@ -297,6 +333,20 @@ export function MarketplaceView() {
         <StatCard label="TVL (listed)" value={`$${totalVolume.toFixed(2)}`} sub="Total listed value" />
         <StatCard label="Platform fee" value={`${(feeBps / 100).toFixed(2)}%`} sub="On every sale" />
       </div>
+
+      <FilterBar
+        search={search}
+        onSearch={setSearch}
+        category={categoryFilter}
+        onCategory={setCategoryFilter}
+        delivery={deliveryFilter}
+        onDelivery={setDeliveryFilter}
+        sortKey={sortKey}
+        onSort={setSortKey}
+        availableCategories={availableCategories}
+        filteredCount={listings.length}
+        totalCount={allListings.length}
+      />
 
       {state.kind === "loading" ? (
         <CenteredCard>Loading listings from Solana…</CenteredCard>
@@ -400,6 +450,131 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub: st
     </div>
   );
 }
+
+function FilterBar({
+  search,
+  onSearch,
+  category,
+  onCategory,
+  delivery,
+  onDelivery,
+  sortKey,
+  onSort,
+  availableCategories,
+  filteredCount,
+  totalCount,
+}: {
+  search: string;
+  onSearch: (v: string) => void;
+  category: string;
+  onCategory: (v: string) => void;
+  delivery: "all" | "physical" | "digital";
+  onDelivery: (v: "all" | "physical" | "digital") => void;
+  sortKey: "newest" | "price_asc" | "price_desc" | "supply";
+  onSort: (v: "newest" | "price_asc" | "price_desc" | "supply") => void;
+  availableCategories: string[];
+  filteredCount: number;
+  totalCount: number;
+}) {
+  const categories = [
+    { key: "all", label: "All" },
+    { key: "commodity", label: "Commodities" },
+    { key: "ticket", label: "Tickets" },
+    { key: "realEstate", label: "Real Estate" },
+    { key: "debt", label: "Debt" },
+    { key: "equity", label: "Equity" },
+    { key: "carbon", label: "Carbon" },
+    { key: "other", label: "Other" },
+  ];
+  const isActive = (key: string) => category === key;
+  const isAvailable = (key: string) => key === "all" || availableCategories.includes(key);
+  return (
+    <div
+      style={{
+        background: "#ffffff",
+        border: "1px solid #eef0f3",
+        borderRadius: 12,
+        padding: "1rem 1.1rem",
+        marginBottom: "1rem",
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.8rem",
+      }}
+    >
+      <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap" }}>
+        {categories.map((cat) => {
+          const active = isActive(cat.key);
+          const available = isAvailable(cat.key);
+          return (
+            <button
+              key={cat.key}
+              onClick={() => onCategory(cat.key)}
+              disabled={!available && !active}
+              style={{
+                padding: "0.45rem 0.85rem",
+                borderRadius: 6,
+                border: "none",
+                background: active ? "#eef2ff" : "transparent",
+                color: active ? "#4338ca" : available ? "#6b7280" : "#d1d5db",
+                fontSize: "0.82rem",
+                fontWeight: active ? 600 : 500,
+                cursor: available || active ? "pointer" : "not-allowed",
+              }}
+            >
+              {cat.label}
+            </button>
+          );
+        })}
+      </div>
+      <div style={{ display: "flex", gap: "0.6rem", alignItems: "center", flexWrap: "wrap" }}>
+        <input
+          placeholder="Search name, symbol, or seller…"
+          value={search}
+          onChange={(e) => onSearch(e.target.value)}
+          style={{
+            flex: 1,
+            minWidth: 220,
+            background: "#ffffff",
+            border: "1px solid #e5e7eb",
+            borderRadius: 7,
+            color: "#111827",
+            padding: "0.5rem 0.75rem",
+            fontSize: "0.86rem",
+            outline: "none",
+          }}
+        />
+        <select style={filterSelect} value={delivery} onChange={(e) => onDelivery(e.target.value as typeof delivery)}>
+          <option value="all">All delivery types</option>
+          <option value="physical">Physical delivery</option>
+          <option value="digital">Digital only</option>
+        </select>
+        <select style={filterSelect} value={sortKey} onChange={(e) => onSort(e.target.value as typeof sortKey)}>
+          <option value="newest">Sort: Newest</option>
+          <option value="price_asc">Sort: Price ↑</option>
+          <option value="price_desc">Sort: Price ↓</option>
+          <option value="supply">Sort: Most remaining</option>
+        </select>
+      </div>
+      {filteredCount !== totalCount ? (
+        <div style={{ fontSize: "0.78rem", color: "#6b7280" }}>
+          Showing {filteredCount} of {totalCount} listings
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+const filterSelect: React.CSSProperties = {
+  background: "#ffffff",
+  border: "1px solid #e5e7eb",
+  borderRadius: 7,
+  color: "#374151",
+  padding: "0.5rem 0.7rem",
+  fontSize: "0.84rem",
+  fontWeight: 500,
+  outline: "none",
+  cursor: "pointer",
+};
 
 function ListingCard({
   listing,
