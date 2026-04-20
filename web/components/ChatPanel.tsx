@@ -1,9 +1,16 @@
 "use client";
 
+import bs58 from "bs58";
 import { RealtimeChannel } from "@supabase/supabase-js";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { useEffect, useRef, useState } from "react";
 
-import { ChatMessage, getSupabaseClient } from "@/lib/supabase";
+import {
+  ChatMessage,
+  getSupabaseAnonKey,
+  getSupabaseClient,
+  getSupabaseUrl,
+} from "@/lib/supabase";
 
 type Props = {
   memoHash: string;
@@ -14,6 +21,15 @@ type Props = {
   onClose: () => void;
 };
 
+type SessionSig = {
+  message: string;
+  signatureBase58: string;
+  signedAt: number; // ms
+};
+
+// Re-use a signed challenge for up to 14 minutes (function enforces 15 min TTL).
+const SIG_TTL_MS = 14 * 60 * 1000;
+
 export function ChatPanel({
   memoHash,
   sellerPubkey,
@@ -22,19 +38,21 @@ export function ChatPanel({
   viewerPubkey,
   onClose,
 }: Props) {
+  const { signMessage } = useWallet();
   const [messages, setMessages] = useState<ChatMessage[] | null>(null);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [signing, setSigning] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const sessionSigRef = useRef<SessionSig | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     const supabase = getSupabaseClient();
 
     async function init() {
-      // Ensure thread row exists (idempotent upsert).
       const { error: upsertErr } = await supabase
         .from("chat_threads")
         .upsert(
@@ -100,19 +118,72 @@ export function ChatPanel({
     }
   }, [messages]);
 
+  const isAllowedToWrite =
+    viewerPubkey === sellerPubkey || viewerPubkey === buyerPubkey;
+  const canSign = Boolean(signMessage);
+
+  async function ensureSessionSig(): Promise<SessionSig> {
+    const current = sessionSigRef.current;
+    if (current && Date.now() - current.signedAt < SIG_TTL_MS) {
+      return current;
+    }
+    if (!signMessage) {
+      throw new Error("Your wallet does not support message signing.");
+    }
+    setSigning(true);
+    try {
+      const timestamp = Date.now();
+      const message = `nodosol-chat:v1:${memoHash}:${viewerPubkey}:${timestamp}`;
+      const sigBytes = await signMessage(new TextEncoder().encode(message));
+      const fresh: SessionSig = {
+        message,
+        signatureBase58: bs58.encode(sigBytes),
+        signedAt: timestamp,
+      };
+      sessionSigRef.current = fresh;
+      return fresh;
+    } finally {
+      setSigning(false);
+    }
+  }
+
   async function send() {
     const trimmed = body.trim();
     if (!trimmed) return;
+    if (!isAllowedToWrite) {
+      setError("Only the deal's seller or buyer can post.");
+      return;
+    }
+    if (!canSign) {
+      setError("Your wallet does not support message signing.");
+      return;
+    }
     setSending(true);
     setError(null);
     try {
-      const supabase = getSupabaseClient();
-      const { error: insertErr } = await supabase.from("chat_messages").insert({
-        thread_memo_hash: memoHash,
-        sender_pubkey: viewerPubkey,
-        body: trimmed,
+      const sig = await ensureSessionSig();
+      const resp = await fetch(`${getSupabaseUrl()}/functions/v1/post-chat-message`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          apikey: getSupabaseAnonKey(),
+          authorization: `Bearer ${getSupabaseAnonKey()}`,
+        },
+        body: JSON.stringify({
+          threadMemoHash: memoHash,
+          body: trimmed,
+          senderPubkey: viewerPubkey,
+          message: sig.message,
+          signature: sig.signatureBase58,
+        }),
       });
-      if (insertErr) throw insertErr;
+      if (!resp.ok) {
+        const payload = await resp.json().catch(() => ({}));
+        // If the cached signature was rejected (expired), clear it so the next
+        // attempt re-signs.
+        if (resp.status === 401) sessionSigRef.current = null;
+        throw new Error(payload?.error ?? `HTTP ${resp.status}`);
+      }
       setBody("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Send failed");
@@ -120,9 +191,6 @@ export function ChatPanel({
       setSending(false);
     }
   }
-
-  const isAllowedToWrite =
-    viewerPubkey === sellerPubkey || viewerPubkey === buyerPubkey;
 
   return (
     <div
@@ -259,12 +327,20 @@ export function ChatPanel({
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder={isAllowedToWrite ? "Message…" : "Only the deal's seller or buyer can post"}
-            disabled={!isAllowedToWrite || sending}
+            placeholder={
+              !isAllowedToWrite
+                ? "Only the deal's seller or buyer can post"
+                : !canSign
+                  ? "Wallet does not support signMessage"
+                  : signing
+                    ? "Waiting for wallet signature…"
+                    : "Message…"
+            }
+            disabled={!isAllowedToWrite || !canSign || sending || signing}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                if (isAllowedToWrite) void send();
+                if (isAllowedToWrite && canSign) void send();
               }
             }}
             style={{
@@ -284,19 +360,19 @@ export function ChatPanel({
           />
           <button
             onClick={() => void send()}
-            disabled={!isAllowedToWrite || sending || !body.trim()}
+            disabled={!isAllowedToWrite || !canSign || sending || signing || !body.trim()}
             style={{
-              background: !body.trim() || !isAllowedToWrite ? "#e5e7eb" : "#4f46e5",
-              color: !body.trim() || !isAllowedToWrite ? "#9ca3af" : "#ffffff",
+              background: !body.trim() || !isAllowedToWrite || !canSign ? "#e5e7eb" : "#4f46e5",
+              color: !body.trim() || !isAllowedToWrite || !canSign ? "#9ca3af" : "#ffffff",
               border: "none",
               borderRadius: 10,
               padding: "0.55rem 1rem",
               fontSize: "0.86rem",
               fontWeight: 600,
-              cursor: !body.trim() || !isAllowedToWrite ? "not-allowed" : "pointer",
+              cursor: !body.trim() || !isAllowedToWrite || !canSign ? "not-allowed" : "pointer",
             }}
           >
-            {sending ? "…" : "Send"}
+            {sending || signing ? "…" : "Send"}
           </button>
         </footer>
       </div>
