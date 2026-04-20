@@ -42,6 +42,8 @@ type Listing = {
   assetSymbol: string | null;
   assetCategory: string | null;
   assetDelivery: boolean | null;
+  assetMetadataUri: string | null;
+  assetImage: string | null; // resolved from metadata JSON
 };
 
 type FetchState =
@@ -135,6 +137,7 @@ export function MarketplaceView() {
             name: string;
             symbol: string;
             deliveryRequired: boolean;
+            metadataUri: string;
           };
         }>>;
       }>).asset.all());
@@ -145,12 +148,40 @@ export function MarketplaceView() {
         }
       }
 
+      // Fetch Metaplex-style JSON for each unique metadata URI in parallel and
+      // pull out the `image` field. Best-effort — missing / broken URIs just
+      // leave the card on its category gradient.
+      const uniqueUris = Array.from(
+        new Set(
+          Array.from(assetByMint.values())
+            .map((a) => a.metadataUri)
+            .filter((u): u is string => typeof u === "string" && u.length > 0)
+        )
+      );
+      const imageByUri = new Map<string, string>();
+      await Promise.all(
+        uniqueUris.map(async (uri) => {
+          try {
+            const httpUri = uri.startsWith("ipfs://")
+              ? uri.replace(/^ipfs:\/\//, "https://ipfs.io/ipfs/")
+              : uri;
+            const resp = await fetch(httpUri, { cache: "force-cache" });
+            if (!resp.ok) return;
+            const json = (await resp.json()) as { image?: string };
+            if (json.image) imageByUri.set(uri, json.image);
+          } catch {
+            // ignore
+          }
+        })
+      );
+
       const listings: Listing[] = listingsRaw
         .filter((x) => decodeListingStatus(x.account.status) === "active")
         .map(({ publicKey: addr, account }) => {
           const assetMint = account.assetMint.toBase58();
           const meta = assetByMint.get(assetMint);
           const priceBase = BigInt(account.pricePerToken.toString());
+          const metadataUri = meta?.metadataUri ?? null;
           return {
             address: addr.toBase58(),
             seller: account.seller.toBase58(),
@@ -166,6 +197,8 @@ export function MarketplaceView() {
             assetSymbol: meta?.symbol ?? null,
             assetCategory: meta ? decodeCategory(meta.category) : null,
             assetDelivery: meta?.deliveryRequired ?? null,
+            assetMetadataUri: metadataUri,
+            assetImage: metadataUri ? imageByUri.get(metadataUri) ?? null : null,
           };
         });
       listings.sort((a, b) => b.createdAt - a.createdAt);
@@ -415,6 +448,13 @@ export function MarketplaceView() {
   );
 }
 
+function toHttp(uri: string): string {
+  if (uri.startsWith("ipfs://")) {
+    return uri.replace(/^ipfs:\/\//, "https://ipfs.io/ipfs/");
+  }
+  return uri;
+}
+
 function decodeCategory(raw: Record<string, unknown>): string {
   for (const k of Object.keys(raw)) return k;
   return "other";
@@ -603,8 +643,29 @@ function ListingCard({
     >
 <Link
         href={`/marketplace/assets/${listing.assetMint}`}
-        style={{ background: gradient, height: 130, position: "relative", textDecoration: "none", display: "block" }}
+        style={{
+          background: listing.assetImage ? "#111" : gradient,
+          height: 130,
+          position: "relative",
+          textDecoration: "none",
+          display: "block",
+          overflow: "hidden",
+        }}
       >
+        {listing.assetImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={toHttp(listing.assetImage)}
+            alt={listing.assetName ?? "asset"}
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        ) : null}
         <div
           style={{
             position: "absolute",
