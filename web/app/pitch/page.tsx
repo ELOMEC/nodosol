@@ -166,31 +166,6 @@ export default function PitchPage() {
         </p>
       </section>
 
-      <section style={{ ...sectionStyle, background: "rgba(16,185,129,0.05)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 14, padding: "1.75rem 2rem" }}>
-        <Eyebrow>Distribution moat</Eyebrow>
-        <h2 style={h2Style}>The founder already owns a working sports-data + video distribution stack that plugs directly into Nodosol&apos;s creator rails.</h2>
-        <p style={paragraphStyle}>
-          Nodosol&apos;s creator payments (tip jars, subscriptions, cNFT tickets)
-          are not cold-starting a TAM. They plug into a pre-existing network the
-          founder already operates — live-scoring software embedded in federation
-          operations, a YouTube channel that is already growing fast, and
-          partnerships with federations that run real competitions.
-        </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.9rem", marginTop: "1.5rem" }}>
-          <DataPoint headline="178K" blurb="YouTube views / 28-day rolling window on DIGITAL Score TV; ~100 matches/week streamed" />
-          <DataPoint headline="3.7K+" blurb="YouTube subscribers, growing from live-match traffic — fan base that lands directly in the creator rail" />
-          <DataPoint headline="5+" blurb="Balkan federations running production software built by the founder (basketball, volleyball, handball)" />
-        </div>
-        <p style={{ ...paragraphStyle, marginTop: "1.5rem" }}>
-          On Day 1 post-mainnet, the founder&apos;s sports stack becomes the
-          distribution funnel: federations sell cNFT tickets to their events,
-          live-scoring apps surface tip-jar Blinks for referees / commentators,
-          subscription plans monetise premium video + stats feeds. Zero
-          acquisition cost for the first thousand creators and tens of
-          thousands of fans.
-        </p>
-      </section>
-
       <section style={sectionStyle}>
         <Eyebrow>Founder</Eyebrow>
         <h2 style={h2Style}>Built by Mladen Rakić — 10+ years shipping production sports software used by federations, broadcasters, and licensing partners.</h2>
