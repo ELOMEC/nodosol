@@ -1,0 +1,39 @@
+[package]
+name = "rwa_mint"
+version = "0.1.0"
+description = "Nodosol RWA tokenisation — mints Token-2022 RWA tokens tied to licenced issuers"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "rwa_mint"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build", "rwa_registry/idl-build"]
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+
+[dependencies]
+anchor-lang = "1.0.0"
+anchor-spl = { version = "1.0.0", features = ["token_2022"] }
+rwa_registry = { path = "../rwa_registry", features = ["cpi"] }
+
+[dev-dependencies]
+litesvm = "0.11.0"
+litesvm-token = { version = "0.11.0", features = ["token-2022"] }
+anchor-spl = { version = "1.0.0", features = ["token_2022"] }
+solana-message = "3.0.1"
+solana-transaction = "3.0.2"
+solana-signer = "3.0.0"
+solana-keypair = "3.0.1"
+solana-pubkey = "3.0.0"
+solana-clock = "3.0.0"
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
