@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { WalletPill } from "./WalletPill";
+
 type NavItem = { href: string; label: string; icon: ReactNode; active?: boolean };
 
 export function MarketplaceShell({
@@ -183,38 +185,7 @@ function Topbar() {
         >
           {IconBell()}
         </button>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.6rem",
-            padding: "0.35rem 0.85rem 0.35rem 0.35rem",
-            background: "#f7f8fa",
-            border: "1px solid #eef0f3",
-            borderRadius: 999,
-          }}
-        >
-          <span
-            style={{
-              width: 28,
-              height: 28,
-              borderRadius: "50%",
-              background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-              color: "#fff",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "0.72rem",
-              fontWeight: 600,
-            }}
-          >
-            MR
-          </span>
-          <div style={{ fontSize: "0.82rem", lineHeight: 1.1 }}>
-            <div style={{ fontWeight: 600 }}>3E8Z…rqBr</div>
-            <div style={{ color: "#6b7280", fontSize: "0.7rem" }}>Licenced issuer</div>
-          </div>
-        </div>
+        <WalletPill />
       </div>
     </header>
   );

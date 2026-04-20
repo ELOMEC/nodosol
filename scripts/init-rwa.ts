@@ -29,6 +29,11 @@ const ISSUER_SEED = Buffer.from("issuer");
 const ASSET_CLASS_COMMODITY = 1 << 0;
 const ASSET_CLASS_TICKET = 1 << 4;
 
+// Wallets to register as Active issuers (authority + additional demo wallets).
+const EXTRA_ISSUERS = [
+  "6AnFbinF7X12mACTVEGfjWZyzYGAShEscAB5UgV3vHsP", // Mladen's Phantom test wallet
+];
+
 async function main() {
   const walletKeypair = loadKeypair(WALLET_PATH);
   const connection = new Connection(RPC_URL, "confirmed");
@@ -69,29 +74,35 @@ async function main() {
     console.log("initialize_registry sig:", sig);
   }
 
-  // 2. register_issuer — dev wallet as Active issuer
-  const existingIssuer = await connection.getAccountInfo(issuerPda);
-  if (existingIssuer) {
-    console.log("Issuer already registered — skipping");
-  } else {
+  // 2. register_issuer — dev wallet + extra wallets as Active issuers
+  const issuersToRegister = [walletKeypair.publicKey, ...EXTRA_ISSUERS.map((k) => new PublicKey(k))];
+  let kycCounter = 1;
+  for (const ownerKey of issuersToRegister) {
+    const [ownerIssuerPda] = PublicKey.findProgramAddressSync(
+      [ISSUER_SEED, ownerKey.toBuffer()],
+      programId
+    );
+    const existing = await connection.getAccountInfo(ownerIssuerPda);
+    const label = ownerKey.toBase58().slice(0, 4) + "…" + ownerKey.toBase58().slice(-4);
+    if (existing) {
+      console.log(`Issuer ${label} already registered — skipping`);
+      kycCounter++;
+      continue;
+    }
     const jurisdictions = [Array.from(Buffer.from("SRB"))];
     const assetClasses = ASSET_CLASS_COMMODITY | ASSET_CLASS_TICKET;
+    const kycRef = `DEMO-KYC-${String(kycCounter).padStart(3, "0")}`;
     const sig = await registry.methods
-      .registerIssuer(
-        walletKeypair.publicKey,
-        jurisdictions,
-        assetClasses,
-        "DEMO-KYC-001",
-        { active: {} }
-      )
+      .registerIssuer(ownerKey, jurisdictions, assetClasses, kycRef, { active: {} })
       .accounts({
         authority: walletKeypair.publicKey,
         config: configPda,
-        issuer: issuerPda,
+        issuer: ownerIssuerPda,
         systemProgram: SystemProgram.programId,
       })
       .rpc();
-    console.log("register_issuer sig:", sig);
+    console.log(`register_issuer ${label} sig:`, sig);
+    kycCounter++;
   }
 
   // Persist state so web + next scripts can find these PDAs.
