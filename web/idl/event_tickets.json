@@ -1,0 +1,1442 @@
+{
+  "address": "FDUwvXRETURbe2JN2PJNCKt6RPAsSLeSi7A4pFMGmtrE",
+  "metadata": {
+    "name": "event_tickets",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Nodosol event tickets — compressed NFT tickets via Metaplex Bubblegum with on-chain fee split"
+  },
+  "instructions": [
+    {
+      "name": "buy_ticket",
+      "discriminator": [
+        11,
+        24,
+        17,
+        193,
+        168,
+        116,
+        164,
+        169
+      ],
+      "accounts": [
+        {
+          "name": "buyer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "event",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "event.creator",
+                "account": "Event"
+              },
+              {
+                "kind": "account",
+                "path": "event.event_id",
+                "account": "Event"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "event"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment_mint"
+        },
+        {
+          "name": "buyer_payment_account",
+          "writable": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "payment_token_program"
+        },
+        {
+          "name": "tree_config",
+          "docs": [
+            "Bubblegum tree_config PDA."
+          ],
+          "writable": true
+        },
+        {
+          "name": "leaf_owner"
+        },
+        {
+          "name": "leaf_delegate"
+        },
+        {
+          "name": "merkle_tree",
+          "docs": [
+            "Merkle tree account — validated against event.merkle_tree."
+          ],
+          "writable": true
+        },
+        {
+          "name": "bubblegum_program",
+          "address": "BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY"
+        },
+        {
+          "name": "log_wrapper",
+          "address": "noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV"
+        },
+        {
+          "name": "compression_program",
+          "address": "cmtDvXumGCrqC1Age74AVPhSRVXJMd8PJS91L8KbNCK"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "close_event",
+      "discriminator": [
+        117,
+        114,
+        193,
+        54,
+        49,
+        25,
+        75,
+        194
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "event"
+          ]
+        },
+        {
+          "name": "payment_mint"
+        },
+        {
+          "name": "event",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "account",
+                "path": "event.event_id",
+                "account": "Event"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "event"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment_token_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "create_event",
+      "discriminator": [
+        49,
+        219,
+        29,
+        203,
+        22,
+        98,
+        100,
+        87
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "payment_mint"
+        },
+        {
+          "name": "event",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "arg",
+                "path": "event_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "event"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment_token_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "event_id",
+          "type": "u64"
+        },
+        {
+          "name": "price",
+          "type": "u64"
+        },
+        {
+          "name": "capacity",
+          "type": "u64"
+        },
+        {
+          "name": "starts_at",
+          "type": "i64"
+        },
+        {
+          "name": "ends_at",
+          "type": "i64"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "symbol",
+          "type": "string"
+        },
+        {
+          "name": "metadata_uri",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "initialize_config",
+      "discriminator": [
+        208,
+        127,
+        21,
+        1,
+        194,
+        190,
+        196,
+        70
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "treasury"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "fee_bps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "initialize_event_tree",
+      "discriminator": [
+        148,
+        43,
+        117,
+        206,
+        128,
+        77,
+        56,
+        214
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "event"
+          ]
+        },
+        {
+          "name": "event",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "event.creator",
+                "account": "Event"
+              },
+              {
+                "kind": "account",
+                "path": "event.event_id",
+                "account": "Event"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tree_config",
+          "docs": [
+            "Bubblegum tree config PDA — derived as [merkle_tree] within Bubblegum."
+          ],
+          "writable": true
+        },
+        {
+          "name": "merkle_tree",
+          "docs": [
+            "Merkle tree account — the caller allocates it in the same",
+            "transaction with SystemProgram.createAccount using the size returned",
+            "by spl-account-compression for (max_depth=14, max_buffer_size=64)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "bubblegum_program",
+          "address": "BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY"
+        },
+        {
+          "name": "compression_program",
+          "address": "cmtDvXumGCrqC1Age74AVPhSRVXJMd8PJS91L8KbNCK"
+        },
+        {
+          "name": "log_wrapper",
+          "address": "noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "update_config_authority",
+      "discriminator": [
+        199,
+        198,
+        63,
+        111,
+        40,
+        225,
+        188,
+        116
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "new_authority"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "update_event_status",
+      "discriminator": [
+        181,
+        237,
+        172,
+        72,
+        61,
+        132,
+        77,
+        247
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "signer": true,
+          "relations": [
+            "event"
+          ]
+        },
+        {
+          "name": "event",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "account",
+                "path": "event.event_id",
+                "account": "Event"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "new_status",
+          "type": {
+            "defined": {
+              "name": "EventStatus"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "update_fee_bps",
+      "discriminator": [
+        43,
+        158,
+        104,
+        51,
+        236,
+        96,
+        178,
+        195
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "new_fee_bps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "update_treasury",
+      "discriminator": [
+        60,
+        16,
+        243,
+        66,
+        96,
+        59,
+        254,
+        131
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "new_treasury"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "withdraw_event_revenue",
+      "discriminator": [
+        65,
+        177,
+        195,
+        57,
+        166,
+        218,
+        105,
+        80
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "event"
+          ]
+        },
+        {
+          "name": "event",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "creator"
+              },
+              {
+                "kind": "account",
+                "path": "event.event_id",
+                "account": "Event"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment_mint"
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "event"
+              }
+            ]
+          }
+        },
+        {
+          "name": "destination",
+          "writable": true
+        },
+        {
+          "name": "payment_token_program"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Config",
+      "discriminator": [
+        155,
+        12,
+        170,
+        224,
+        30,
+        250,
+        204,
+        130
+      ]
+    },
+    {
+      "name": "Event",
+      "discriminator": [
+        125,
+        192,
+        125,
+        158,
+        9,
+        115,
+        152,
+        233
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "AuthorityUpdated",
+      "discriminator": [
+        133,
+        207,
+        24,
+        122,
+        14,
+        234,
+        91,
+        34
+      ]
+    },
+    {
+      "name": "ConfigInitialized",
+      "discriminator": [
+        181,
+        49,
+        200,
+        156,
+        19,
+        167,
+        178,
+        91
+      ]
+    },
+    {
+      "name": "EventClosed",
+      "discriminator": [
+        136,
+        138,
+        5,
+        113,
+        129,
+        202,
+        80,
+        85
+      ]
+    },
+    {
+      "name": "EventCreated",
+      "discriminator": [
+        59,
+        186,
+        199,
+        175,
+        242,
+        25,
+        238,
+        94
+      ]
+    },
+    {
+      "name": "EventRevenueWithdrawn",
+      "discriminator": [
+        241,
+        37,
+        123,
+        87,
+        3,
+        243,
+        42,
+        255
+      ]
+    },
+    {
+      "name": "EventStatusChanged",
+      "discriminator": [
+        62,
+        147,
+        190,
+        76,
+        175,
+        123,
+        95,
+        133
+      ]
+    },
+    {
+      "name": "EventTreeInitialised",
+      "discriminator": [
+        76,
+        140,
+        241,
+        204,
+        191,
+        203,
+        143,
+        185
+      ]
+    },
+    {
+      "name": "FeeBpsUpdated",
+      "discriminator": [
+        151,
+        59,
+        111,
+        165,
+        241,
+        143,
+        149,
+        117
+      ]
+    },
+    {
+      "name": "TicketMinted",
+      "discriminator": [
+        22,
+        17,
+        212,
+        38,
+        91,
+        144,
+        104,
+        109
+      ]
+    },
+    {
+      "name": "TreasuryUpdated",
+      "discriminator": [
+        80,
+        239,
+        54,
+        168,
+        43,
+        38,
+        85,
+        145
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "Only the config authority may perform this action"
+    },
+    {
+      "code": 6001,
+      "name": "FeeBpsTooHigh",
+      "msg": "Fee basis points exceed the maximum allowed"
+    },
+    {
+      "code": 6002,
+      "name": "TreasuryMismatch",
+      "msg": "Treasury account mismatch"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidPrice",
+      "msg": "Price must be greater than zero"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidCapacity",
+      "msg": "Capacity must be greater than zero"
+    },
+    {
+      "code": 6005,
+      "name": "InvalidTimeWindow",
+      "msg": "Time window is invalid"
+    },
+    {
+      "code": 6006,
+      "name": "EventNotActive",
+      "msg": "Event is not in the Active state"
+    },
+    {
+      "code": 6007,
+      "name": "SoldOut",
+      "msg": "Event is sold out"
+    },
+    {
+      "code": 6008,
+      "name": "SaleNotStarted",
+      "msg": "Sale has not started yet"
+    },
+    {
+      "code": 6009,
+      "name": "SaleEnded",
+      "msg": "Sale has already ended"
+    },
+    {
+      "code": 6010,
+      "name": "MetadataTooLong",
+      "msg": "Metadata string is too long"
+    },
+    {
+      "code": 6011,
+      "name": "TreeMismatch",
+      "msg": "Merkle tree address mismatch"
+    },
+    {
+      "code": 6012,
+      "name": "TreeAlreadyInitialised",
+      "msg": "Tree has already been initialised for this event"
+    },
+    {
+      "code": 6013,
+      "name": "TreeNotInitialised",
+      "msg": "Tree must be initialised before ticket sales"
+    },
+    {
+      "code": 6014,
+      "name": "AssetMintMismatch",
+      "msg": "Asset mint mismatch"
+    },
+    {
+      "code": 6015,
+      "name": "VaultNotEmpty",
+      "msg": "Vault still holds funds — withdraw before close"
+    },
+    {
+      "code": 6016,
+      "name": "NotCreator",
+      "msg": "Only the creator may perform this action"
+    },
+    {
+      "code": 6017,
+      "name": "InvalidStatusTransition",
+      "msg": "Invalid status transition"
+    },
+    {
+      "code": 6018,
+      "name": "ArithmeticOverflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6019,
+      "name": "InvalidBubblegumProgram",
+      "msg": "Invalid Bubblegum program address"
+    },
+    {
+      "code": 6020,
+      "name": "InvalidCompressionProgram",
+      "msg": "Invalid SPL Account Compression program address"
+    },
+    {
+      "code": 6021,
+      "name": "InvalidNoopProgram",
+      "msg": "Invalid SPL Noop program address"
+    }
+  ],
+  "types": [
+    {
+      "name": "AuthorityUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "previous",
+            "type": "pubkey"
+          },
+          {
+            "name": "next",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Config",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "ConfigInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Event",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "event_id",
+            "type": "u64"
+          },
+          {
+            "name": "payment_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "merkle_tree",
+            "type": "pubkey"
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "capacity",
+            "type": "u64"
+          },
+          {
+            "name": "sold",
+            "type": "u64"
+          },
+          {
+            "name": "starts_at",
+            "type": "i64"
+          },
+          {
+            "name": "ends_at",
+            "type": "i64"
+          },
+          {
+            "name": "total_revenue",
+            "type": "u64"
+          },
+          {
+            "name": "total_withdrawn",
+            "type": "u64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "EventStatus"
+              }
+            }
+          },
+          {
+            "name": "tree_initialised",
+            "type": "bool"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "symbol",
+            "type": "string"
+          },
+          {
+            "name": "metadata_uri",
+            "type": "string"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "updated_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "vault_bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventClosed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "event",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "event_id",
+            "type": "u64"
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "capacity",
+            "type": "u64"
+          },
+          {
+            "name": "starts_at",
+            "type": "i64"
+          },
+          {
+            "name": "ends_at",
+            "type": "i64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventRevenueWithdrawn",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "event",
+            "type": "pubkey"
+          },
+          {
+            "name": "creator",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "total_withdrawn",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Paused"
+          },
+          {
+            "name": "Closed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventStatusChanged",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "event",
+            "type": "pubkey"
+          },
+          {
+            "name": "previous",
+            "type": {
+              "defined": {
+                "name": "EventStatus"
+              }
+            }
+          },
+          {
+            "name": "next",
+            "type": {
+              "defined": {
+                "name": "EventStatus"
+              }
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "EventTreeInitialised",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "event",
+            "type": "pubkey"
+          },
+          {
+            "name": "merkle_tree",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "FeeBpsUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "previous",
+            "type": "u16"
+          },
+          {
+            "name": "next",
+            "type": "u16"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TicketMinted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "event",
+            "type": "pubkey"
+          },
+          {
+            "name": "buyer",
+            "type": "pubkey"
+          },
+          {
+            "name": "merkle_tree",
+            "type": "pubkey"
+          },
+          {
+            "name": "sold",
+            "type": "u64"
+          },
+          {
+            "name": "seller_share",
+            "type": "u64"
+          },
+          {
+            "name": "fee",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TreasuryUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "previous",
+            "type": "pubkey"
+          },
+          {
+            "name": "next",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    }
+  ]
+}

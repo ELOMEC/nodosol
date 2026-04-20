@@ -9,6 +9,7 @@
     "init-rwa": "tsx init-rwa.ts",
     "init-marketplace": "tsx init-marketplace.ts",
     "init-otc": "tsx init-otc.ts",
+    "init-event-tickets": "tsx init-event-tickets.ts",
     "fund-user": "tsx fund-user.ts --"
   },
   "dependencies": {
