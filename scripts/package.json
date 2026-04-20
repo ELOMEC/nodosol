@@ -8,6 +8,7 @@
     "init-fee-config": "tsx init-fee-config.ts",
     "init-rwa": "tsx init-rwa.ts",
     "init-marketplace": "tsx init-marketplace.ts",
+    "init-otc": "tsx init-otc.ts",
     "fund-user": "tsx fund-user.ts --"
   },
   "dependencies": {
