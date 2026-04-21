@@ -20,6 +20,12 @@ import { eventTicketsProgram, fetchTiersForEvent, TicketTierDoc } from "@/lib/ev
 import { getAsset, HeliusAsset } from "@/lib/helius";
 import { toHttp } from "@/lib/metadataImages";
 import { parseSeatFromName, parseTierLabelFromName } from "@/lib/ticketName";
+import {
+  cancelListing,
+  createListing,
+  getActiveListingForAsset,
+  TicketListingDoc,
+} from "@/lib/ticketListings";
 import { getVenueTemplate, VenueTemplate } from "@/lib/venue-templates";
 import {
   getEventVenueMapping,
@@ -44,6 +50,7 @@ type Loaded = {
   event: EventMeta | null;
   template: VenueTemplate | null;
   matchedTier: TicketTierDoc | null;
+  activeListing: TicketListingDoc | null;
 };
 
 type State =
@@ -66,6 +73,8 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
   const [codeCopied, setCodeCopied] = useState(false);
   const [signing, setSigning] = useState(false);
   const [signError, setSignError] = useState<string | null>(null);
+  const [listingOpen, setListingOpen] = useState(false);
+  const [listingBusy, setListingBusy] = useState(false);
 
   // Countdown tick so the expiry label updates live.
   const [now, setNow] = useState(() => Date.now());
@@ -169,7 +178,16 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
         // Program not deployed or DAS issues — render what we have.
       }
 
-      setState({ kind: "ready", loaded: { asset, event, template, matchedTier } });
+      let activeListing: TicketListingDoc | null = null;
+      try {
+        activeListing = await getActiveListingForAsset(assetId);
+      } catch (err) {
+        console.warn("listing lookup failed", err);
+      }
+      setState({
+        kind: "ready",
+        loaded: { asset, event, template, matchedTier, activeListing },
+      });
     } catch (err) {
       console.error(err);
       setState({
@@ -239,6 +257,50 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
       setTimeout(() => setCodeCopied(false), 1600);
     } catch {
       // ignore
+    }
+  }
+
+  async function submitListing(input: {
+    priceUsdc: number;
+    expiresAt: string | null;
+    note: string | null;
+  }) {
+    if (state.kind !== "ready" || !publicKey || !state.loaded.event) return;
+    setListingBusy(true);
+    try {
+      const priceBase = BigInt(Math.round(input.priceUsdc * USDC_UNIT));
+      await createListing({
+        assetId,
+        eventPubkey: state.loaded.event.address,
+        sellerPubkey: publicKey.toBase58(),
+        priceUsdcBase: priceBase,
+        note: input.note,
+        expiresAt: input.expiresAt,
+      });
+      setListingOpen(false);
+      await load();
+    } catch (err) {
+      console.error(err);
+      window.alert(err instanceof Error ? err.message : "List failed");
+    } finally {
+      setListingBusy(false);
+    }
+  }
+
+  async function cancelCurrentListing() {
+    if (state.kind !== "ready" || !publicKey) return;
+    const listing = state.loaded.activeListing;
+    if (!listing) return;
+    if (!window.confirm("Cancel this resale listing?")) return;
+    setListingBusy(true);
+    try {
+      await cancelListing(listing.id, publicKey.toBase58());
+      await load();
+    } catch (err) {
+      console.error(err);
+      window.alert(err instanceof Error ? err.message : "Cancel failed");
+    } finally {
+      setListingBusy(false);
     }
   }
 
@@ -377,6 +439,20 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
               template={template}
               matchedTier={matchedTier}
               seat={seat}
+            />
+          )}
+
+          {ownerMatch && event && (
+            <ResalePanel
+              listing={state.loaded.activeListing}
+              open={listingOpen}
+              busy={listingBusy}
+              onOpen={() => setListingOpen(true)}
+              onClose={() => {
+                if (!listingBusy) setListingOpen(false);
+              }}
+              onSubmit={(v) => void submitListing(v)}
+              onCancel={() => void cancelCurrentListing()}
             />
           )}
 
@@ -527,6 +603,265 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
     </Shell>
   );
 }
+
+function ResalePanel({
+  listing,
+  open,
+  busy,
+  onOpen,
+  onClose,
+  onSubmit,
+  onCancel,
+}: {
+  listing: TicketListingDoc | null;
+  open: boolean;
+  busy: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+  onSubmit: (v: { priceUsdc: number; expiresAt: string | null; note: string | null }) => void;
+  onCancel: () => void;
+}) {
+  const [price, setPrice] = useState("");
+  const [expiry, setExpiry] = useState<"1d" | "3d" | "1w" | "none">("1w");
+  const [note, setNote] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+
+  function expiresToIso(v: typeof expiry): string | null {
+    if (v === "none") return null;
+    const d = new Date();
+    if (v === "1d") d.setDate(d.getDate() + 1);
+    else if (v === "3d") d.setDate(d.getDate() + 3);
+    else if (v === "1w") d.setDate(d.getDate() + 7);
+    return d.toISOString();
+  }
+
+  function handleSubmit() {
+    const p = parseFloat(price);
+    if (!Number.isFinite(p) || p <= 0) {
+      setErr("Price must be a positive number.");
+      return;
+    }
+    setErr(null);
+    onSubmit({
+      priceUsdc: p,
+      expiresAt: expiresToIso(expiry),
+      note: note.trim() || null,
+    });
+  }
+
+  if (listing) {
+    const priceUsdc = listing.priceUsdcBase / USDC_UNIT;
+    return (
+      <div
+        style={{
+          border: "1px solid #10b981",
+          background: "#ecfdf5",
+          borderRadius: 10,
+          padding: "0.85rem 1rem",
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.55rem",
+        }}
+      >
+        <div style={{ fontSize: "0.72rem", color: "#065f46", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+          Listed for resale
+        </div>
+        <div style={{ fontSize: "1.05rem", fontWeight: 700, color: "#065f46" }}>
+          ${priceUsdc.toFixed(2)} USDC
+        </div>
+        {listing.expiresAt && (
+          <div style={{ fontSize: "0.78rem", color: "#047857" }}>
+            Expires {new Date(listing.expiresAt).toLocaleString()}
+          </div>
+        )}
+        {listing.note && (
+          <div style={{ fontSize: "0.78rem", color: "#047857", fontStyle: "italic" }}>
+            “{listing.note}”
+          </div>
+        )}
+        <div style={{ fontSize: "0.72rem", color: "#6b7280" }}>
+          Settlement is off-chain honor-system for V0 — when a buyer pays, Nodosol
+          flags the listing, you transfer the cNFT in Phantom and confirm.
+        </div>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={busy}
+          style={{
+            alignSelf: "flex-start",
+            padding: "0.4rem 0.85rem",
+            borderRadius: 7,
+            border: "1px solid #fecaca",
+            background: "transparent",
+            color: "#b91c1c",
+            fontSize: "0.78rem",
+            fontWeight: 600,
+            cursor: busy ? "not-allowed" : "pointer",
+          }}
+        >
+          {busy ? "Cancelling…" : "Cancel listing"}
+        </button>
+      </div>
+    );
+  }
+
+  if (!open) {
+    return (
+      <div
+        style={{
+          border: "1px solid var(--shell-border, #eef0f3)",
+          borderRadius: 10,
+          padding: "0.85rem 1rem",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.75rem",
+          justifyContent: "space-between",
+        }}
+      >
+        <div>
+          <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>Resell this ticket</div>
+          <div style={{ fontSize: "0.76rem", color: "#6b7280" }}>
+            Post a listing on the Nodosol resale board.
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onOpen}
+          style={{
+            padding: "0.45rem 0.9rem",
+            borderRadius: 7,
+            border: "1px solid var(--shell-border, #eef0f3)",
+            background: "var(--shell-pill-bg, #f7f8fa)",
+            color: "var(--shell-fg, #111827)",
+            fontSize: "0.82rem",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          List for resale
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        border: "1px solid var(--shell-border, #eef0f3)",
+        borderRadius: 10,
+        padding: "0.85rem 1rem",
+        display: "flex",
+        flexDirection: "column",
+        gap: "0.55rem",
+      }}
+    >
+      <div style={{ fontSize: "0.82rem", fontWeight: 600, marginBottom: "0.2rem" }}>
+        List this ticket for resale
+      </div>
+      <div
+        style={{
+          fontSize: "0.72rem",
+          background: "#fef3c7",
+          color: "#92400e",
+          padding: "0.45rem 0.6rem",
+          borderRadius: 7,
+        }}
+      >
+        V0: settlement is honor-system — buyer sends USDC to your wallet in-app,
+        then you transfer the cNFT to them in Phantom. Atomic on-chain swap is
+        coming in the next program upgrade.
+      </div>
+
+      <label style={smallLabel}>Price (USDC)</label>
+      <input
+        type="number"
+        min={0.01}
+        step="0.01"
+        value={price}
+        onChange={(e) => setPrice(e.target.value)}
+        placeholder="e.g. 85"
+        style={smallInput}
+      />
+
+      <label style={smallLabel}>Active for</label>
+      <select
+        value={expiry}
+        onChange={(e) => setExpiry(e.target.value as "1d" | "3d" | "1w" | "none")}
+        style={smallInput}
+      >
+        <option value="1d">1 day</option>
+        <option value="3d">3 days</option>
+        <option value="1w">1 week</option>
+        <option value="none">No expiry</option>
+      </select>
+
+      <label style={smallLabel}>Note (optional)</label>
+      <input
+        type="text"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="e.g. section change needed, corporate package, etc."
+        style={smallInput}
+      />
+
+      {err && <div style={{ fontSize: "0.75rem", color: "#b91c1c" }}>{err}</div>}
+
+      <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.3rem" }}>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={busy}
+          style={{
+            padding: "0.45rem 1rem",
+            borderRadius: 7,
+            border: "none",
+            background: busy ? "#c7d2fe" : "#4f46e5",
+            color: "#fff",
+            fontSize: "0.82rem",
+            fontWeight: 600,
+            cursor: busy ? "not-allowed" : "pointer",
+          }}
+        >
+          {busy ? "Listing…" : "Publish listing"}
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={busy}
+          style={{
+            padding: "0.45rem 0.95rem",
+            borderRadius: 7,
+            border: "1px solid var(--shell-border, #eef0f3)",
+            background: "transparent",
+            color: "var(--shell-fg, #111827)",
+            fontSize: "0.82rem",
+            fontWeight: 600,
+            cursor: busy ? "not-allowed" : "pointer",
+          }}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const smallLabel: React.CSSProperties = {
+  fontSize: "0.7rem",
+  color: "#6b7280",
+  fontWeight: 600,
+  letterSpacing: "0.04em",
+  textTransform: "uppercase",
+};
+
+const smallInput: React.CSSProperties = {
+  padding: "0.45rem 0.6rem",
+  borderRadius: 6,
+  border: "1px solid var(--shell-border, #eef0f3)",
+  background: "var(--shell-card, #fff)",
+  color: "var(--shell-fg, #111827)",
+  fontSize: "0.85rem",
+};
 
 function CheckInCodeDisplay({
   code,
