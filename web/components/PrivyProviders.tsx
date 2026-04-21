@@ -1,7 +1,6 @@
 "use client";
 
 import { PrivyProvider } from "@privy-io/react-auth";
-import { toSolanaWalletConnectors } from "@privy-io/react-auth/solana";
 import type { ReactNode } from "react";
 
 export function PrivyProviders({ children }: { children: ReactNode }) {
@@ -19,12 +18,9 @@ export function PrivyProviders({ children }: { children: ReactNode }) {
           walletChainType: "solana-only",
           showWalletLoginFirst: false,
         },
-        loginMethods: ["email", "google", "wallet"],
+        loginMethods: ["email", "google"],
         embeddedWallets: {
           solana: { createOnLogin: "users-without-wallets" },
-        },
-        externalWallets: {
-          solana: { connectors: toSolanaWalletConnectors() },
         },
       }}
     >
