@@ -246,6 +246,21 @@ function EventCard({ event }: { event: EventRow }) {
           Tiers & venue
         </Link>
         <Link
+          href={`/creator/events/${event.address}/scan`}
+          style={{
+            padding: "0.5rem 0.9rem",
+            borderRadius: 7,
+            border: "1px solid var(--shell-border, #eef0f3)",
+            background: "var(--shell-pill-bg, #f7f8fa)",
+            color: "var(--shell-fg, #111827)",
+            fontSize: "0.8rem",
+            fontWeight: 600,
+            textDecoration: "none",
+          }}
+        >
+          Door scan
+        </Link>
+        <Link
           href={`/marketplace/events/v/${event.address}`}
           style={{
             padding: "0.5rem 0.9rem",
