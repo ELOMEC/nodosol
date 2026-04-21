@@ -11,6 +11,7 @@ import { eventTicketsProgram } from "@/lib/eventTickets";
 import {
   buyTicketResaleTx,
   cancelTicketResaleTx,
+  closeExpiredResaleTx,
   fetchAllActiveListings,
   OnChainResaleListing,
 } from "@/lib/ticketResale";
@@ -141,6 +142,37 @@ export function ResaleView() {
     } catch (err) {
       console.error(err);
       window.alert(err instanceof Error ? err.message : "Buy failed.");
+    } finally {
+      setBusyListing(null);
+    }
+  }
+
+  async function reclaimExpired(listing: OnChainResaleListing) {
+    if (!publicKey) return;
+    if (
+      !window.confirm(
+        "Reclaim this expired listing? The cNFT and rent will be returned to the original seller. You (the caller) only pay the tx fee."
+      )
+    ) {
+      return;
+    }
+    const assetId = await deriveCnftAssetId(
+      new PublicKey(listing.merkleTree),
+      BigInt(listing.nonce)
+    );
+    setBusyListing(listing.address);
+    try {
+      const sig = await closeExpiredResaleTx({
+        connection,
+        wallet,
+        listing,
+        assetId,
+      });
+      window.alert(`Reclaimed on behalf of seller. Tx: ${sig.slice(0, 12)}…`);
+      await load();
+    } catch (err) {
+      console.error(err);
+      window.alert(err instanceof Error ? err.message : "Reclaim failed");
     } finally {
       setBusyListing(null);
     }
@@ -293,6 +325,7 @@ export function ResaleView() {
                   busy={busyListing === l.address}
                   youAreSeller={publicKey?.toBase58() === l.seller}
                   onBuy={() => void buy(l)}
+                  onReclaimExpired={() => void reclaimExpired(l)}
                 />
               ))}
             </div>
@@ -398,12 +431,14 @@ function ListingCard({
   busy,
   youAreSeller,
   onBuy,
+  onReclaimExpired,
 }: {
   listing: OnChainResaleListing;
   eventMeta: { name: string; symbol: string } | undefined;
   busy: boolean;
   youAreSeller: boolean;
   onBuy: () => void;
+  onReclaimExpired: () => void;
 }) {
   const expired = listing.expiresAt > 0 && listing.expiresAt * 1000 < Date.now();
   return (
@@ -445,30 +480,49 @@ function ListingCard({
         )}
       </div>
       <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.2rem" }}>
-        <button
-          type="button"
-          onClick={onBuy}
-          disabled={busy || youAreSeller || expired}
-          title={
-            youAreSeller
-              ? "You are the seller"
-              : expired
-              ? "Listing expired"
-              : "Atomic USDC + cNFT swap"
-          }
-          style={{
-            padding: "0.45rem 1rem",
-            borderRadius: 7,
-            border: "none",
-            background: busy || youAreSeller || expired ? "#c7d2fe" : "#4f46e5",
-            color: "#fff",
-            fontSize: "0.8rem",
-            fontWeight: 600,
-            cursor: busy || youAreSeller || expired ? "not-allowed" : "pointer",
-          }}
-        >
-          {busy ? "Swapping…" : youAreSeller ? "Your listing" : "Buy · atomic swap"}
-        </button>
+        {expired ? (
+          <button
+            type="button"
+            onClick={onReclaimExpired}
+            disabled={busy}
+            title="Permissionless: returns the cNFT + rent to the seller"
+            style={{
+              padding: "0.45rem 1rem",
+              borderRadius: 7,
+              border: "1px solid var(--shell-border, #eef0f3)",
+              background: busy ? "#e0e7ff" : "var(--shell-pill-bg, #f7f8fa)",
+              color: "var(--shell-fg, #111827)",
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              cursor: busy ? "not-allowed" : "pointer",
+            }}
+          >
+            {busy ? "Reclaiming…" : "Reclaim for seller"}
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onBuy}
+            disabled={busy || youAreSeller}
+            title={
+              youAreSeller
+                ? "You are the seller"
+                : "Atomic USDC + cNFT swap"
+            }
+            style={{
+              padding: "0.45rem 1rem",
+              borderRadius: 7,
+              border: "none",
+              background: busy || youAreSeller ? "#c7d2fe" : "#4f46e5",
+              color: "#fff",
+              fontSize: "0.8rem",
+              fontWeight: 600,
+              cursor: busy || youAreSeller ? "not-allowed" : "pointer",
+            }}
+          >
+            {busy ? "Swapping…" : youAreSeller ? "Your listing" : "Buy · atomic swap"}
+          </button>
+        )}
       </div>
     </div>
   );

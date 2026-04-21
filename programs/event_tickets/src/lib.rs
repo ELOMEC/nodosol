@@ -162,4 +162,13 @@ pub mod event_tickets {
     ) -> Result<()> {
         handle_buy_ticket_resale(ctx, root, data_hash, creator_hash)
     }
+
+    pub fn close_expired_resale<'info>(
+        ctx: Context<'info, CloseExpiredResale<'info>>,
+        root: [u8; 32],
+        data_hash: [u8; 32],
+        creator_hash: [u8; 32],
+    ) -> Result<()> {
+        handle_close_expired_resale(ctx, root, data_hash, creator_hash)
+    }
 }

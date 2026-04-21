@@ -26,6 +26,7 @@ import {
   BUBBLEGUM_PROGRAM_ID,
   EVENT_TICKETS_PROGRAM_ID,
   eventTicketsProgram,
+  fetchEventTicketsConfig,
   NOOP_PROGRAM_ID,
   treeConfigPda,
 } from "./eventTickets";
@@ -363,6 +364,8 @@ export async function buyTicketResaleTx(input: {
     );
   }
 
+  const cfg = await fetchEventTicketsConfig(program);
+
   const ix = await program.methods
     .buyTicketResale(bundle.root, bundle.dataHash, bundle.creatorHash)
     .accounts({
@@ -372,6 +375,8 @@ export async function buyTicketResaleTx(input: {
       paymentMint,
       buyerPaymentAccount: buyerAta,
       sellerPaymentAccount: sellerAta,
+      config: cfg.address,
+      treasury: cfg.treasury,
       paymentTokenProgram: TOKEN_2022_PROGRAM_ID,
       treeConfig: tc,
       merkleTree,
@@ -388,6 +393,58 @@ export async function buyTicketResaleTx(input: {
   const tx = new Transaction({ feePayer: buyerPk, recentBlockhash: blockhash });
   tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 900_000 }));
   for (const i of ixs) tx.add(i);
+  const sig = await wallet.sendTransaction(tx, connection);
+  await connection.confirmTransaction(
+    { signature: sig, blockhash, lastValidBlockHeight },
+    "confirmed"
+  );
+  return sig;
+}
+
+/**
+ * Permissionless reclaim of an expired listing. Anyone can call — the
+ * cNFT + rent go to the original seller. Useful when the seller goes
+ * offline and a community member wants to clean up the listing PDA.
+ */
+export async function closeExpiredResaleTx(input: {
+  connection: Connection;
+  wallet: SendableWallet;
+  listing: OnChainResaleListing;
+  assetId: string;
+}): Promise<string> {
+  const { connection, wallet, listing, assetId } = input;
+  if (!wallet.publicKey) throw new Error("Wallet not connected");
+  const callerPk = wallet.publicKey;
+  const provider = new AnchorProvider(connection, wallet as unknown as Wallet, {
+    commitment: "confirmed",
+  });
+  const program = eventTicketsProgram(provider);
+
+  const merkleTree = new PublicKey(listing.merkleTree);
+  const seller = new PublicKey(listing.seller);
+  const bundle = await buildProofBundle(assetId);
+  const [tc] = treeConfigPda(merkleTree);
+
+  const ix = await program.methods
+    .closeExpiredResale(bundle.root, bundle.dataHash, bundle.creatorHash)
+    .accounts({
+      caller: callerPk,
+      seller,
+      listing: new PublicKey(listing.address),
+      treeConfig: tc,
+      merkleTree,
+      bubblegumProgram: BUBBLEGUM_PROGRAM_ID,
+      logWrapper: NOOP_PROGRAM_ID,
+      compressionProgram: ACCOUNT_COMPRESSION_PROGRAM_ID,
+      systemProgram: SystemProgram.programId,
+    } as never)
+    .remainingAccounts(bundle.proofAccounts)
+    .instruction();
+
+  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+  const tx = new Transaction({ feePayer: callerPk, recentBlockhash: blockhash });
+  tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 700_000 }));
+  tx.add(ix);
   const sig = await wallet.sendTransaction(tx, connection);
   await connection.confirmTransaction(
     { signature: sig, blockhash, lastValidBlockHeight },

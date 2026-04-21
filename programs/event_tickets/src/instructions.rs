@@ -16,6 +16,7 @@ pub mod close_event;
 pub mod list_ticket_resale;
 pub mod cancel_ticket_resale;
 pub mod buy_ticket_resale;
+pub mod close_expired_resale;
 
 pub use initialize_config::*;
 pub use update_fee_bps::*;
@@ -35,3 +36,4 @@ pub use close_event::*;
 pub use list_ticket_resale::*;
 pub use cancel_ticket_resale::*;
 pub use buy_ticket_resale::*;
+pub use close_expired_resale::*;

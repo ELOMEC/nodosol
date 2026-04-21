@@ -10,12 +10,13 @@ use anchor_spl::{
 
 use crate::{
     constants::{
-        ACCOUNT_COMPRESSION_PROGRAM_ID, BUBBLEGUM_PROGRAM_ID, NOOP_PROGRAM_ID, RESALE_SEED,
+        ACCOUNT_COMPRESSION_PROGRAM_ID, BPS_DENOMINATOR, BUBBLEGUM_PROGRAM_ID, CONFIG_SEED,
+        NOOP_PROGRAM_ID, RESALE_SEED,
     },
     error::EventTicketsError,
     events::TicketResaleFilled,
     instructions::list_ticket_resale::BUBBLEGUM_TRANSFER_DISCRIMINATOR,
-    state::TicketResaleListing,
+    state::{Config, TicketResaleListing},
 };
 
 #[derive(Accounts)]
@@ -52,6 +53,20 @@ pub struct BuyTicketResale<'info> {
         token::token_program = payment_token_program,
     )]
     pub seller_payment_account: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    #[account(
+        seeds = [CONFIG_SEED],
+        bump = config.bump,
+    )]
+    pub config: Box<Account<'info, Config>>,
+
+    #[account(
+        mut,
+        address = config.treasury @ EventTicketsError::TreasuryMismatch,
+        token::mint = payment_mint,
+        token::token_program = payment_token_program,
+    )]
+    pub treasury: Box<InterfaceAccount<'info, TokenAccount>>,
 
     pub payment_token_program: Interface<'info, TokenInterface>,
 
@@ -106,9 +121,32 @@ pub fn handle_buy_ticket_resale<'info>(
     }
 
     let price = ctx.accounts.listing.price;
+    let fee_bps = ctx.accounts.config.fee_bps as u64;
+    let fee = price
+        .checked_mul(fee_bps)
+        .and_then(|v| v.checked_div(BPS_DENOMINATOR))
+        .ok_or(EventTicketsError::ArithmeticOverflow)?;
+    let seller_share = price
+        .checked_sub(fee)
+        .ok_or(EventTicketsError::ArithmeticOverflow)?;
     let decimals = ctx.accounts.payment_mint.decimals;
 
-    // 1. USDC transfer buyer → seller ATA. Buyer is signer.
+    // 1a. Platform fee: buyer → treasury (if > 0).
+    if fee > 0 {
+        let cpi_accounts = TransferChecked {
+            from: ctx.accounts.buyer_payment_account.to_account_info(),
+            mint: ctx.accounts.payment_mint.to_account_info(),
+            to: ctx.accounts.treasury.to_account_info(),
+            authority: ctx.accounts.buyer.to_account_info(),
+        };
+        transfer_checked(
+            CpiContext::new(ctx.accounts.payment_token_program.key(), cpi_accounts),
+            fee,
+            decimals,
+        )?;
+    }
+
+    // 1b. Seller share: buyer → seller ATA.
     {
         let cpi_accounts = TransferChecked {
             from: ctx.accounts.buyer_payment_account.to_account_info(),
@@ -118,7 +156,7 @@ pub fn handle_buy_ticket_resale<'info>(
         };
         transfer_checked(
             CpiContext::new(ctx.accounts.payment_token_program.key(), cpi_accounts),
-            price,
+            seller_share,
             decimals,
         )?;
     }
