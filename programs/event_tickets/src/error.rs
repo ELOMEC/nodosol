@@ -72,4 +72,10 @@ pub enum EventTicketsError {
     SellerCannotBuy,
     #[msg("Resale merkle tree does not match the listing")]
     ResaleTreeMismatch,
+    #[msg("Revealed price does not match the listing commit")]
+    PriceCommitMismatch,
+    #[msg("Listing is in private-pricing mode — use buy_ticket_resale_private")]
+    ListingIsPrivate,
+    #[msg("Listing is in public-pricing mode — use buy_ticket_resale")]
+    ListingIsPublic,
 }

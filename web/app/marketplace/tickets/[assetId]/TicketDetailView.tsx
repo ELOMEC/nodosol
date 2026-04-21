@@ -24,7 +24,10 @@ import { parseSeatFromName, parseTierLabelFromName } from "@/lib/ticketName";
 import {
   buyTicketResaleTx,
   cancelTicketResaleTx,
+  encodePriceEnvelope,
   fetchListingForAsset,
+  generatePriceNonce,
+  listTicketResalePrivateTx,
   listTicketResaleTx,
   OnChainResaleListing,
   resaleListingPda,
@@ -78,6 +81,7 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
   const [signError, setSignError] = useState<string | null>(null);
   const [listingOpen, setListingOpen] = useState(false);
   const [listingBusy, setListingBusy] = useState(false);
+  const [lastEnvelope, setLastEnvelope] = useState<string | null>(null);
 
   // Countdown tick so the expiry label updates live.
   const [now, setNow] = useState(() => Date.now());
@@ -274,6 +278,7 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
   async function submitListing(input: {
     priceUsdc: number;
     expiresAt: string | null;
+    isPrivate: boolean;
   }) {
     if (state.kind !== "ready" || !publicKey || !state.loaded.event) return;
     const asset = state.loaded.asset;
@@ -285,15 +290,35 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
     setListingBusy(true);
     try {
       const expiresUnix = input.expiresAt ? Math.floor(new Date(input.expiresAt).getTime() / 1000) : 0;
-      const sig = await listTicketResaleTx({
-        connection,
-        wallet,
-        event: new PublicKey(state.loaded.event.address),
-        merkleTree: new PublicKey(tree),
-        assetId,
-        priceUsdc: input.priceUsdc,
-        expiresAt: expiresUnix,
-      });
+      let sig: string;
+      if (input.isPrivate) {
+        const nonce = generatePriceNonce();
+        const priceBase = BigInt(Math.round(input.priceUsdc * USDC_UNIT));
+        const envelope = encodePriceEnvelope(priceBase, nonce);
+        sig = await listTicketResalePrivateTx({
+          connection,
+          wallet,
+          event: new PublicKey(state.loaded.event.address),
+          merkleTree: new PublicKey(tree),
+          assetId,
+          priceUsdc: input.priceUsdc,
+          nonce,
+          expiresAt: expiresUnix,
+        });
+        // Save envelope so the seller can copy it to share with buyer.
+        setLastEnvelope(envelope);
+      } else {
+        sig = await listTicketResaleTx({
+          connection,
+          wallet,
+          event: new PublicKey(state.loaded.event.address),
+          merkleTree: new PublicKey(tree),
+          assetId,
+          priceUsdc: input.priceUsdc,
+          expiresAt: expiresUnix,
+        });
+        setLastEnvelope(null);
+      }
       setListingOpen(false);
       window.alert(`Listed on-chain. The cNFT is now in escrow. Tx: ${sig.slice(0, 12)}…`);
       await load();
@@ -476,6 +501,8 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
               listing={state.loaded.activeListing}
               open={listingOpen}
               busy={listingBusy}
+              envelope={lastEnvelope}
+              onDismissEnvelope={() => setLastEnvelope(null)}
               onOpen={() => setListingOpen(true)}
               onClose={() => {
                 if (!listingBusy) setListingOpen(false);
@@ -638,6 +665,8 @@ function ResalePanel({
   listing,
   open,
   busy,
+  envelope,
+  onDismissEnvelope,
   onOpen,
   onClose,
   onSubmit,
@@ -646,14 +675,18 @@ function ResalePanel({
   listing: OnChainResaleListing | null;
   open: boolean;
   busy: boolean;
+  envelope: string | null;
+  onDismissEnvelope: () => void;
   onOpen: () => void;
   onClose: () => void;
-  onSubmit: (v: { priceUsdc: number; expiresAt: string | null }) => void;
+  onSubmit: (v: { priceUsdc: number; expiresAt: string | null; isPrivate: boolean }) => void;
   onCancel: () => void;
 }) {
   const [price, setPrice] = useState("");
   const [expiry, setExpiry] = useState<"1d" | "3d" | "1w" | "none">("1w");
+  const [isPrivate, setIsPrivate] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const [envelopeCopied, setEnvelopeCopied] = useState(false);
 
   function expiresToIso(v: typeof expiry): string | null {
     if (v === "none") return null;
@@ -674,6 +707,7 @@ function ResalePanel({
     onSubmit({
       priceUsdc: p,
       expiresAt: expiresToIso(expiry),
+      isPrivate,
     });
   }
 
@@ -693,11 +727,93 @@ function ResalePanel({
         }}
       >
         <div style={{ fontSize: "0.72rem", color: "#065f46", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-          Listed for resale · on-chain escrow
+          Listed for resale · on-chain escrow {listing.isPrivate ? "· PRIVATE PRICE" : ""}
         </div>
         <div style={{ fontSize: "1.05rem", fontWeight: 700, color: "#065f46" }}>
-          ${priceUsdc.toFixed(2)} USDC
+          {listing.isPrivate ? "Price hidden on-chain" : `$${priceUsdc.toFixed(2)} USDC`}
         </div>
+        {listing.isPrivate && (
+          <div style={{ fontSize: "0.72rem", color: "#065f46", lineHeight: 1.4 }}>
+            The cNFT is in escrow. Only someone with the (price, nonce) envelope
+            you generated can buy — share it over DM / email / encrypted chat.
+          </div>
+        )}
+        {envelope && (
+          <div
+            style={{
+              background: "#fff",
+              border: "1px dashed #10b981",
+              borderRadius: 8,
+              padding: "0.6rem 0.75rem",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.35rem",
+            }}
+          >
+            <div style={{ fontSize: "0.7rem", color: "#065f46", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+              Share this envelope (one-time)
+            </div>
+            <code
+              style={{
+                fontSize: "0.72rem",
+                fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+                background: "#f0fdf4",
+                padding: "0.4rem 0.5rem",
+                borderRadius: 6,
+                wordBreak: "break-all",
+                color: "#064e3b",
+              }}
+            >
+              {envelope}
+            </code>
+            <div style={{ display: "flex", gap: "0.35rem" }}>
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(envelope);
+                    setEnvelopeCopied(true);
+                    setTimeout(() => setEnvelopeCopied(false), 1600);
+                  } catch {
+                    // ignore
+                  }
+                }}
+                style={{
+                  padding: "0.35rem 0.75rem",
+                  borderRadius: 6,
+                  border: "none",
+                  background: "#10b981",
+                  color: "#fff",
+                  fontSize: "0.74rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                {envelopeCopied ? "✓ Copied" : "Copy"}
+              </button>
+              <button
+                type="button"
+                onClick={onDismissEnvelope}
+                style={{
+                  padding: "0.35rem 0.75rem",
+                  borderRadius: 6,
+                  border: "1px solid #a7f3d0",
+                  background: "transparent",
+                  color: "#065f46",
+                  fontSize: "0.74rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                I saved it
+              </button>
+            </div>
+            <div style={{ fontSize: "0.68rem", color: "#b91c1c" }}>
+              This is shown only once. If you lose the envelope and haven&apos;t
+              sent it to a buyer, cancel the listing to recover the cNFT.
+            </div>
+          </div>
+        )}
         {expiresMs > 0 && (
           <div style={{ fontSize: "0.78rem", color: "#047857" }}>
             Expires {new Date(expiresMs).toLocaleString()}
@@ -819,6 +935,31 @@ function ResalePanel({
         <option value="1w">1 week</option>
         <option value="none">No expiry</option>
       </select>
+
+      <label
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "0.45rem",
+          fontSize: "0.8rem",
+          color: "var(--shell-fg, #111827)",
+          marginTop: "0.2rem",
+          cursor: "pointer",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={isPrivate}
+          onChange={(e) => setIsPrivate(e.target.checked)}
+          style={{ marginTop: 3 }}
+        />
+        <span>
+          <strong>Private price</strong> — commit price off-chain (keccak256 hash),
+          share envelope only with the buyer. Useful for pre-negotiated sales
+          (corporate blocks, invite-only drops). Buy tx still reveals price
+          on-chain at settlement.
+        </span>
+      </label>
 
       {err && <div style={{ fontSize: "0.75rem", color: "#b91c1c" }}>{err}</div>}
 

@@ -124,11 +124,21 @@ pub struct TicketResaleListing {
     pub leaf_index: u32,
     /// Nonce from the cNFT leaf (equals leaf_index for v1 but stored for CPI).
     pub nonce: u64,
+    /// Plain price used by public listings. 0 on private listings — see price_commit.
     pub price: u64,
+    /// sha256(price_le_bytes || 32-byte seller nonce). All zeroes on public listings.
+    /// When non-zero, `buy_ticket_resale_private` must supply the matching reveal.
+    pub price_commit: [u8; 32],
     pub created_at: i64,
     pub expires_at: i64,
     pub bump: u8,
     pub reserved: [u8; 16],
+}
+
+impl TicketResaleListing {
+    pub fn is_private(&self) -> bool {
+        self.price_commit != [0u8; 32]
+    }
 }
 
 impl TicketResaleListing {

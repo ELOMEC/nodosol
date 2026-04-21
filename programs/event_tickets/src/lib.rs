@@ -171,4 +171,45 @@ pub mod event_tickets {
     ) -> Result<()> {
         handle_close_expired_resale(ctx, root, data_hash, creator_hash)
     }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn list_ticket_resale_private<'info>(
+        ctx: Context<'info, ListTicketResalePrivate<'info>>,
+        leaf_index: u32,
+        nonce: u64,
+        root: [u8; 32],
+        data_hash: [u8; 32],
+        creator_hash: [u8; 32],
+        price_commit: [u8; 32],
+        expires_at: i64,
+    ) -> Result<()> {
+        handle_list_ticket_resale_private(
+            ctx,
+            leaf_index,
+            nonce,
+            root,
+            data_hash,
+            creator_hash,
+            price_commit,
+            expires_at,
+        )
+    }
+
+    pub fn buy_ticket_resale_private<'info>(
+        ctx: Context<'info, BuyTicketResalePrivate<'info>>,
+        root: [u8; 32],
+        data_hash: [u8; 32],
+        creator_hash: [u8; 32],
+        revealed_price: u64,
+        price_nonce: [u8; 32],
+    ) -> Result<()> {
+        handle_buy_ticket_resale_private(
+            ctx,
+            root,
+            data_hash,
+            creator_hash,
+            revealed_price,
+            price_nonce,
+        )
+    }
 }

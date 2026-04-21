@@ -3,6 +3,7 @@ use anchor_lang::solana_program::{
     instruction::{AccountMeta, Instruction},
     program::invoke_signed,
 };
+use solana_program::keccak;
 use anchor_spl::{
     token_2022::{transfer_checked, TransferChecked},
     token_interface::{Mint, TokenAccount, TokenInterface},
@@ -19,13 +20,21 @@ use crate::{
     state::{Config, TicketResaleListing},
 };
 
+/// Buys a private-price listing by revealing the (price, nonce) pair
+/// whose sha256 matches the commit stored on-chain. Other than taking
+/// the reveal as args (and computing the hash to verify), the flow is
+/// identical to the public buy — atomic USDC + cNFT swap.
+///
+/// The reveal lands in the transaction's instruction data, so after a
+/// successful buy the price is permanently visible to anyone parsing
+/// history. Privacy here is "pending" — the asking price is hidden
+/// from the wider market until the first buyer accepts it.
 #[derive(Accounts)]
-pub struct BuyTicketResale<'info> {
+pub struct BuyTicketResalePrivate<'info> {
     #[account(mut)]
     pub buyer: Signer<'info>,
 
-    /// CHECK: receives the rent refund when the listing PDA is closed. The
-    /// listing's `has_one` check binds this to `listing.seller`.
+    /// CHECK: receives rent refund, must match listing.seller.
     #[account(mut, address = listing.seller @ EventTicketsError::NotSeller)]
     pub seller: UncheckedAccount<'info>,
 
@@ -70,7 +79,6 @@ pub struct BuyTicketResale<'info> {
 
     pub payment_token_program: Interface<'info, TokenInterface>,
 
-    // Bubblegum transfer accounts ---------------------------------------
     /// CHECK: Bubblegum derives and validates.
     #[account(mut)]
     pub tree_config: UncheckedAccount<'info>,
@@ -97,17 +105,19 @@ pub struct BuyTicketResale<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handle_buy_ticket_resale<'info>(
-    ctx: Context<'info, BuyTicketResale<'info>>,
+pub fn handle_buy_ticket_resale_private<'info>(
+    ctx: Context<'info, BuyTicketResalePrivate<'info>>,
     root: [u8; 32],
     data_hash: [u8; 32],
     creator_hash: [u8; 32],
+    revealed_price: u64,
+    price_nonce: [u8; 32],
 ) -> Result<()> {
     let now = Clock::get()?.unix_timestamp;
 
     {
         let listing = &ctx.accounts.listing;
-        require!(!listing.is_private(), EventTicketsError::ListingIsPrivate);
+        require!(listing.is_private(), EventTicketsError::ListingIsPublic);
         require!(
             listing.seller != ctx.accounts.buyer.key(),
             EventTicketsError::SellerCannotBuy
@@ -119,20 +129,26 @@ pub fn handle_buy_ticket_resale<'info>(
             listing.payment_mint == ctx.accounts.payment_mint.key(),
             EventTicketsError::AssetMintMismatch
         );
+
+        // Verify the reveal matches the stored commit.
+        // Commit scheme: keccak256(price_le_bytes || 32-byte nonce).
+        let computed = keccak::hashv(&[&revealed_price.to_le_bytes(), &price_nonce]);
+        require!(
+            computed.to_bytes() == listing.price_commit,
+            EventTicketsError::PriceCommitMismatch
+        );
     }
 
-    let price = ctx.accounts.listing.price;
     let fee_bps = ctx.accounts.config.fee_bps as u64;
-    let fee = price
+    let fee = revealed_price
         .checked_mul(fee_bps)
         .and_then(|v| v.checked_div(BPS_DENOMINATOR))
         .ok_or(EventTicketsError::ArithmeticOverflow)?;
-    let seller_share = price
+    let seller_share = revealed_price
         .checked_sub(fee)
         .ok_or(EventTicketsError::ArithmeticOverflow)?;
     let decimals = ctx.accounts.payment_mint.decimals;
 
-    // 1a. Platform fee: buyer → treasury (if > 0).
     if fee > 0 {
         let cpi_accounts = TransferChecked {
             from: ctx.accounts.buyer_payment_account.to_account_info(),
@@ -147,7 +163,6 @@ pub fn handle_buy_ticket_resale<'info>(
         )?;
     }
 
-    // 1b. Seller share: buyer → seller ATA.
     {
         let cpi_accounts = TransferChecked {
             from: ctx.accounts.buyer_payment_account.to_account_info(),
@@ -162,7 +177,7 @@ pub fn handle_buy_ticket_resale<'info>(
         )?;
     }
 
-    // 2. Bubblegum transfer listing PDA → buyer. PDA signs.
+    // Bubblegum transfer: listing PDA → buyer, program-signed.
     let listing_key = ctx.accounts.listing.key();
     let seller_key = ctx.accounts.seller.key();
     let buyer_key = ctx.accounts.buyer.key();
@@ -182,9 +197,9 @@ pub fn handle_buy_ticket_resale<'info>(
 
     let mut accounts = vec![
         AccountMeta::new(ctx.accounts.tree_config.key(), false),
-        AccountMeta::new_readonly(listing_key, true), // leaf_owner = PDA, signer
-        AccountMeta::new_readonly(listing_key, true), // leaf_delegate = PDA, signer
-        AccountMeta::new_readonly(buyer_key, false), // new_leaf_owner = buyer
+        AccountMeta::new_readonly(listing_key, true),
+        AccountMeta::new_readonly(listing_key, true),
+        AccountMeta::new_readonly(buyer_key, false),
         AccountMeta::new(merkle_tree_key, false),
         AccountMeta::new_readonly(ctx.accounts.log_wrapper.key(), false),
         AccountMeta::new_readonly(ctx.accounts.compression_program.key(), false),
@@ -202,9 +217,9 @@ pub fn handle_buy_ticket_resale<'info>(
 
     let mut infos: Vec<AccountInfo<'info>> = vec![
         ctx.accounts.tree_config.to_account_info(),
-        ctx.accounts.listing.to_account_info(), // leaf_owner
-        ctx.accounts.listing.to_account_info(), // leaf_delegate
-        ctx.accounts.buyer.to_account_info(), // new_leaf_owner
+        ctx.accounts.listing.to_account_info(),
+        ctx.accounts.listing.to_account_info(),
+        ctx.accounts.buyer.to_account_info(),
         ctx.accounts.merkle_tree.to_account_info(),
         ctx.accounts.log_wrapper.to_account_info(),
         ctx.accounts.compression_program.to_account_info(),
@@ -229,9 +244,8 @@ pub fn handle_buy_ticket_resale<'info>(
         buyer: buyer_key,
         merkle_tree: merkle_tree_key,
         leaf_index,
-        price,
+        price: revealed_price,
         timestamp: now,
     });
-    // `close = seller` on the listing account refunds rent.
     Ok(())
 }

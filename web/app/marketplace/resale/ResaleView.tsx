@@ -8,10 +8,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { eventTicketsProgram } from "@/lib/eventTickets";
+import { USDC_UNIT } from "@/lib/constants";
 import {
+  buyTicketResalePrivateTx,
   buyTicketResaleTx,
   cancelTicketResaleTx,
   closeExpiredResaleTx,
+  decodePriceEnvelope,
   fetchAllActiveListings,
   OnChainResaleListing,
 } from "@/lib/ticketResale";
@@ -39,6 +42,7 @@ export function ResaleView() {
   const [state, setState] = useState<State>({ kind: "loading" });
   const [eventFilter, setEventFilter] = useState<string>("");
   const [busyListing, setBusyListing] = useState<string | null>(null);
+  const [privateBuyModal, setPrivateBuyModal] = useState<OnChainResaleListing | null>(null);
 
   const load = useCallback(async () => {
     setState({ kind: "loading" });
@@ -112,10 +116,10 @@ export function ResaleView() {
       window.alert("You are the seller of this listing.");
       return;
     }
-    // We need the assetId — derive from Helius getAssetsByGroup? Or just
-    // compute: Bubblegum asset_id = get_asset_id(merkleTree, nonce). The
-    // client-side hash formula matches on-chain:
-    //   Pubkey::find_program_address([b"asset", merkleTree, nonce], BUBBLEGUM).0
+    if (listing.isPrivate) {
+      setPrivateBuyModal(listing);
+      return;
+    }
     const assetId = await deriveCnftAssetId(
       new PublicKey(listing.merkleTree),
       BigInt(listing.nonce)
@@ -142,6 +146,41 @@ export function ResaleView() {
     } catch (err) {
       console.error(err);
       window.alert(err instanceof Error ? err.message : "Buy failed.");
+    } finally {
+      setBusyListing(null);
+    }
+  }
+
+  async function buyPrivate(listing: OnChainResaleListing, envelope: string) {
+    if (!publicKey) return;
+    const parsed = decodePriceEnvelope(envelope);
+    if (!parsed) {
+      window.alert("That doesn't look like a valid envelope.");
+      return;
+    }
+    const assetId = await deriveCnftAssetId(
+      new PublicKey(listing.merkleTree),
+      BigInt(listing.nonce)
+    );
+    setBusyListing(listing.address);
+    try {
+      const sig = await buyTicketResalePrivateTx({
+        connection,
+        wallet,
+        listing,
+        assetId,
+        priceBase: parsed.priceBase,
+        nonce: parsed.nonce,
+      });
+      const priceUsdc = Number(parsed.priceBase) / USDC_UNIT;
+      window.alert(
+        `Swap complete. Paid $${priceUsdc.toFixed(2)} USDC, cNFT is in your wallet. Tx: ${sig.slice(0, 12)}…`
+      );
+      setPrivateBuyModal(null);
+      await load();
+    } catch (err) {
+      console.error(err);
+      window.alert(err instanceof Error ? err.message : "Private buy failed.");
     } finally {
       setBusyListing(null);
     }
@@ -332,7 +371,191 @@ export function ResaleView() {
           )}
         </>
       )}
+      {privateBuyModal && (
+        <PrivateBuyModal
+          listing={privateBuyModal}
+          eventMeta={state.kind === "ready" ? state.events.get(privateBuyModal.event) : undefined}
+          busy={busyListing === privateBuyModal.address}
+          onCancel={() => {
+            if (busyListing === null) setPrivateBuyModal(null);
+          }}
+          onSubmit={(envelope) => void buyPrivate(privateBuyModal, envelope)}
+        />
+      )}
     </>
+  );
+}
+
+function PrivateBuyModal({
+  listing,
+  eventMeta,
+  busy,
+  onCancel,
+  onSubmit,
+}: {
+  listing: OnChainResaleListing;
+  eventMeta: { name: string; symbol: string } | undefined;
+  busy: boolean;
+  onCancel: () => void;
+  onSubmit: (envelope: string) => void;
+}) {
+  const [env, setEnv] = useState("");
+  const [parsed, setParsed] = useState<{ priceBase: bigint; nonce: Uint8Array } | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  function onEnvChange(v: string) {
+    setEnv(v);
+    setErr(null);
+    const p = decodePriceEnvelope(v.trim());
+    setParsed(p);
+  }
+
+  function handleSubmit() {
+    const trimmed = env.trim();
+    if (!trimmed) {
+      setErr("Paste the envelope first.");
+      return;
+    }
+    if (!parsed) {
+      setErr("Envelope doesn't decode — double-check with the seller.");
+      return;
+    }
+    onSubmit(trimmed);
+  }
+
+  const priceUsdc = parsed ? Number(parsed.priceBase) / USDC_UNIT : null;
+
+  return (
+    <div
+      role="dialog"
+      aria-modal
+      onClick={onCancel}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(17,24,39,0.55)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 150,
+        padding: "1rem",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "var(--shell-card, #fff)",
+          color: "var(--shell-fg, #111827)",
+          borderRadius: 14,
+          width: 540,
+          maxWidth: "100%",
+          padding: "1.2rem 1.4rem",
+          boxShadow: "0 18px 48px rgba(0,0,0,0.25)",
+          display: "flex",
+          flexDirection: "column",
+          gap: "0.75rem",
+        }}
+      >
+        <div>
+          <div style={{ fontSize: "1.05rem", fontWeight: 600 }}>
+            Buy {eventMeta ? `— ${eventMeta.name}` : "private listing"}
+          </div>
+          <div style={{ fontSize: "0.78rem", color: "#6b7280", marginTop: "0.2rem" }}>
+            This listing has a private price. Paste the envelope the seller
+            shared with you (looks like <code>AQAAAAAAAAAxMjM…</code>). The
+            price stays hidden until you sign the buy tx.
+          </div>
+        </div>
+
+        <label
+          style={{
+            fontSize: "0.72rem",
+            color: "#6b7280",
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: "0.04em",
+          }}
+        >
+          Envelope
+        </label>
+        <textarea
+          rows={3}
+          value={env}
+          onChange={(e) => onEnvChange(e.target.value)}
+          placeholder="Paste the whole envelope string here"
+          style={{
+            padding: "0.55rem 0.7rem",
+            borderRadius: 7,
+            border: "1px solid var(--shell-border, #eef0f3)",
+            background: "var(--shell-card, #fff)",
+            color: "var(--shell-fg, #111827)",
+            fontSize: "0.82rem",
+            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+            resize: "vertical",
+            minHeight: 64,
+          }}
+        />
+
+        {priceUsdc !== null ? (
+          <div
+            style={{
+              padding: "0.6rem 0.75rem",
+              borderRadius: 8,
+              background: "#eef2ff",
+              color: "#3730a3",
+              fontSize: "0.85rem",
+            }}
+          >
+            Envelope decodes to <strong>${priceUsdc.toFixed(2)} USDC</strong>.
+            On submit, the program verifies this matches the seller&apos;s
+            on-chain commit, then settles atomically.
+          </div>
+        ) : (
+          <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+            Waiting for a valid envelope…
+          </div>
+        )}
+
+        {err && <div style={{ fontSize: "0.78rem", color: "#b91c1c" }}>{err}</div>}
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.45rem" }}>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            style={{
+              padding: "0.5rem 1rem",
+              borderRadius: 7,
+              border: "1px solid var(--shell-border, #eef0f3)",
+              background: "var(--shell-card, #fff)",
+              color: "var(--shell-fg, #111827)",
+              fontSize: "0.82rem",
+              fontWeight: 600,
+              cursor: busy ? "not-allowed" : "pointer",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={busy || !parsed}
+            style={{
+              padding: "0.5rem 1.1rem",
+              borderRadius: 7,
+              border: "none",
+              background: busy || !parsed ? "#c7d2fe" : "#4f46e5",
+              color: "#fff",
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              cursor: busy || !parsed ? "not-allowed" : "pointer",
+            }}
+          >
+            {busy ? "Swapping…" : "Buy · atomic swap"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -465,10 +688,33 @@ function ListingCard({
           )}
         </div>
         <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: "1.2rem", fontWeight: 700 }}>${listing.priceUsdc.toFixed(2)}</div>
-          <div style={{ fontSize: "0.62rem", color: "#9ca3af" }}>USDC</div>
+          {listing.isPrivate ? (
+            <>
+              <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "#4f46e5" }}>Private</div>
+              <div style={{ fontSize: "0.62rem", color: "#9ca3af" }}>needs envelope</div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: "1.2rem", fontWeight: 700 }}>${listing.priceUsdc.toFixed(2)}</div>
+              <div style={{ fontSize: "0.62rem", color: "#9ca3af" }}>USDC</div>
+            </>
+          )}
         </div>
       </div>
+      {listing.isPrivate && (
+        <div
+          style={{
+            fontSize: "0.7rem",
+            color: "#3730a3",
+            background: "#eef2ff",
+            padding: "0.35rem 0.55rem",
+            borderRadius: 6,
+          }}
+        >
+          Seller committed to a private price. Only someone with the envelope
+          can buy.
+        </div>
+      )}
       <div style={{ fontSize: "0.7rem", color: "#6b7280", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
         <span>
           Seller <code style={{ color: "#9ca3af" }}>{listing.seller.slice(0, 6)}…{listing.seller.slice(-4)}</code>
@@ -520,7 +766,13 @@ function ListingCard({
               cursor: busy || youAreSeller ? "not-allowed" : "pointer",
             }}
           >
-            {busy ? "Swapping…" : youAreSeller ? "Your listing" : "Buy · atomic swap"}
+            {busy
+              ? "Swapping…"
+              : youAreSeller
+              ? "Your listing"
+              : listing.isPrivate
+              ? "Buy with envelope"
+              : "Buy · atomic swap"}
           </button>
         )}
       </div>
