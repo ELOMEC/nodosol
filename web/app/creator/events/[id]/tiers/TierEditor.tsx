@@ -30,6 +30,14 @@ import {
   VenueRegion,
   VenueTemplate,
 } from "@/lib/venue-templates";
+import {
+  getEventVenueMapping,
+  getVenueLayout,
+  layoutToTemplate,
+  listVenueLayoutsByCreator,
+  upsertEventVenueMapping,
+  VenueLayoutDoc,
+} from "@/lib/venueLayouts";
 
 type EventMeta = {
   address: string;
@@ -89,6 +97,8 @@ export function TierEditor({ address }: { address: string }) {
 
   const [state, setState] = useState<LoadState>({ kind: "loading" });
   const [templateId, setTemplateId] = useState<string>("");
+  const [customLayout, setCustomLayout] = useState<VenueLayoutDoc | null>(null);
+  const [customLayouts, setCustomLayouts] = useState<VenueLayoutDoc[]>([]);
   const [forms, setForms] = useState<Record<string, TierFormState>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [nextTierId, setNextTierId] = useState(1);
@@ -128,8 +138,39 @@ export function TierEditor({ address }: { address: string }) {
       };
       const tiers = await fetchTiersForEvent(program, eventPk);
       setState({ kind: "ready", event, tiers });
-      const inferred = inferTemplate(tiers);
-      if (inferred) setTemplateId(inferred);
+
+      // Prefer custom layout if one is linked; else infer from existing tiers
+      // or leave unselected.
+      let resolvedTemplate = "";
+      let resolvedCustom: VenueLayoutDoc | null = null;
+      try {
+        const mapping = await getEventVenueMapping(address);
+        if (mapping) {
+          const layout = await getVenueLayout(mapping.layoutId);
+          if (layout) {
+            resolvedCustom = layout;
+            resolvedTemplate = `custom:${layout.id}`;
+          }
+        }
+      } catch (err) {
+        console.warn("venue mapping lookup failed", err);
+      }
+      if (!resolvedTemplate) {
+        const inferred = inferTemplate(tiers);
+        if (inferred) resolvedTemplate = inferred;
+      }
+      setCustomLayout(resolvedCustom);
+      setTemplateId(resolvedTemplate);
+
+      if (publicKey) {
+        try {
+          const list = await listVenueLayoutsByCreator(publicKey.toBase58());
+          setCustomLayouts(list);
+        } catch (err) {
+          console.warn("custom layouts list failed", err);
+        }
+      }
+
       const maxTierId = tiers.reduce((m, t) => Math.max(m, t.tierId), 0);
       setNextTierId(maxTierId + 1);
     } catch (err) {
@@ -139,13 +180,41 @@ export function TierEditor({ address }: { address: string }) {
         message: err instanceof Error ? err.message : "Load failed",
       });
     }
-  }, [address, connection, wallet]);
+  }, [address, connection, wallet, publicKey]);
 
   useEffect(() => {
     if (connected) void load();
   }, [connected, load]);
 
-  const template = templateId ? getVenueTemplate(templateId) : null;
+  const template: VenueTemplate | null = templateId
+    ? templateId.startsWith("custom:") && customLayout
+      ? layoutToTemplate(customLayout)
+      : getVenueTemplate(templateId)
+    : null;
+
+  const pickTemplate = useCallback(
+    async (next: string) => {
+      setTemplateId(next);
+      if (!next.startsWith("custom:")) {
+        setCustomLayout(null);
+        return;
+      }
+      const id = next.slice("custom:".length);
+      const layout = customLayouts.find((l) => l.id === id) ?? (await getVenueLayout(id));
+      setCustomLayout(layout);
+      if (publicKey && layout) {
+        try {
+          await upsertEventVenueMapping(address, layout.id, publicKey.toBase58());
+        } catch (err) {
+          console.error("save mapping failed", err);
+          window.alert(
+            err instanceof Error ? err.message : "Could not save venue selection."
+          );
+        }
+      }
+    },
+    [address, customLayouts, publicKey]
+  );
 
   useEffect(() => {
     if (state.kind !== "ready" || !template) return;
@@ -356,11 +425,12 @@ export function TierEditor({ address }: { address: string }) {
         <>
           <TemplatePicker
             value={templateId}
-            onChange={setTemplateId}
-            disabled={tiers.length > 0 && !!inferTemplate(tiers)}
+            onChange={(next) => void pickTemplate(next)}
+            disabled={tiers.length > 0 && !templateId.startsWith("custom:")}
+            customLayouts={customLayouts}
             hint={
-              tiers.length > 0 && inferTemplate(tiers)
-                ? `Template is locked to "${templateId}" because tiers already exist for this event.`
+              tiers.length > 0 && !templateId.startsWith("custom:")
+                ? `Built-in template is locked because tiers already exist for this event. Custom layouts can still be switched.`
                 : undefined
             }
           />
@@ -463,18 +533,20 @@ function TemplatePicker({
   value,
   onChange,
   disabled,
+  customLayouts,
   hint,
 }: {
   value: string;
   onChange: (id: string) => void;
   disabled: boolean;
+  customLayouts: VenueLayoutDoc[];
   hint?: string;
 }) {
   return (
     <Card>
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
         <label style={{ fontSize: "0.82rem", color: "var(--shell-fg, #111827)", fontWeight: 600 }}>
-          Venue template
+          Venue
         </label>
         <select
           value={value}
@@ -489,11 +561,33 @@ function TemplatePicker({
             color: "var(--shell-fg, #111827)",
           }}
         >
-          <option value="">— pick a template —</option>
-          {Object.entries(VENUE_TEMPLATES).map(([id, tpl]) => (
-            <option key={id} value={id}>{tpl.name} ({tpl.regions.length} zones)</option>
-          ))}
+          <option value="">— pick a venue —</option>
+          <optgroup label="Built-in templates">
+            {Object.entries(VENUE_TEMPLATES).map(([id, tpl]) => (
+              <option key={id} value={id}>{tpl.name} ({tpl.regions.length} zones)</option>
+            ))}
+          </optgroup>
+          {customLayouts.length > 0 && (
+            <optgroup label="My custom layouts">
+              {customLayouts.map((l) => (
+                <option key={l.id} value={`custom:${l.id}`}>
+                  {l.name} ({l.regions.length} zones)
+                </option>
+              ))}
+            </optgroup>
+          )}
         </select>
+        <Link
+          href="/creator/venues/new"
+          style={{
+            fontSize: "0.78rem",
+            color: "#4f46e5",
+            textDecoration: "none",
+            fontWeight: 600,
+          }}
+        >
+          + Draw custom →
+        </Link>
         {hint && <span style={{ fontSize: "0.78rem", color: "#9ca3af" }}>{hint}</span>}
       </div>
     </Card>

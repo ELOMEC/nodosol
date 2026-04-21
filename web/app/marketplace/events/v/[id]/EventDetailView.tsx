@@ -35,6 +35,11 @@ import {
   VenueRegion,
   VenueTemplate,
 } from "@/lib/venue-templates";
+import {
+  getEventVenueMapping,
+  getVenueLayout,
+  layoutToTemplate,
+} from "@/lib/venueLayouts";
 
 type EventData = {
   address: string;
@@ -62,7 +67,7 @@ type EventData = {
 
 type State =
   | { kind: "loading" }
-  | { kind: "ready"; event: EventData; tiers: TicketTierDoc[] }
+  | { kind: "ready"; event: EventData; tiers: TicketTierDoc[]; customTemplate: VenueTemplate | null }
   | { kind: "error"; message: string };
 
 export function EventDetailView({ address }: { address: string }) {
@@ -138,6 +143,17 @@ export function EventDetailView({ address }: { address: string }) {
 
       const tiers = await fetchTiersForEvent(program, eventPk);
 
+      let customTemplate: VenueTemplate | null = null;
+      try {
+        const mapping = await getEventVenueMapping(address);
+        if (mapping) {
+          const layout = await getVenueLayout(mapping.layoutId);
+          if (layout) customTemplate = layoutToTemplate(layout);
+        }
+      } catch (err) {
+        console.warn("venue layout lookup failed", err);
+      }
+
       setState({
         kind: "ready",
         event: {
@@ -164,6 +180,7 @@ export function EventDetailView({ address }: { address: string }) {
           venueTemplate,
         },
         tiers,
+        customTemplate,
       });
     } catch (err) {
       console.error(err);
@@ -238,6 +255,7 @@ export function EventDetailView({ address }: { address: string }) {
 
   const template = useMemo<VenueTemplate | null>(() => {
     if (state.kind !== "ready") return null;
+    if (state.customTemplate) return state.customTemplate;
     const id = state.event.venueTemplate;
     return id ? getVenueTemplate(id) : null;
   }, [state]);
