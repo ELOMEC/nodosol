@@ -12,6 +12,7 @@
     "init-event-tickets": "tsx init-event-tickets.ts",
     "init-auctions": "tsx init-auctions.ts",
     "fund-user": "tsx fund-user.ts --",
+    "fund-user-ct": "tsx fund-user-ct.ts",
     "seed-demo": "tsx seed-demo-data.ts",
     "seed-plans": "tsx seed-demo-plans.ts",
     "seed-tiers": "tsx seed-event-tiers.ts",
