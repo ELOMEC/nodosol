@@ -14,6 +14,7 @@ rwa_mint = "HLCCfvp99Z1Rnix64mC6w6dYL9EkEjVmPCL7rr27evsU"
 marketplace = "69ZFM7nHUTXcHp8TZpRtX4qr3ERK2VGxRdqXvNtbfJkZ"
 otc_deals = "FmXBAWoSGanaFfP8p9gekgrFn7buEn1XUSFWebDr3Pwz"
 event_tickets = "FDUwvXRETURbe2JN2PJNCKt6RPAsSLeSi7A4pFMGmtrE"
+auctions = "6c95kxTWCXacsAev4xnvNbKnLYWFGPpJT5zwT4SnWh5v"
 
 [programs.devnet]
 tip_jar = "C2bM3p1Cco4bDj6gQe29k7UWcepxLCrVgiPPoidh549P"
@@ -24,6 +25,7 @@ rwa_mint = "HLCCfvp99Z1Rnix64mC6w6dYL9EkEjVmPCL7rr27evsU"
 marketplace = "69ZFM7nHUTXcHp8TZpRtX4qr3ERK2VGxRdqXvNtbfJkZ"
 otc_deals = "FmXBAWoSGanaFfP8p9gekgrFn7buEn1XUSFWebDr3Pwz"
 event_tickets = "FDUwvXRETURbe2JN2PJNCKt6RPAsSLeSi7A4pFMGmtrE"
+auctions = "6c95kxTWCXacsAev4xnvNbKnLYWFGPpJT5zwT4SnWh5v"
 
 [provider]
 cluster = "localnet"

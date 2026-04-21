@@ -1,0 +1,1432 @@
+{
+  "address": "6c95kxTWCXacsAev4xnvNbKnLYWFGPpJT5zwT4SnWh5v",
+  "metadata": {
+    "name": "auctions",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Nodosol sealed-bid auction primitive — commit/reveal bidding on USDC, reusable for tickets, RWA, and real-estate rentals"
+  },
+  "instructions": [
+    {
+      "name": "cancel_auction",
+      "discriminator": [
+        156,
+        43,
+        197,
+        110,
+        218,
+        105,
+        143,
+        182
+      ],
+      "accounts": [
+        {
+          "name": "seller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "auction",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "auction.seller",
+                "account": "Auction"
+              },
+              {
+                "kind": "account",
+                "path": "auction.auction_id",
+                "account": "Auction"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "auction"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment_token_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "commit_bid",
+      "discriminator": [
+        149,
+        237,
+        198,
+        113,
+        53,
+        66,
+        70,
+        76
+      ],
+      "accounts": [
+        {
+          "name": "bidder",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "auction",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "auction.seller",
+                "account": "Auction"
+              },
+              {
+                "kind": "account",
+                "path": "auction.auction_id",
+                "account": "Auction"
+              }
+            ]
+          }
+        },
+        {
+          "name": "bid",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  105,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "auction"
+              },
+              {
+                "kind": "account",
+                "path": "bidder"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment_mint"
+        },
+        {
+          "name": "bidder_payment_account",
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "auction"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment_token_program"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "commit",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "escrow",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "create_auction",
+      "discriminator": [
+        234,
+        6,
+        201,
+        246,
+        47,
+        219,
+        176,
+        107
+      ],
+      "accounts": [
+        {
+          "name": "seller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "auction",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "seller"
+              },
+              {
+                "kind": "arg",
+                "path": "auction_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment_mint"
+        },
+        {
+          "name": "vault",
+          "docs": [
+            "Vault ATA owned by the auction PDA — holds every bidder's",
+            "escrow until settle / refund. Created at auction init."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "auction"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment_token_program"
+        },
+        {
+          "name": "associated_token_program",
+          "address": "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "auction_id",
+          "type": "u64"
+        },
+        {
+          "name": "start_price",
+          "type": "u64"
+        },
+        {
+          "name": "min_deposit",
+          "type": "u64"
+        },
+        {
+          "name": "commit_ends_at",
+          "type": "i64"
+        },
+        {
+          "name": "reveal_ends_at",
+          "type": "i64"
+        },
+        {
+          "name": "memo",
+          "type": "string"
+        },
+        {
+          "name": "metadata_uri",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "initialize_auction_config",
+      "discriminator": [
+        94,
+        1,
+        96,
+        31,
+        46,
+        102,
+        88,
+        102
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment_mint",
+          "docs": [
+            "auction settlement — not read here beyond its key."
+          ]
+        },
+        {
+          "name": "treasury",
+          "docs": [
+            "The treasury ATA (Token-2022 / SPL Token account) that receives",
+            "platform fees on settlement. Enforced to match `payment_mint`."
+          ]
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "fee_bps",
+          "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "refund_bid",
+      "discriminator": [
+        171,
+        145,
+        79,
+        190,
+        16,
+        50,
+        10,
+        24
+      ],
+      "accounts": [
+        {
+          "name": "bidder",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "auction",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "auction.seller",
+                "account": "Auction"
+              },
+              {
+                "kind": "account",
+                "path": "auction.auction_id",
+                "account": "Auction"
+              }
+            ]
+          }
+        },
+        {
+          "name": "bid",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  105,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "auction"
+              },
+              {
+                "kind": "account",
+                "path": "bidder"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment_mint"
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "auction"
+              }
+            ]
+          }
+        },
+        {
+          "name": "bidder_payment_account",
+          "writable": true
+        },
+        {
+          "name": "payment_token_program"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "reveal_bid",
+      "discriminator": [
+        48,
+        73,
+        28,
+        255,
+        202,
+        126,
+        236,
+        196
+      ],
+      "accounts": [
+        {
+          "name": "bidder",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "auction",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "auction.seller",
+                "account": "Auction"
+              },
+              {
+                "kind": "account",
+                "path": "auction.auction_id",
+                "account": "Auction"
+              }
+            ]
+          }
+        },
+        {
+          "name": "bid",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  105,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "auction"
+              },
+              {
+                "kind": "account",
+                "path": "bidder"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "bid_amount",
+          "type": "u64"
+        },
+        {
+          "name": "nonce",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "settle_auction",
+      "discriminator": [
+        246,
+        196,
+        183,
+        98,
+        222,
+        139,
+        46,
+        133
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "docs": [
+            "Anyone may invoke settle — pays the compute for the seller."
+          ],
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "auction",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  97,
+                  117,
+                  99,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "auction.seller",
+                "account": "Auction"
+              },
+              {
+                "kind": "account",
+                "path": "auction.auction_id",
+                "account": "Auction"
+              }
+            ]
+          }
+        },
+        {
+          "name": "winner_bid",
+          "docs": [
+            "Optional winner bid account — pass when `auction.highest_bidder`",
+            "is non-default. The flip to `Won` prevents the winner from",
+            "later calling refund_bid and draining the seller payout back."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  105,
+                  100
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "auction"
+              },
+              {
+                "kind": "account",
+                "path": "auction.highest_bidder",
+                "account": "Auction"
+              }
+            ]
+          }
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment_mint"
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "auction"
+              }
+            ]
+          }
+        },
+        {
+          "name": "seller_payment_account",
+          "docs": [
+            "Seller's payment account — receives winning bid minus fee."
+          ],
+          "writable": true
+        },
+        {
+          "name": "seller"
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "payment_token_program"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Auction",
+      "discriminator": [
+        218,
+        94,
+        247,
+        242,
+        126,
+        233,
+        131,
+        81
+      ]
+    },
+    {
+      "name": "AuctionConfig",
+      "discriminator": [
+        195,
+        54,
+        8,
+        51,
+        28,
+        231,
+        33,
+        142
+      ]
+    },
+    {
+      "name": "SealedBid",
+      "discriminator": [
+        199,
+        9,
+        212,
+        151,
+        48,
+        136,
+        163,
+        226
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "AuctionCancelled",
+      "discriminator": [
+        22,
+        32,
+        51,
+        83,
+        215,
+        194,
+        171,
+        209
+      ]
+    },
+    {
+      "name": "AuctionConfigInitialized",
+      "discriminator": [
+        101,
+        7,
+        118,
+        97,
+        180,
+        39,
+        148,
+        141
+      ]
+    },
+    {
+      "name": "AuctionCreated",
+      "discriminator": [
+        133,
+        190,
+        194,
+        65,
+        172,
+        0,
+        70,
+        178
+      ]
+    },
+    {
+      "name": "AuctionSettled",
+      "discriminator": [
+        61,
+        151,
+        131,
+        170,
+        95,
+        203,
+        219,
+        147
+      ]
+    },
+    {
+      "name": "BidCommitted",
+      "discriminator": [
+        81,
+        13,
+        193,
+        139,
+        0,
+        168,
+        82,
+        55
+      ]
+    },
+    {
+      "name": "BidRefunded",
+      "discriminator": [
+        197,
+        100,
+        31,
+        186,
+        67,
+        28,
+        46,
+        103
+      ]
+    },
+    {
+      "name": "BidRevealed",
+      "discriminator": [
+        227,
+        144,
+        125,
+        229,
+        28,
+        109,
+        18,
+        209
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "Only the config authority may perform this action"
+    },
+    {
+      "code": 6001,
+      "name": "FeeBpsTooHigh",
+      "msg": "Fee basis points exceed the maximum allowed"
+    },
+    {
+      "code": 6002,
+      "name": "TreasuryMismatch",
+      "msg": "Treasury account mismatch"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidCommitDeadline",
+      "msg": "Commit deadline must be in the future"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidRevealDeadline",
+      "msg": "Reveal deadline must be after the commit deadline"
+    },
+    {
+      "code": 6005,
+      "name": "InvalidMinDeposit",
+      "msg": "Minimum deposit must be greater than zero"
+    },
+    {
+      "code": 6006,
+      "name": "NotCommitPhase",
+      "msg": "Auction is not in the commit phase"
+    },
+    {
+      "code": 6007,
+      "name": "NotRevealPhase",
+      "msg": "Auction is not in the reveal phase"
+    },
+    {
+      "code": 6008,
+      "name": "NotSettlePhase",
+      "msg": "Auction reveal phase has not ended yet"
+    },
+    {
+      "code": 6009,
+      "name": "AuctionClosed",
+      "msg": "Auction is already settled or cancelled"
+    },
+    {
+      "code": 6010,
+      "name": "SellerCannotBid",
+      "msg": "Seller cannot bid on their own auction"
+    },
+    {
+      "code": 6011,
+      "name": "DepositBelowMinimum",
+      "msg": "Deposit is below the auction minimum"
+    },
+    {
+      "code": 6012,
+      "name": "BidExceedsEscrow",
+      "msg": "Revealed bid exceeds the escrow deposited at commit"
+    },
+    {
+      "code": 6013,
+      "name": "BidBelowStartPrice",
+      "msg": "Revealed bid is below the auction start price"
+    },
+    {
+      "code": 6014,
+      "name": "BidCommitMismatch",
+      "msg": "Revealed bid does not match the stored commit"
+    },
+    {
+      "code": 6015,
+      "name": "InvalidBidState",
+      "msg": "Bid is not in the expected state for this action"
+    },
+    {
+      "code": 6016,
+      "name": "NotBidder",
+      "msg": "Only the original bidder may refund this escrow"
+    },
+    {
+      "code": 6017,
+      "name": "WinnerCannotRefund",
+      "msg": "Winning bidder cannot refund — they received the asset"
+    },
+    {
+      "code": 6018,
+      "name": "HasBids",
+      "msg": "Cannot cancel an auction that already has committed bids"
+    },
+    {
+      "code": 6019,
+      "name": "ArithmeticOverflow",
+      "msg": "Arithmetic overflow"
+    }
+  ],
+  "types": [
+    {
+      "name": "Auction",
+      "docs": [
+        "A sealed-bid auction. The \"asset\" is described off-chain in `memo`",
+        "(short) and `metadata_uri` (rich JSON). This keeps the primitive",
+        "generic — the same program runs a ticket auction, an RWA token",
+        "auction, or a real-estate rental bid, differing only in metadata.",
+        "",
+        "Settlement is USDC-in-USDC-out; if the seller needs to transfer a",
+        "physical or on-chain asset to the winner, that is handled either",
+        "via a separate CPI (future work: cNFT escrow variant) or off-chain.",
+        "",
+        "PDA seeds: `[b\"auction\", seller, auction_id_le]`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "auction_id",
+            "type": "u64"
+          },
+          {
+            "name": "payment_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "start_price",
+            "type": "u64"
+          },
+          {
+            "name": "min_deposit",
+            "type": "u64"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "commit_ends_at",
+            "type": "i64"
+          },
+          {
+            "name": "reveal_ends_at",
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "AuctionStatus"
+              }
+            }
+          },
+          {
+            "name": "bid_count",
+            "docs": [
+              "Total SealedBid accounts created under this auction."
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "revealed_count",
+            "docs": [
+              "Number of bids that progressed to Revealed status."
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "highest_bid",
+            "docs": [
+              "Highest revealed bid so far. Zero until the first reveal."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "highest_bidder",
+            "docs": [
+              "Bidder who posted the highest revealed bid. Default pubkey",
+              "when no bids have been revealed yet."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "settled_at",
+            "type": "i64"
+          },
+          {
+            "name": "memo",
+            "type": "string"
+          },
+          {
+            "name": "metadata_uri",
+            "type": "string"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "vault_bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuctionCancelled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "auction",
+            "type": "pubkey"
+          },
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuctionConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                64
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuctionConfigInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "treasury",
+            "type": "pubkey"
+          },
+          {
+            "name": "fee_bps",
+            "type": "u16"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuctionCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "auction",
+            "type": "pubkey"
+          },
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "auction_id",
+            "type": "u64"
+          },
+          {
+            "name": "start_price",
+            "type": "u64"
+          },
+          {
+            "name": "min_deposit",
+            "type": "u64"
+          },
+          {
+            "name": "commit_ends_at",
+            "type": "i64"
+          },
+          {
+            "name": "reveal_ends_at",
+            "type": "i64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuctionSettled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "auction",
+            "type": "pubkey"
+          },
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "winner",
+            "type": "pubkey"
+          },
+          {
+            "name": "winning_bid",
+            "type": "u64"
+          },
+          {
+            "name": "seller_share",
+            "type": "u64"
+          },
+          {
+            "name": "fee",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AuctionStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "CommitPhase"
+          },
+          {
+            "name": "RevealPhase"
+          },
+          {
+            "name": "Settled"
+          },
+          {
+            "name": "Cancelled"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BidCommitted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "auction",
+            "type": "pubkey"
+          },
+          {
+            "name": "bidder",
+            "type": "pubkey"
+          },
+          {
+            "name": "escrow",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BidRefunded",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "auction",
+            "type": "pubkey"
+          },
+          {
+            "name": "bidder",
+            "type": "pubkey"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BidRevealed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "auction",
+            "type": "pubkey"
+          },
+          {
+            "name": "bidder",
+            "type": "pubkey"
+          },
+          {
+            "name": "bid",
+            "type": "u64"
+          },
+          {
+            "name": "is_new_highest",
+            "type": "bool"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BidStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Committed"
+          },
+          {
+            "name": "Revealed"
+          },
+          {
+            "name": "Refunded"
+          },
+          {
+            "name": "Won"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SealedBid",
+      "docs": [
+        "Per-bidder sealed-bid account for an auction. At commit time the",
+        "bidder escrows `escrow` USDC and stores `commit = keccak256(bid || nonce)`.",
+        "Revealing unlocks the bid value on-chain. Losers claim their escrow",
+        "back via refund_bid; the winner's escrow is consumed by settle.",
+        "",
+        "PDA seeds: `[b\"bid\", auction, bidder]` — enforces one active bid",
+        "per (auction, bidder) pair."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "auction",
+            "type": "pubkey"
+          },
+          {
+            "name": "bidder",
+            "type": "pubkey"
+          },
+          {
+            "name": "commit",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "escrow",
+            "type": "u64"
+          },
+          {
+            "name": "revealed_bid",
+            "type": "u64"
+          },
+          {
+            "name": "committed_at",
+            "type": "i64"
+          },
+          {
+            "name": "revealed_at",
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "BidStatus"
+              }
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
