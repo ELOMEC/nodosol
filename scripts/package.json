@@ -10,6 +10,7 @@
     "init-marketplace": "tsx init-marketplace.ts",
     "init-otc": "tsx init-otc.ts",
     "init-event-tickets": "tsx init-event-tickets.ts",
+    "init-auctions": "tsx init-auctions.ts",
     "fund-user": "tsx fund-user.ts --",
     "seed-demo": "tsx seed-demo-data.ts",
     "seed-plans": "tsx seed-demo-plans.ts",
