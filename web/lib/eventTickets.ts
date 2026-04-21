@@ -31,6 +31,7 @@ export const MERKLE_TREE_ACCOUNT_SIZE = 31_800;
 const CONFIG_SEED = Buffer.from("config");
 const EVENT_SEED = Buffer.from("event");
 const VAULT_SEED = Buffer.from("vault");
+const TIER_SEED = Buffer.from("tier");
 
 export function eventTicketsConfigPda(): [PublicKey, number] {
   return PublicKey.findProgramAddressSync([CONFIG_SEED], EVENT_TICKETS_PROGRAM_ID);
@@ -106,6 +107,86 @@ export async function fetchEventTicketsConfig(
  * The caller must sign with `merkleTree` (the keypair owning this address) so
  * the lamports transfer + allocation goes through.
  */
+export function tierPda(event: PublicKey, tierId: number): [PublicKey, number] {
+  const idBuf = Buffer.alloc(2);
+  idBuf.writeUInt16LE(tierId);
+  return PublicKey.findProgramAddressSync(
+    [TIER_SEED, event.toBuffer(), idBuf],
+    EVENT_TICKETS_PROGRAM_ID
+  );
+}
+
+export type TierStatusKey = "active" | "paused" | "closed";
+
+export function decodeTierStatus(raw: Record<string, unknown>): TierStatusKey {
+  if ("active" in raw) return "active";
+  if ("paused" in raw) return "paused";
+  if ("closed" in raw) return "closed";
+  return "active";
+}
+
+export type TicketTierDoc = {
+  address: string;
+  event: string;
+  tierId: number;
+  name: string;
+  sectionCode: string;
+  price: number; // in payment-mint base units — caller divides by USDC_UNIT
+  capacity: number;
+  sold: number;
+  colorHex: string; // "#RRGGBB"
+  status: TierStatusKey;
+  createdAt: number;
+  updatedAt: number;
+};
+
+/// Fetch all TicketTier accounts for an event — memcmp on `event` pubkey at
+/// offset 8 (first field after Anchor discriminator).
+export async function fetchTiersForEvent(
+  program: Program,
+  event: PublicKey
+): Promise<TicketTierDoc[]> {
+  const api = (program.account as Record<string, {
+    all: (
+      filters: unknown[]
+    ) => Promise<Array<{
+      publicKey: PublicKey;
+      account: {
+        event: PublicKey;
+        tierId: number;
+        price: import("@coral-xyz/anchor").BN;
+        capacity: number;
+        sold: number;
+        colorHex: number[] | Uint8Array;
+        status: Record<string, unknown>;
+        name: string;
+        sectionCode: string;
+        createdAt: import("@coral-xyz/anchor").BN;
+        updatedAt: import("@coral-xyz/anchor").BN;
+      };
+    }>>;
+  }>).ticketTier;
+  const items = await api.all([
+    { memcmp: { offset: 8, bytes: event.toBase58() } },
+  ]);
+  return items
+    .map(({ publicKey, account }) => ({
+      address: publicKey.toBase58(),
+      event: account.event.toBase58(),
+      tierId: account.tierId,
+      name: account.name,
+      sectionCode: account.sectionCode,
+      price: Number(account.price.toString()),
+      capacity: account.capacity,
+      sold: account.sold,
+      colorHex: "#" + Buffer.from(account.colorHex).toString("utf8"),
+      status: decodeTierStatus(account.status),
+      createdAt: account.createdAt.toNumber(),
+      updatedAt: account.updatedAt.toNumber(),
+    }))
+    .sort((a, b) => a.tierId - b.tierId);
+}
+
 export function buildCreateMerkleTreeAccountIx(
   payer: PublicKey,
   merkleTree: PublicKey,

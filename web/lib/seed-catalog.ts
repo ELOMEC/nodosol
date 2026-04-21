@@ -11,6 +11,8 @@ export type SeedMetadata = {
   symbol: string;
   description: string;
   image: string;
+  /** Optional venue template id for events — matches VENUE_TEMPLATES in venue-templates.ts. */
+  venueTemplate?: "arena-circle" | "open-air" | "theatre" | "conference";
 };
 
 export const SEED_METADATA: Record<string, SeedMetadata> = {
@@ -153,59 +155,69 @@ export const SEED_METADATA: Record<string, SeedMetadata> = {
     symbol: "EXT",
     description: "Four-day flagship festival at Petrovaradin Fortress, Novi Sad.",
     image: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=900&q=80",
+    venueTemplate: "open-air",
   },
   "event-sea-dance-2026": {
     name: "Sea Dance Festival 2026",
     symbol: "SDC",
     description: "Beachfront electronic music festival at Buljarica Bay.",
     image: "https://images.unsplash.com/photo-1506157786151-b8491531f063?w=900&q=80",
+    venueTemplate: "open-air",
   },
   "event-philharmonic-spring": {
     name: "Philharmonic Spring Series",
     symbol: "PSS",
     description: "Five-concert spring series at Kolarac Hall.",
     image: "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=900&q=80",
+    venueTemplate: "theatre",
   },
   "event-basketball-final-four": {
     name: "Basketball Cup — Final Four",
     symbol: "B4F",
     description: "ABA League Final Four at Štark Arena.",
     image: "https://images.unsplash.com/photo-1546519638-68e109498ffc?w=900&q=80",
+    venueTemplate: "arena-circle",
   },
   "event-volleyball-grand-prix": {
     name: "Volleyball Grand Prix",
     symbol: "VGP",
     description: "International women's volleyball Grand Prix.",
     image: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=900&q=80",
+    venueTemplate: "arena-circle",
   },
   "event-handball-cup-finale": {
     name: "Handball Cup Finale",
     symbol: "HCF",
     description: "ARKUS Handball Cup final weekend.",
     image: "https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?w=900&q=80",
+    venueTemplate: "arena-circle",
   },
   "event-theatre-premiere-night": {
     name: "Drama Theatre Premiere Night",
     symbol: "DTH",
     description: "Yugoslav Drama Theatre season opener.",
     image: "https://images.unsplash.com/photo-1503095396549-807759245b35?w=900&q=80",
+    venueTemplate: "theatre",
   },
   "event-tech-conference-bg": {
     name: "Belgrade Tech Conference 2026",
     symbol: "BTC",
     description: "Two-day developer + founder conference at Sava Centar.",
     image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=900&q=80",
+    venueTemplate: "conference",
   },
   "event-wine-fair-fruska": {
     name: "Fruška Gora Wine Fair",
     symbol: "FWF",
     description: "Annual Fruška Gora wine fair with 40 wineries.",
     image: "https://images.unsplash.com/photo-1506377247377-2a5b3b417ebb?w=900&q=80",
+    venueTemplate: "conference",
   },
   "event-exhibition-modern-art": {
     name: "Museum of Contemporary Art — Spring Exhibit",
     symbol: "MCA",
     description: "90-day spring exhibition at MoCA Belgrade.",
     image: "https://images.unsplash.com/photo-1577720580479-7d839d829c73?w=900&q=80",
+    venueTemplate: "theatre",
   },
 };

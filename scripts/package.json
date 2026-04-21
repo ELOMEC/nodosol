@@ -12,7 +12,8 @@
     "init-event-tickets": "tsx init-event-tickets.ts",
     "fund-user": "tsx fund-user.ts --",
     "seed-demo": "tsx seed-demo-data.ts",
-    "seed-plans": "tsx seed-demo-plans.ts"
+    "seed-plans": "tsx seed-demo-plans.ts",
+    "seed-tiers": "tsx seed-event-tiers.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
