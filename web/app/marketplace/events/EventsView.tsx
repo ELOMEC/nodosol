@@ -52,6 +52,7 @@ type EventRow = {
   name: string;
   symbol: string;
   metadataUri: string;
+  imageUrl: string | null;
 };
 
 type FetchState =
@@ -130,6 +131,30 @@ export function EventsView() {
         return;
       }
 
+      const uniqueUris = Array.from(
+        new Set(
+          items
+            .map((x) => x.account.metadataUri)
+            .filter((u): u is string => typeof u === "string" && u.length > 0)
+        )
+      );
+      const imageByUri = new Map<string, string>();
+      await Promise.all(
+        uniqueUris.map(async (uri) => {
+          try {
+            const httpUri = uri.startsWith("ipfs://")
+              ? uri.replace(/^ipfs:\/\//, "https://ipfs.io/ipfs/")
+              : uri;
+            const resp = await fetch(httpUri, { cache: "force-cache" });
+            if (!resp.ok) return;
+            const json = (await resp.json()) as { image?: string };
+            if (json.image) imageByUri.set(uri, json.image);
+          } catch {
+            // ignore
+          }
+        })
+      );
+
       const rows: EventRow[] = items.map(({ publicKey: addr, account }) => ({
         address: addr.toBase58(),
         creator: account.creator.toBase58(),
@@ -149,6 +174,7 @@ export function EventsView() {
         name: account.name,
         symbol: account.symbol,
         metadataUri: account.metadataUri,
+        imageUrl: account.metadataUri ? imageByUri.get(account.metadataUri) ?? null : null,
       }));
 
       const mine = publicKey
@@ -581,8 +607,10 @@ function PublicEventCard({
     >
       <div
         style={{
-          background: "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)",
-          height: 100,
+          background: event.imageUrl
+            ? `center / cover no-repeat url(${event.imageUrl})`
+            : "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)",
+          height: 140,
           position: "relative",
         }}
       >

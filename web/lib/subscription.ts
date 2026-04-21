@@ -81,7 +81,7 @@ export async function fetchPlansByCreator(
         createdAt: BN;
       };
     }>>;
-  }>).plan;
+  }>).subscriptionPlan;
   // creator at offset 8 (first field after discriminator).
   const items = await api.all([
     { memcmp: { offset: 8, bytes: creator.toBase58() } },
