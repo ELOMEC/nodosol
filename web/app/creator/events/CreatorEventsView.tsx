@@ -114,7 +114,7 @@ export function CreatorEventsView() {
           </p>
         </div>
         <Link
-          href="/marketplace/events"
+          href="/creator/events/new"
           style={{
             background: "#4f46e5",
             color: "#fff",
@@ -157,7 +157,7 @@ export function CreatorEventsView() {
                 Create your first event on the marketplace, then come back here to set up tiers.
               </div>
               <Link
-                href="/marketplace/events"
+                href="/creator/events/new"
                 style={{
                   background: "#4f46e5",
                   color: "#fff",
