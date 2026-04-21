@@ -13,6 +13,7 @@ import {
   insertCheckIn,
   listCheckInsForEvent,
 } from "@/lib/checkIns";
+import { parseCheckInCode, verifyCheckInSignature } from "@/lib/checkInSign";
 import {
   addScanner,
   EventScannerDoc,
@@ -42,6 +43,7 @@ type ScanResult = {
   rowLabel: string | null;
   seatNumber: number | null;
   ownerPubkey: string | null;
+  verified: boolean;
   existingCheckIn?: CheckInDoc;
 };
 
@@ -118,20 +120,62 @@ export function ScanView({ address }: { address: string }) {
   );
 
   async function handleScan(raw: string) {
-    const assetId = extractAssetId(raw);
-    if (!assetId) {
-      setLast({
-        kind: "error",
-        assetId: raw.trim(),
-        message: "That doesn't look like a cNFT asset ID or ticket URL.",
-        assetName: null,
-        rowLabel: null,
-        seatNumber: null,
-        ownerPubkey: null,
-      });
-      return;
-    }
     if (!event || !publicKey) return;
+
+    // Detect a signed check-in code first — it's the preferred (verified)
+    // path. Falls back to raw asset ID / ticket URL paste for manual use.
+    const signed = parseCheckInCode(raw);
+    let assetId: string | null = null;
+    let verified = false;
+    let expectedSigner: string | null = null;
+
+    if (signed) {
+      if (signed.event !== event.address) {
+        setLast({
+          kind: "error",
+          assetId: signed.asset,
+          message: "Signed code is for a different event.",
+          assetName: null,
+          rowLabel: null,
+          seatNumber: null,
+          ownerPubkey: signed.signer,
+          verified: false,
+        });
+        return;
+      }
+      const check = verifyCheckInSignature(signed);
+      if (!check.ok) {
+        setLast({
+          kind: "error",
+          assetId: signed.asset,
+          message: check.reason ?? "Signature verification failed.",
+          assetName: null,
+          rowLabel: null,
+          seatNumber: null,
+          ownerPubkey: signed.signer,
+          verified: false,
+        });
+        return;
+      }
+      assetId = signed.asset;
+      expectedSigner = signed.signer;
+      verified = true;
+    } else {
+      assetId = extractAssetId(raw);
+      if (!assetId) {
+        setLast({
+          kind: "error",
+          assetId: raw.trim(),
+          message: "Not a check-in code, asset ID, or ticket URL.",
+          assetName: null,
+          rowLabel: null,
+          seatNumber: null,
+          ownerPubkey: null,
+          verified: false,
+        });
+        return;
+      }
+    }
 
     setBusy(true);
     setLast(null);
@@ -146,6 +190,7 @@ export function ScanView({ address }: { address: string }) {
           rowLabel: null,
           seatNumber: null,
           ownerPubkey: null,
+          verified: false,
         });
         return;
       }
@@ -159,6 +204,7 @@ export function ScanView({ address }: { address: string }) {
           rowLabel: null,
           seatNumber: null,
           ownerPubkey: asset.ownership?.owner ?? null,
+          verified: false,
         });
         return;
       }
@@ -171,6 +217,7 @@ export function ScanView({ address }: { address: string }) {
           rowLabel: null,
           seatNumber: null,
           ownerPubkey: asset.ownership?.owner ?? null,
+          verified: false,
         });
         return;
       }
@@ -179,6 +226,23 @@ export function ScanView({ address }: { address: string }) {
       const seat = assetName ? parseSeatFromName(assetName) : null;
       const tierLabel = assetName ? parseTierLabelFromName(assetName) : null;
       const ownerPubkey = asset.ownership?.owner ?? null;
+
+      // If the paste was a signed code, the signer must match the CURRENT
+      // on-chain holder — otherwise the attendee could present a stale
+      // code after transferring the ticket to someone else.
+      if (verified && expectedSigner && ownerPubkey && expectedSigner !== ownerPubkey) {
+        setLast({
+          kind: "error",
+          assetId,
+          message: `Signed code was issued by a different wallet than the current holder (signer ${expectedSigner.slice(0, 6)}… vs holder ${ownerPubkey.slice(0, 6)}…). Ask attendee to re-sign.`,
+          assetName,
+          rowLabel: seat?.rowLabel ?? null,
+          seatNumber: seat?.seatNumber ?? null,
+          ownerPubkey,
+          verified: false,
+        });
+        return;
+      }
 
       // Best-effort tier_id lookup — matches tier.name or section_code.
       let tierId: number | null = null;
@@ -225,11 +289,12 @@ export function ScanView({ address }: { address: string }) {
         setLast({
           kind: "success",
           assetId,
-          message: "Admitted.",
+          message: verified ? "Admitted — signed code verified." : "Admitted. ⚠ Verify holder in person (unsigned scan).",
           assetName,
           rowLabel: seat?.rowLabel ?? null,
           seatNumber: seat?.seatNumber ?? null,
           ownerPubkey,
+          verified,
         });
         setScans((prev) => [checkIn, ...prev]);
       } catch (err) {
@@ -242,6 +307,7 @@ export function ScanView({ address }: { address: string }) {
             rowLabel: seat?.rowLabel ?? null,
             seatNumber: seat?.seatNumber ?? null,
             ownerPubkey,
+            verified,
           });
         } else {
           throw err;
@@ -253,12 +319,13 @@ export function ScanView({ address }: { address: string }) {
       console.error(err);
       setLast({
         kind: "error",
-        assetId,
+        assetId: assetId ?? raw,
         message: err instanceof Error ? err.message : "Scan failed.",
         assetName: null,
         rowLabel: null,
         seatNumber: null,
         ownerPubkey: null,
+        verified: false,
       });
     } finally {
       setBusy(false);
@@ -334,7 +401,7 @@ export function ScanView({ address }: { address: string }) {
             autoFocus
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Paste asset ID or ticket URL and press Enter"
+            placeholder="Paste signed check-in code (preferred), asset ID, or ticket URL"
             style={{
               flex: 1,
               padding: "0.65rem 0.85rem",
@@ -363,9 +430,11 @@ export function ScanView({ address }: { address: string }) {
           </button>
         </form>
         <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>
-          Paste the ticket&apos;s cNFT asset ID, or paste the URL you get from{" "}
-          <code>/marketplace/tickets/&lt;id&gt;</code>. The scanner verifies the
-          ticket belongs to this event and records the check-in.
+          Preferred: attendee generates a signed <strong>check-in code</strong> on{" "}
+          <code>/marketplace/tickets/&lt;id&gt;</code> and shares the code — the
+          scanner cryptographically verifies the holder signed it and that the
+          signer is the current on-chain owner. Plain asset IDs / ticket URLs
+          still work as a fallback but are recorded as unverified.
         </div>
         {last && <ResultBanner result={last} />}
       </Card>
@@ -606,8 +675,22 @@ function ResultBanner({ result }: { result: ScanResult }) {
         padding: "0.85rem 1rem",
       }}
     >
-      <div style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "0.3rem", textTransform: "uppercase", letterSpacing: "0.04em" }}>
-        {result.kind === "success" ? "✓ Admit" : result.kind === "duplicate" ? "⚠ Already scanned" : "× Reject"}
+      <div style={{ fontSize: "1rem", fontWeight: 700, marginBottom: "0.3rem", textTransform: "uppercase", letterSpacing: "0.04em", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+        <span>{result.kind === "success" ? "✓ Admit" : result.kind === "duplicate" ? "⚠ Already scanned" : "× Reject"}</span>
+        {result.verified && (
+          <span
+            style={{
+              fontSize: "0.62rem",
+              background: "#059669",
+              color: "#fff",
+              padding: "0.1rem 0.4rem",
+              borderRadius: 4,
+              letterSpacing: "0.04em",
+            }}
+          >
+            VERIFIED
+          </span>
+        )}
       </div>
       <div style={{ fontSize: "0.85rem", marginBottom: result.assetName ? "0.4rem" : 0 }}>
         {result.message}

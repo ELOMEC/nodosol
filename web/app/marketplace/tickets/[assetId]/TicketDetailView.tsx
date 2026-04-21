@@ -1,6 +1,7 @@
 "use client";
 
 import { AnchorProvider, BN, Wallet } from "@coral-xyz/anchor";
+import bs58 from "bs58";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { PublicKey } from "@solana/web3.js";
@@ -8,6 +9,13 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { USDC_UNIT } from "@/lib/constants";
+import {
+  buildCheckInMessage,
+  CHECK_IN_CODE_VERSION,
+  CHECK_IN_MAX_AGE_MS,
+  formatCheckInCode,
+  SignedCheckIn,
+} from "@/lib/checkInSign";
 import { eventTicketsProgram, fetchTiersForEvent, TicketTierDoc } from "@/lib/eventTickets";
 import { getAsset, HeliusAsset } from "@/lib/helius";
 import { toHttp } from "@/lib/metadataImages";
@@ -50,6 +58,22 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
 
   const [state, setState] = useState<State>({ kind: "loading" });
   const [copied, setCopied] = useState(false);
+  const [checkInCode, setCheckInCode] = useState<{
+    signed: SignedCheckIn;
+    code: string;
+    generatedAt: number;
+  } | null>(null);
+  const [codeCopied, setCodeCopied] = useState(false);
+  const [signing, setSigning] = useState(false);
+  const [signError, setSignError] = useState<string | null>(null);
+
+  // Countdown tick so the expiry label updates live.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!checkInCode) return;
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [checkInCode]);
 
   const load = useCallback(async () => {
     setState({ kind: "loading" });
@@ -169,6 +193,50 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
       await navigator.clipboard.writeText(assetId);
       setCopied(true);
       setTimeout(() => setCopied(false), 1600);
+    } catch {
+      // ignore
+    }
+  }
+
+  async function generateCheckInCode() {
+    if (state.kind !== "ready" || !publicKey || !state.loaded.event) return;
+    if (!wallet.signMessage) {
+      setSignError("This wallet adapter does not support signing messages.");
+      return;
+    }
+    setSigning(true);
+    setSignError(null);
+    try {
+      const payload = {
+        version: CHECK_IN_CODE_VERSION,
+        asset: assetId,
+        event: state.loaded.event.address,
+        ts: Date.now(),
+        signer: publicKey.toBase58(),
+      };
+      const message = new TextEncoder().encode(buildCheckInMessage(payload));
+      const sig = await wallet.signMessage(message);
+      const signed: SignedCheckIn = { ...payload, sig: bs58.encode(sig) };
+      setCheckInCode({
+        signed,
+        code: formatCheckInCode(signed),
+        generatedAt: Date.now(),
+      });
+      setCodeCopied(false);
+    } catch (err) {
+      console.error(err);
+      setSignError(err instanceof Error ? err.message : "Sign failed.");
+    } finally {
+      setSigning(false);
+    }
+  }
+
+  async function copyCheckInCode() {
+    if (!checkInCode) return;
+    try {
+      await navigator.clipboard.writeText(checkInCode.code);
+      setCodeCopied(true);
+      setTimeout(() => setCodeCopied(false), 1600);
     } catch {
       // ignore
     }
@@ -312,6 +380,61 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
             />
           )}
 
+          {ownerMatch && event && (
+            <div
+              style={{
+                border: "1px solid #c7d2fe",
+                background: "#eef2ff",
+                borderRadius: 10,
+                padding: "0.85rem 1rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.55rem",
+              }}
+            >
+              <div style={{ fontSize: "0.72rem", color: "#4338ca", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Check-in code
+              </div>
+              <div style={{ fontSize: "0.78rem", color: "#3730a3" }}>
+                Door staff will ask for a signed code at the gate. Generate it on
+                this device — it stays valid for 5 minutes, then regenerate if needed.
+              </div>
+              {checkInCode ? (
+                <CheckInCodeDisplay
+                  code={checkInCode.code}
+                  generatedAt={checkInCode.generatedAt}
+                  now={now}
+                  copied={codeCopied}
+                  onCopy={() => void copyCheckInCode()}
+                  onRegenerate={() => void generateCheckInCode()}
+                  regenerating={signing}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void generateCheckInCode()}
+                  disabled={signing}
+                  style={{
+                    padding: "0.55rem 1.1rem",
+                    borderRadius: 8,
+                    border: "none",
+                    background: signing ? "#c7d2fe" : "#4f46e5",
+                    color: "#fff",
+                    fontSize: "0.85rem",
+                    fontWeight: 600,
+                    cursor: signing ? "not-allowed" : "pointer",
+                    alignSelf: "flex-start",
+                  }}
+                >
+                  {signing ? "Signing…" : "Generate check-in code"}
+                </button>
+              )}
+              {signError && (
+                <div style={{ fontSize: "0.75rem", color: "#b91c1c" }}>{signError}</div>
+              )}
+            </div>
+          )}
+
           <div
             style={{
               border: "1px solid var(--shell-border, #eef0f3)",
@@ -323,7 +446,7 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
             }}
           >
             <div style={{ fontSize: "0.72rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              Asset ID (door scan)
+              Asset ID (unverified fallback)
             </div>
             <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
               <code
@@ -402,6 +525,95 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
         </div>
       </div>
     </Shell>
+  );
+}
+
+function CheckInCodeDisplay({
+  code,
+  generatedAt,
+  now,
+  copied,
+  onCopy,
+  onRegenerate,
+  regenerating,
+}: {
+  code: string;
+  generatedAt: number;
+  now: number;
+  copied: boolean;
+  onCopy: () => void;
+  onRegenerate: () => void;
+  regenerating: boolean;
+}) {
+  const remainingMs = Math.max(0, generatedAt + CHECK_IN_MAX_AGE_MS - now);
+  const remainingSec = Math.ceil(remainingMs / 1000);
+  const expired = remainingMs === 0;
+  const remainingLabel = expired
+    ? "Expired — regenerate"
+    : `Valid for ${Math.floor(remainingSec / 60)}:${(remainingSec % 60).toString().padStart(2, "0")}`;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem" }}>
+      <div
+        style={{
+          background: "#fff",
+          border: "1px solid #c7d2fe",
+          borderRadius: 8,
+          padding: "0.6rem 0.75rem",
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+          fontSize: "0.7rem",
+          wordBreak: "break-all",
+          color: "#1e1b4b",
+        }}
+      >
+        {code}
+      </div>
+      <div style={{ display: "flex", gap: "0.4rem", alignItems: "center", flexWrap: "wrap" }}>
+        <button
+          type="button"
+          onClick={onCopy}
+          disabled={expired}
+          style={{
+            padding: "0.4rem 0.85rem",
+            borderRadius: 7,
+            border: "none",
+            background: expired ? "#c7d2fe" : "#4f46e5",
+            color: "#fff",
+            fontSize: "0.78rem",
+            fontWeight: 600,
+            cursor: expired ? "not-allowed" : "pointer",
+          }}
+        >
+          {copied ? "✓ Copied" : "Copy code"}
+        </button>
+        <button
+          type="button"
+          onClick={onRegenerate}
+          disabled={regenerating}
+          style={{
+            padding: "0.4rem 0.85rem",
+            borderRadius: 7,
+            border: "1px solid #c7d2fe",
+            background: "transparent",
+            color: "#4338ca",
+            fontSize: "0.78rem",
+            fontWeight: 600,
+            cursor: regenerating ? "not-allowed" : "pointer",
+          }}
+        >
+          {regenerating ? "Signing…" : "Regenerate"}
+        </button>
+        <span
+          style={{
+            fontSize: "0.72rem",
+            color: expired ? "#b91c1c" : "#4338ca",
+            fontWeight: 600,
+          }}
+        >
+          {remainingLabel}
+        </span>
+      </div>
+    </div>
   );
 }
 
