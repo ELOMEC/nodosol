@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 pub const CONFIG_SEED: &[u8] = b"config";
 pub const EVENT_SEED: &[u8] = b"event";
 pub const VAULT_SEED: &[u8] = b"vault";
+pub const TIER_SEED: &[u8] = b"tier";
 
 pub const BPS_DENOMINATOR: u64 = 10_000;
 pub const MAX_FEE_BPS: u16 = 1_000; // 10%
@@ -10,6 +11,9 @@ pub const MAX_FEE_BPS: u16 = 1_000; // 10%
 pub const MAX_NAME_LEN: usize = 64;
 pub const MAX_SYMBOL_LEN: usize = 16;
 pub const MAX_URI_LEN: usize = 256;
+pub const MAX_TIER_NAME_LEN: usize = 48;
+pub const MAX_SECTION_CODE_LEN: usize = 16;
+pub const MAX_TIERS_PER_EVENT: u16 = 128;
 
 // Tree sizing. max_depth=14 → 16,384 leaves. Rent stays reasonable per event.
 pub const TREE_MAX_DEPTH: u32 = 14;

@@ -66,6 +66,40 @@ pub mod event_tickets {
         handle_buy_ticket(ctx)
     }
 
+    pub fn create_tier(
+        ctx: Context<CreateTier>,
+        tier_id: u16,
+        name: String,
+        section_code: String,
+        price: u64,
+        capacity: u32,
+        color_hex: [u8; 6],
+    ) -> Result<()> {
+        handle_create_tier(ctx, tier_id, name, section_code, price, capacity, color_hex)
+    }
+
+    pub fn update_tier_price(ctx: Context<UpdateTierPrice>, new_price: u64) -> Result<()> {
+        handle_update_tier_price(ctx, new_price)
+    }
+
+    pub fn update_tier_capacity(
+        ctx: Context<UpdateTierCapacity>,
+        new_capacity: u32,
+    ) -> Result<()> {
+        handle_update_tier_capacity(ctx, new_capacity)
+    }
+
+    pub fn update_tier_status(
+        ctx: Context<UpdateTierStatus>,
+        new_status: TierStatus,
+    ) -> Result<()> {
+        handle_update_tier_status(ctx, new_status)
+    }
+
+    pub fn buy_tier_ticket(ctx: Context<BuyTierTicket>) -> Result<()> {
+        handle_buy_tier_ticket(ctx)
+    }
+
     pub fn withdraw_event_revenue(
         ctx: Context<WithdrawEventRevenue>,
         amount: u64,

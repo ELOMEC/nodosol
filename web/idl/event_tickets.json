@@ -147,6 +147,168 @@
       "args": []
     },
     {
+      "name": "buy_tier_ticket",
+      "discriminator": [
+        110,
+        119,
+        13,
+        196,
+        229,
+        105,
+        98,
+        13
+      ],
+      "accounts": [
+        {
+          "name": "buyer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "event",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "event.creator",
+                "account": "Event"
+              },
+              {
+                "kind": "account",
+                "path": "event.event_id",
+                "account": "Event"
+              }
+            ]
+          },
+          "relations": [
+            "tier"
+          ]
+        },
+        {
+          "name": "tier",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  105,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "event"
+              },
+              {
+                "kind": "account",
+                "path": "tier.tier_id",
+                "account": "TicketTier"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "event"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment_mint"
+        },
+        {
+          "name": "buyer_payment_account",
+          "writable": true
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "treasury",
+          "writable": true
+        },
+        {
+          "name": "payment_token_program"
+        },
+        {
+          "name": "tree_config",
+          "writable": true
+        },
+        {
+          "name": "leaf_owner"
+        },
+        {
+          "name": "leaf_delegate"
+        },
+        {
+          "name": "merkle_tree",
+          "writable": true
+        },
+        {
+          "name": "bubblegum_program",
+          "address": "BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY"
+        },
+        {
+          "name": "log_wrapper",
+          "address": "noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV"
+        },
+        {
+          "name": "compression_program",
+          "address": "cmtDvXumGCrqC1Age74AVPhSRVXJMd8PJS91L8KbNCK"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "close_event",
       "discriminator": [
         117,
@@ -334,6 +496,113 @@
         {
           "name": "metadata_uri",
           "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "create_tier",
+      "discriminator": [
+        64,
+        146,
+        139,
+        178,
+        95,
+        123,
+        94,
+        244
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "event",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "event.creator",
+                "account": "Event"
+              },
+              {
+                "kind": "account",
+                "path": "event.event_id",
+                "account": "Event"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tier",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  105,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "event"
+              },
+              {
+                "kind": "arg",
+                "path": "tier_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "tier_id",
+          "type": "u16"
+        },
+        {
+          "name": "name",
+          "type": "string"
+        },
+        {
+          "name": "section_code",
+          "type": "string"
+        },
+        {
+          "name": "price",
+          "type": "u64"
+        },
+        {
+          "name": "capacity",
+          "type": "u32"
+        },
+        {
+          "name": "color_hex",
+          "type": {
+            "array": [
+              "u8",
+              6
+            ]
+          }
         }
       ]
     },
@@ -625,6 +894,253 @@
       ]
     },
     {
+      "name": "update_tier_capacity",
+      "discriminator": [
+        210,
+        104,
+        100,
+        82,
+        13,
+        78,
+        255,
+        119
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "signer": true
+        },
+        {
+          "name": "event",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "event.creator",
+                "account": "Event"
+              },
+              {
+                "kind": "account",
+                "path": "event.event_id",
+                "account": "Event"
+              }
+            ]
+          },
+          "relations": [
+            "tier"
+          ]
+        },
+        {
+          "name": "tier",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  105,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "event"
+              },
+              {
+                "kind": "account",
+                "path": "tier.tier_id",
+                "account": "TicketTier"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "new_capacity",
+          "type": "u32"
+        }
+      ]
+    },
+    {
+      "name": "update_tier_price",
+      "discriminator": [
+        170,
+        15,
+        113,
+        219,
+        100,
+        55,
+        52,
+        193
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "signer": true
+        },
+        {
+          "name": "event",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "event.creator",
+                "account": "Event"
+              },
+              {
+                "kind": "account",
+                "path": "event.event_id",
+                "account": "Event"
+              }
+            ]
+          },
+          "relations": [
+            "tier"
+          ]
+        },
+        {
+          "name": "tier",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  105,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "event"
+              },
+              {
+                "kind": "account",
+                "path": "tier.tier_id",
+                "account": "TicketTier"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "new_price",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "update_tier_status",
+      "discriminator": [
+        128,
+        16,
+        207,
+        217,
+        119,
+        1,
+        64,
+        239
+      ],
+      "accounts": [
+        {
+          "name": "creator",
+          "signer": true
+        },
+        {
+          "name": "event",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "event.creator",
+                "account": "Event"
+              },
+              {
+                "kind": "account",
+                "path": "event.event_id",
+                "account": "Event"
+              }
+            ]
+          },
+          "relations": [
+            "tier"
+          ]
+        },
+        {
+          "name": "tier",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  105,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "event"
+              },
+              {
+                "kind": "account",
+                "path": "tier.tier_id",
+                "account": "TicketTier"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "new_status",
+          "type": {
+            "defined": {
+              "name": "TierStatus"
+            }
+          }
+        }
+      ]
+    },
+    {
       "name": "update_treasury",
       "discriminator": [
         60,
@@ -784,6 +1300,19 @@
         152,
         233
       ]
+    },
+    {
+      "name": "TicketTier",
+      "discriminator": [
+        123,
+        241,
+        89,
+        61,
+        59,
+        46,
+        145,
+        242
+      ]
     }
   ],
   "events": [
@@ -901,6 +1430,71 @@
         91,
         144,
         104,
+        109
+      ]
+    },
+    {
+      "name": "TierCapacityUpdated",
+      "discriminator": [
+        204,
+        253,
+        6,
+        168,
+        67,
+        229,
+        0,
+        180
+      ]
+    },
+    {
+      "name": "TierCreated",
+      "discriminator": [
+        108,
+        89,
+        243,
+        73,
+        191,
+        133,
+        180,
+        100
+      ]
+    },
+    {
+      "name": "TierPriceUpdated",
+      "discriminator": [
+        226,
+        153,
+        71,
+        150,
+        186,
+        110,
+        106,
+        33
+      ]
+    },
+    {
+      "name": "TierStatusChanged",
+      "discriminator": [
+        142,
+        176,
+        197,
+        121,
+        111,
+        125,
+        131,
+        158
+      ]
+    },
+    {
+      "name": "TierTicketMinted",
+      "discriminator": [
+        65,
+        63,
+        181,
+        138,
+        91,
+        169,
+        69,
         109
       ]
     },
@@ -1028,6 +1622,36 @@
       "code": 6021,
       "name": "InvalidNoopProgram",
       "msg": "Invalid SPL Noop program address"
+    },
+    {
+      "code": 6022,
+      "name": "TierEventMismatch",
+      "msg": "Tier does not belong to this event"
+    },
+    {
+      "code": 6023,
+      "name": "TierNotActive",
+      "msg": "Tier is not in the Active state"
+    },
+    {
+      "code": 6024,
+      "name": "TierSoldOut",
+      "msg": "Tier is sold out"
+    },
+    {
+      "code": 6025,
+      "name": "TierNameTooLong",
+      "msg": "Tier name is too long"
+    },
+    {
+      "code": 6026,
+      "name": "SectionCodeTooLong",
+      "msg": "Section code is too long"
+    },
+    {
+      "code": 6027,
+      "name": "CapacityBelowSold",
+      "msg": "New capacity cannot be below tickets already sold"
     }
   ],
   "types": [
@@ -1402,6 +2026,266 @@
           {
             "name": "sold",
             "type": "u64"
+          },
+          {
+            "name": "seller_share",
+            "type": "u64"
+          },
+          {
+            "name": "fee",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TicketTier",
+      "docs": [
+        "A pricing / seating category within an Event. Events may define zero or",
+        "many tiers; when ≥1 exists, buyers purchase from a specific tier and that",
+        "tier's per-seat price / capacity overrides the event-level defaults.",
+        "",
+        "PDA seeds: `[b\"tier\", event_pubkey, tier_id_le]`."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "event",
+            "type": "pubkey"
+          },
+          {
+            "name": "tier_id",
+            "type": "u16"
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "capacity",
+            "type": "u32"
+          },
+          {
+            "name": "sold",
+            "type": "u32"
+          },
+          {
+            "name": "color_hex",
+            "docs": [
+              "Hex colour as ASCII without leading '#', e.g. b\"FF5733\"."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                6
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "TierStatus"
+              }
+            }
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "section_code",
+            "docs": [
+              "Venue-facing section code that matches the SVG layout (e.g. \"213\", \"Floor A\")."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "updated_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "TierCapacityUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tier",
+            "type": "pubkey"
+          },
+          {
+            "name": "previous",
+            "type": "u32"
+          },
+          {
+            "name": "next",
+            "type": "u32"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TierCreated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "event",
+            "type": "pubkey"
+          },
+          {
+            "name": "tier",
+            "type": "pubkey"
+          },
+          {
+            "name": "tier_id",
+            "type": "u16"
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "capacity",
+            "type": "u32"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TierPriceUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tier",
+            "type": "pubkey"
+          },
+          {
+            "name": "previous",
+            "type": "u64"
+          },
+          {
+            "name": "next",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TierStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Paused"
+          },
+          {
+            "name": "Closed"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TierStatusChanged",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "tier",
+            "type": "pubkey"
+          },
+          {
+            "name": "previous",
+            "type": {
+              "defined": {
+                "name": "TierStatus"
+              }
+            }
+          },
+          {
+            "name": "next",
+            "type": {
+              "defined": {
+                "name": "TierStatus"
+              }
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TierTicketMinted",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "event",
+            "type": "pubkey"
+          },
+          {
+            "name": "tier",
+            "type": "pubkey"
+          },
+          {
+            "name": "tier_id",
+            "type": "u16"
+          },
+          {
+            "name": "buyer",
+            "type": "pubkey"
+          },
+          {
+            "name": "merkle_tree",
+            "type": "pubkey"
+          },
+          {
+            "name": "tier_sold",
+            "type": "u32"
           },
           {
             "name": "seller_share",

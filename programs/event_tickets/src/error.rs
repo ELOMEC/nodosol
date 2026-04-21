@@ -46,4 +46,16 @@ pub enum EventTicketsError {
     InvalidCompressionProgram,
     #[msg("Invalid SPL Noop program address")]
     InvalidNoopProgram,
+    #[msg("Tier does not belong to this event")]
+    TierEventMismatch,
+    #[msg("Tier is not in the Active state")]
+    TierNotActive,
+    #[msg("Tier is sold out")]
+    TierSoldOut,
+    #[msg("Tier name is too long")]
+    TierNameTooLong,
+    #[msg("Section code is too long")]
+    SectionCodeTooLong,
+    #[msg("New capacity cannot be below tickets already sold")]
+    CapacityBelowSold,
 }

@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::state::EventStatus;
+use crate::state::{EventStatus, TierStatus};
 
 #[event]
 pub struct ConfigInitialized {
@@ -80,5 +80,52 @@ pub struct EventStatusChanged {
 #[event]
 pub struct EventClosed {
     pub event: Pubkey,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct TierCreated {
+    pub event: Pubkey,
+    pub tier: Pubkey,
+    pub tier_id: u16,
+    pub price: u64,
+    pub capacity: u32,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct TierPriceUpdated {
+    pub tier: Pubkey,
+    pub previous: u64,
+    pub next: u64,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct TierCapacityUpdated {
+    pub tier: Pubkey,
+    pub previous: u32,
+    pub next: u32,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct TierStatusChanged {
+    pub tier: Pubkey,
+    pub previous: TierStatus,
+    pub next: TierStatus,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct TierTicketMinted {
+    pub event: Pubkey,
+    pub tier: Pubkey,
+    pub tier_id: u16,
+    pub buyer: Pubkey,
+    pub merkle_tree: Pubkey,
+    pub tier_sold: u32,
+    pub seller_share: u64,
+    pub fee: u64,
     pub timestamp: i64,
 }
