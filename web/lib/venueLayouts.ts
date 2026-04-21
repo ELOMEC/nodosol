@@ -211,5 +211,6 @@ export function layoutToTemplate(layout: VenueLayoutDoc): VenueTemplate {
       ? { d: layout.stageD, label: layout.stageLabel ?? "STAGE" }
       : undefined,
     regions: layout.regions,
+    backgroundUrl: layout.backgroundUrl ?? undefined,
   };
 }

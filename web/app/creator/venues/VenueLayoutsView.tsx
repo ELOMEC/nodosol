@@ -149,6 +149,9 @@ function LayoutCard({
     >
       <div style={{ background: "var(--shell-pill-bg, #f7f8fa)", aspectRatio: "4/3", position: "relative" }}>
         <svg viewBox={layout.viewBox} preserveAspectRatio="xMidYMid meet" style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
+          {layout.backgroundUrl && (
+            <ThumbBackground url={layout.backgroundUrl} viewBox={layout.viewBox} />
+          )}
           {layout.stageD && (
             <path d={layout.stageD} fill="#1f2937" opacity={0.7} />
           )}
@@ -204,6 +207,26 @@ function LayoutCard({
         </div>
       </div>
     </div>
+  );
+}
+
+function ThumbBackground({ url, viewBox }: { url: string; viewBox: string }) {
+  const parts = viewBox.split(/\s+/).map(Number);
+  const x = parts[0] || 0;
+  const y = parts[1] || 0;
+  const w = parts[2] || 1000;
+  const h = parts[3] || 700;
+  return (
+    <image
+      href={url}
+      x={x}
+      y={y}
+      width={w}
+      height={h}
+      opacity={0.55}
+      preserveAspectRatio="xMidYMid meet"
+      style={{ pointerEvents: "none" }}
+    />
   );
 }
 

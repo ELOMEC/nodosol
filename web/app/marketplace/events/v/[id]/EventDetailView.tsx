@@ -513,7 +513,7 @@ function VenueMap({
   onSelect: (id: number | null) => void;
   bestTierId: number | null;
 }) {
-  const [, , vbW, vbH] = template.viewBox.split(" ").map(Number);
+  const [vbX, vbY, vbW, vbH] = template.viewBox.split(" ").map(Number);
   return (
     <div
       style={{
@@ -536,6 +536,18 @@ function VenueMap({
         style={{ width: "100%", height: "auto", display: "block" }}
         onMouseLeave={() => onHover(null)}
       >
+        {template.backgroundUrl && (
+          <image
+            href={template.backgroundUrl}
+            x={vbX || 0}
+            y={vbY || 0}
+            width={vbW}
+            height={vbH}
+            opacity={0.55}
+            preserveAspectRatio="xMidYMid meet"
+            style={{ pointerEvents: "none" }}
+          />
+        )}
         {template.stage ? (
           <>
             <path d={template.stage.d} fill="#1f2937" />

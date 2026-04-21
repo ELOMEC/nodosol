@@ -28,6 +28,8 @@ export type VenueTemplate = {
   /** Stage / pitch / focus region rendered statically (no tier, just context). */
   stage?: { d: string; label: string };
   regions: VenueRegion[];
+  /** Optional floor-plan image rendered under the zones (custom layouts only). */
+  backgroundUrl?: string;
 };
 
 export const VENUE_TEMPLATES: Record<string, VenueTemplate> = {
