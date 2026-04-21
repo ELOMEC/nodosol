@@ -624,7 +624,16 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "litesvm",
+ "litesvm-token",
+ "sha3",
+ "solana-clock 3.0.1",
+ "solana-keypair",
+ "solana-message 3.1.0",
  "solana-program",
+ "solana-pubkey 3.0.0",
+ "solana-signer",
+ "solana-transaction",
 ]
 
 [[package]]

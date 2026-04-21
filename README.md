@@ -14,30 +14,42 @@ Monorepo:
 
 ```
 nodosol/
-├── programs/
-│   ├── tip_jar/         Anchor program: creator profiles + USDC tips
-│   ├── subscription/    Anchor program: recurring creator billing
-│   └── events/          Anchor program: paid/free tickets + check-in
-├── web/                 Next.js app + Solana Actions (Blink) endpoints
-└── scripts/             Devnet init + demo seeding
+├── programs/          # Anchor on-chain programs (see table below)
+├── web/               # Next.js app + Solana Actions (Blink) endpoints
+├── mobile/            # Expo + React Navigation (companion / deep-link UX; no on-chain wallet stack)
+├── scripts/           # Devnet init + demo seeding
+└── docs/              # e.g. mainnet deploy & security checklist
 ```
 
 ## On-chain programs
 
-All three programs share a Token-2022 architecture via `anchor-spl::token_interface`, so the same code path supports SPL Token and Token-2022 and leaves room to activate Confidential Transfers (V2) without data migrations.
+Programs use Token-2022 via `anchor-spl::token_interface` where they move value, so the same code paths support SPL Token and Token-2022 and leave room to activate Confidential Transfers (V2) without data migrations where schemas already reserve fields (for example ElGamal pubkey slots on creator flows).
 
-| Program        | Program ID                                       | Instructions                                                         |
-| -------------- | ------------------------------------------------ | -------------------------------------------------------------------- |
-| `tip_jar`      | `C2bM3p1Cco4bDj6gQe29k7UWcepxLCrVgiPPoidh549P`   | `initialize_creator`, `send_tip`, `withdraw`, `update_elgamal_pubkey` |
-| `subscription` | `8G2hbD1qJUcaVAEdfVxaHfbCgxyEzQdrpjhDMM9pSL4w`   | `create_plan`, `subscribe`, `cancel`, `charge`                        |
-| `events`       | `4q4KxCcvY7vswq3tXgr448ghXWBtz4PzNfoddZu282Ax`   | `create_event`, `buy_ticket`, `check_in`, `withdraw_revenue`          |
+Program IDs (localnet / devnet from [Anchor.toml](Anchor.toml); refresh after deploy):
+
+| Program | Program ID | Role |
+| --- | --- | --- |
+| `tip_jar` | `C2bM3p1Cco4bDj6gQe29k7UWcepxLCrVgiPPoidh549P` | Config + creator profiles, USDC tips, withdraw, ElGamal pubkey slot |
+| `subscription` | `8G2hbD1qJUcaVAEdfVxaHfbCgxyEzQdrpjhDMM9pSL4w` | Recurring plans, delegate-based `charge`, plan lifecycle |
+| `events` | `4q4KxCcvY7vswq3tXgr448ghXWBtz4PzNfoddZu282Ax` | Paid/free events, tickets, check-in, revenue withdraw |
+| `event_tickets` | `FDUwvXRETURbe2JN2PJNCKt6RPAsSLeSi7A4pFMGmtrE` | Merkle-tree tickets, tiers, resale (public/private) |
+| `rwa_registry` | `7BCWTrD7rcedAg3zpvtvNdManv39kzr3eHBjWyomCbdT` | Issuer registry and compliance-oriented metadata |
+| `rwa_mint` | `HLCCfvp99Z1Rnix64mC6w6dYL9EkEjVmPCL7rr27evsU` | Token-2022 RWA asset mint + lifecycle |
+| `marketplace` | `69ZFM7nHUTXcHp8TZpRtX4qr3ERK2VGxRdqXvNtbfJkZ` | Listings, escrow vault, fee split buys |
+| `otc_deals` | `FmXBAWoSGanaFfP8p9gekgrFn7buEn1XUSFWebDr3Pwz` | Two-party OTC escrow |
+| `auctions` | `6c95kxTWCXacsAev4xnvNbKnLYWFGPpJT5zwT4SnWh5v` | Sealed-bid USDC auctions (commit / reveal / settle / refund) |
+
+Instruction-level detail and mainnet rollout notes: [docs/mainnet-deploy-plan.md](docs/mainnet-deploy-plan.md).
 
 ### Design notes
 
-- **Vaults are program-owned.** Each creator/plan/event has its own Token-2022 vault whose authority is the program PDA, so funds only move via program instructions.
-- **Recurring billing uses SPL delegate.** `subscribe(approve_amount)` approves the plan PDA as delegate on the subscriber's ATA. `charge` is permissionless; anyone may pay the tx fee to advance a due billing cycle, but only the plan PDA can actually pull tokens.
-- **`elgamal_pubkey: [u8; 32]`** is zeroed on creator profile creation and mutable via `update_elgamal_pubkey`. This reserves the slot for V2 Confidential Transfers with no state migration.
-- **Checked math on every counter**, `has_one` constraints tie each child to its parent's `mint` and `vault`, and `Box<Account>` everywhere that would otherwise blow the 4 KiB BPF stack frame.
+- **Vaults are program-owned.** Each creator/plan/event (and marketplace listing, auction, etc.) uses PDAs whose token authority is the program, so funds move only through program instructions.
+- **Recurring billing uses SPL delegate.** `subscribe(approve_amount)` approves the plan PDA as delegate on the subscriber's ATA. `charge` is permissionless for the payer of fees, but only the plan PDA can pull tokens.
+- **Checked math on counters**, `has_one` / seed constraints where applicable, and `Box<Account>` on large structs to stay within BPF stack limits.
+
+### Anchor client (TypeScript) vs on-chain Anchor
+
+Programs are built with **Anchor 1.0** (`anchor-lang` / `anchor-spl` 1.0). The `web` app uses **`@coral-xyz/anchor` ~0.31** against checked-in IDLs under `web/idl/`. Regenerate IDLs with `anchor build` after program changes and keep versions aligned per [Anchor release notes](https://github.com/coral-xyz/anchor).
 
 ## Blink endpoints
 
@@ -65,14 +77,14 @@ Each POST returns a serialized transaction built with the deployed IDL. The endp
 
 ### Build + test the programs
 
+`anchor build` produces `target/deploy/*.so` used by the LiteSVM integration tests.
+
 ```bash
 anchor build
-cargo test --manifest-path programs/tip_jar/Cargo.toml
-cargo test --manifest-path programs/subscription/Cargo.toml
-cargo test --manifest-path programs/events/Cargo.toml
+cargo test
 ```
 
-52 integration tests pass across the three programs (LiteSVM + Token-2022).
+From the workspace root, `cargo test` runs integration tests in each `programs/<crate>/tests/` directory (LiteSVM + Token-2022). Run `cargo test 2>&1 | grep 'test result: ok'` to confirm all crates pass; the integration test count is printed per file under `running N tests`.
 
 ### Run the web app
 
@@ -80,6 +92,7 @@ cargo test --manifest-path programs/events/Cargo.toml
 cd web
 npm install
 cp .env.example .env
+# Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY if you use uploads / realtime.
 npm run dev
 # → http://localhost:3000
 ```
@@ -112,7 +125,7 @@ into a browser. Phantom / dial.to will render the Action, and clicking "Tip $5" 
 
 ## Devnet demo (live)
 
-The three programs are deployed to Solana devnet with seeded demo data.
+The creator-facing programs used by the demo are deployed to Solana devnet with seeded demo data.
 
 - Creator wallet: `3E8ZZJBkz82RmLSSmMZJBGuwrtkJDoCsX5UZVj26rqBr`
 - Mock USDC mint: `73w3ocXSe2yDMWTHj1kwQxrbNjUY9tBJP9HYDkcpmh7h` (6 decimals, Token-2022)
