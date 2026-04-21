@@ -607,7 +607,7 @@ function PublicEventCard({
       }}
     >
       <Link
-        href={`/marketplace/events/${event.address}`}
+        href={`/marketplace/events/v/${event.address}`}
         style={{ textDecoration: "none", color: "inherit", display: "block" }}
       >
         <div
@@ -638,7 +638,7 @@ function PublicEventCard({
       </Link>
       <div style={{ padding: "1rem 1.1rem 1.1rem", display: "flex", flexDirection: "column", flex: 1 }}>
         <Link
-          href={`/marketplace/events/${event.address}`}
+          href={`/marketplace/events/v/${event.address}`}
           style={{ textDecoration: "none", color: "inherit" }}
         >
           <div style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.15rem", lineHeight: 1.3 }}>

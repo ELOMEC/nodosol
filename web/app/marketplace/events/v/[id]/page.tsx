@@ -5,12 +5,12 @@ import { EventDetailView } from "./EventDetailView";
 export default async function EventDetailPage({
   params,
 }: {
-  params: Promise<{ address: string }>;
+  params: Promise<{ id: string }>;
 }) {
-  const { address } = await params;
+  const { id } = await params;
   return (
     <MarketplaceShell active="events">
-      <EventDetailView address={address} />
+      <EventDetailView address={id} />
     </MarketplaceShell>
   );
 }
