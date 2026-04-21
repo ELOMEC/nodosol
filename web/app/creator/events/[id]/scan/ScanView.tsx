@@ -13,6 +13,13 @@ import {
   insertCheckIn,
   listCheckInsForEvent,
 } from "@/lib/checkIns";
+import {
+  addScanner,
+  EventScannerDoc,
+  isWalletAuthorised,
+  listScannersForEvent,
+  removeScanner,
+} from "@/lib/eventScanners";
 import { eventTicketsProgram } from "@/lib/eventTickets";
 import { getAsset } from "@/lib/helius";
 import { parseSeatFromName, parseTierLabelFromName } from "@/lib/ticketName";
@@ -47,6 +54,7 @@ export function ScanView({ address }: { address: string }) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [scans, setScans] = useState<CheckInDoc[]>([]);
+  const [scanners, setScanners] = useState<EventScannerDoc[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [last, setLast] = useState<ScanResult | null>(null);
@@ -83,8 +91,12 @@ export function ScanView({ address }: { address: string }) {
         capacity: raw.capacity.toNumber(),
         sold: raw.sold.toNumber(),
       });
-      const rows = await listCheckInsForEvent(address);
+      const [rows, scannerRows] = await Promise.all([
+        listCheckInsForEvent(address),
+        listScannersForEvent(address),
+      ]);
       setScans(rows);
+      setScanners(scannerRows);
     } catch (err) {
       console.error(err);
       setLoadError(err instanceof Error ? err.message : "Load failed");
@@ -97,7 +109,13 @@ export function ScanView({ address }: { address: string }) {
     if (connected) void loadEvent();
   }, [connected, loadEvent]);
 
-  const isOwner = event && publicKey?.toBase58() === event.creator;
+  const walletStr = publicKey?.toBase58() ?? null;
+  const isCreator = !!(event && walletStr && walletStr === event.creator);
+  const isAuthorised = !!(
+    event &&
+    walletStr &&
+    isWalletAuthorised(walletStr, event.creator, scanners)
+  );
 
   async function handleScan(raw: string) {
     const assetId = extractAssetId(raw);
@@ -274,16 +292,16 @@ export function ScanView({ address }: { address: string }) {
     );
   }
 
-  if (!isOwner) {
+  if (!isAuthorised) {
     return (
       <Shell title={`Door scan — ${event.name}`}>
         <Card>
           <Centered>
             <div style={{ color: "#b91c1c", fontWeight: 600, marginBottom: "0.4rem" }}>
-              Not your event
+              Not authorised
             </div>
             <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>
-              Only wallet {event.creator.slice(0, 6)}…{event.creator.slice(-4)} can scan tickets here.
+              This wallet isn&apos;t on the scanner roster for this event. Ask the creator ({event.creator.slice(0, 6)}…{event.creator.slice(-4)}) to add you.
             </div>
           </Centered>
         </Card>
@@ -364,13 +382,210 @@ export function ScanView({ address }: { address: string }) {
           ) : (
             <div style={{ display: "grid", gap: "0.4rem" }}>
               {scans.map((s) => (
-                <ScanRow key={s.id} scan={s} />
+                <ScanRow
+                  key={s.id}
+                  scan={s}
+                  scannerLabel={scannerLabelFor(s.checkedInBy, event.creator, scanners)}
+                />
               ))}
             </div>
           )}
         </Card>
       </div>
+
+      {isCreator && (
+        <div style={{ marginTop: "1rem" }}>
+          <StaffPanel
+            eventPubkey={event.address}
+            creatorPubkey={event.creator}
+            scanners={scanners}
+            onAdd={async (scannerPubkey, label) => {
+              if (!publicKey) return;
+              const doc = await addScanner({
+                eventPubkey: event.address,
+                scannerPubkey,
+                label,
+                addedBy: publicKey.toBase58(),
+              });
+              setScanners((prev) => [...prev, doc]);
+            }}
+            onRemove={async (id) => {
+              await removeScanner(id);
+              setScanners((prev) => prev.filter((s) => s.id !== id));
+            }}
+          />
+        </div>
+      )}
     </Shell>
+  );
+}
+
+function scannerLabelFor(
+  pubkey: string,
+  creatorPubkey: string,
+  scanners: EventScannerDoc[]
+): string | null {
+  if (pubkey === creatorPubkey) return "Creator";
+  const hit = scanners.find((s) => s.scannerPubkey === pubkey);
+  return hit?.label ?? null;
+}
+
+function StaffPanel({
+  eventPubkey,
+  creatorPubkey,
+  scanners,
+  onAdd,
+  onRemove,
+}: {
+  eventPubkey: string;
+  creatorPubkey: string;
+  scanners: EventScannerDoc[];
+  onAdd: (scannerPubkey: string, label: string | null) => Promise<void>;
+  onRemove: (id: number) => Promise<void>;
+}) {
+  const [pubkey, setPubkey] = useState("");
+  const [label, setLabel] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function submit() {
+    const trimmed = pubkey.trim();
+    if (!trimmed) return;
+    if (trimmed === creatorPubkey) {
+      setErr("Creator wallet already scans by default — no need to add.");
+      return;
+    }
+    if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(trimmed)) {
+      setErr("That doesn't look like a valid Solana pubkey.");
+      return;
+    }
+    setBusy(true);
+    setErr(null);
+    try {
+      await onAdd(trimmed, label.trim() || null);
+      setPubkey("");
+      setLabel("");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Add failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // keep eventPubkey linter-silent; it's in the interface for auditability
+  void eventPubkey;
+
+  return (
+    <Card>
+      <div style={{ fontSize: "0.82rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", color: "#6b7280", marginBottom: "0.65rem" }}>
+        Staff scanners ({scanners.length})
+      </div>
+      <div style={{ fontSize: "0.78rem", color: "#6b7280", marginBottom: "0.75rem" }}>
+        Add one wallet per entrance — door staff connects that wallet on this page to admit tickets. The creator wallet can always scan, even if not listed here.
+      </div>
+
+      {scanners.length > 0 ? (
+        <div style={{ display: "grid", gap: "0.4rem", marginBottom: "0.9rem" }}>
+          {scanners.map((s) => (
+            <div
+              key={s.id}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr auto",
+                gap: "0.5rem",
+                alignItems: "center",
+                padding: "0.55rem 0.7rem",
+                border: "1px solid var(--shell-border, #eef0f3)",
+                borderRadius: 7,
+              }}
+            >
+              <div>
+                <div style={{ fontSize: "0.86rem", fontWeight: 600 }}>
+                  {s.label || "(unnamed entrance)"}
+                </div>
+                <code style={{ fontSize: "0.7rem", color: "#9ca3af" }}>
+                  {s.scannerPubkey.slice(0, 10)}…{s.scannerPubkey.slice(-6)}
+                </code>
+              </div>
+              <button
+                type="button"
+                onClick={() => void onRemove(s.id)}
+                style={{
+                  padding: "0.35rem 0.7rem",
+                  borderRadius: 5,
+                  border: "1px solid #fecaca",
+                  background: "transparent",
+                  color: "#b91c1c",
+                  fontSize: "0.76rem",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                }}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!busy) void submit();
+        }}
+        style={{ display: "grid", gridTemplateColumns: "2fr 1fr auto", gap: "0.45rem" }}
+      >
+        <input
+          type="text"
+          value={pubkey}
+          onChange={(e) => setPubkey(e.target.value)}
+          placeholder="Scanner wallet pubkey"
+          style={{
+            padding: "0.5rem 0.65rem",
+            borderRadius: 6,
+            border: "1px solid var(--shell-border, #eef0f3)",
+            background: "var(--shell-card, #fff)",
+            color: "var(--shell-fg, #111827)",
+            fontSize: "0.8rem",
+            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+          }}
+        />
+        <input
+          type="text"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder="Entrance label (optional)"
+          style={{
+            padding: "0.5rem 0.65rem",
+            borderRadius: 6,
+            border: "1px solid var(--shell-border, #eef0f3)",
+            background: "var(--shell-card, #fff)",
+            color: "var(--shell-fg, #111827)",
+            fontSize: "0.8rem",
+          }}
+        />
+        <button
+          type="submit"
+          disabled={busy || !pubkey.trim()}
+          style={{
+            padding: "0.5rem 1rem",
+            borderRadius: 6,
+            border: "none",
+            background: busy || !pubkey.trim() ? "#c7d2fe" : "#4f46e5",
+            color: "#fff",
+            fontSize: "0.8rem",
+            fontWeight: 600,
+            cursor: busy || !pubkey.trim() ? "not-allowed" : "pointer",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {busy ? "Adding…" : "Add scanner"}
+        </button>
+      </form>
+      {err && (
+        <div style={{ marginTop: "0.5rem", fontSize: "0.75rem", color: "#b91c1c" }}>{err}</div>
+      )}
+    </Card>
   );
 }
 
@@ -416,7 +631,7 @@ function ResultBanner({ result }: { result: ScanResult }) {
   );
 }
 
-function ScanRow({ scan }: { scan: CheckInDoc }) {
+function ScanRow({ scan, scannerLabel }: { scan: CheckInDoc; scannerLabel: string | null }) {
   const when = new Date(scan.checkedInAt);
   return (
     <div
@@ -461,8 +676,13 @@ function ScanRow({ scan }: { scan: CheckInDoc }) {
           <code style={{ fontSize: "0.68rem", color: "#9ca3af" }}>{scan.assetId.slice(0, 8)}…</code>
         </div>
       </div>
-      <div style={{ fontSize: "0.72rem", color: "#6b7280", whiteSpace: "nowrap" }}>
-        {when.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+      <div style={{ fontSize: "0.72rem", color: "#6b7280", whiteSpace: "nowrap", textAlign: "right" }}>
+        <div>{when.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
+        {scannerLabel && (
+          <div style={{ fontSize: "0.66rem", color: "#9ca3af", marginTop: "0.1rem" }}>
+            via {scannerLabel}
+          </div>
+        )}
       </div>
     </div>
   );
