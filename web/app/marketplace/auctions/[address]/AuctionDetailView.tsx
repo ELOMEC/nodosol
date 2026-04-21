@@ -285,6 +285,28 @@ export function AuctionDetailView({ address }: { address: string }) {
         </Card>
       </div>
 
+      {state.loaded.metadata?.gallery && state.loaded.metadata.gallery.length > 0 && (
+        <Card>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: "0.5rem",
+            }}
+          >
+            {state.loaded.metadata.gallery.map((src, i) => (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                key={i}
+                src={src}
+                alt=""
+                style={{ width: "100%", aspectRatio: "4/3", objectFit: "cover", borderRadius: 8 }}
+              />
+            ))}
+          </div>
+        </Card>
+      )}
+
       {state.loaded.metadata?.description && (
         <Card>
           <SectionTitle>Description</SectionTitle>

@@ -111,21 +111,39 @@ export function RentalsView() {
             via the delegate pattern.
           </p>
         </div>
-        <Link
-          href="/marketplace/rentals/new"
-          style={{
-            background: "#4f46e5",
-            color: "#fff",
-            padding: "0.55rem 1.1rem",
-            borderRadius: 8,
-            fontSize: "0.85rem",
-            fontWeight: 600,
-            textDecoration: "none",
-            whiteSpace: "nowrap",
-          }}
-        >
-          + List a rental
-        </Link>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <Link
+            href="/marketplace/rentals/my"
+            style={{
+              background: "var(--shell-card, #fff)",
+              color: "var(--shell-fg, #111827)",
+              padding: "0.55rem 1.1rem",
+              borderRadius: 8,
+              border: "1px solid var(--shell-border, #eef0f3)",
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            My rentals
+          </Link>
+          <Link
+            href="/marketplace/rentals/new"
+            style={{
+              background: "#4f46e5",
+              color: "#fff",
+              padding: "0.55rem 1.1rem",
+              borderRadius: 8,
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              textDecoration: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            + List a rental
+          </Link>
+        </div>
       </header>
 
       <Card>

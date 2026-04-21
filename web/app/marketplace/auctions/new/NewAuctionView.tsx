@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { GalleryUploader } from "@/components/GalleryUploader";
 import { LocationPicker, LocationValue } from "@/components/LocationPicker";
 import { createAuctionTx } from "@/lib/auctions";
 import { uploadAuctionMetadata } from "@/lib/auctionMetadata";
@@ -18,6 +19,7 @@ export function NewAuctionView() {
 
   const [memo, setMemo] = useState("");
   const [description, setDescription] = useState("");
+  const [gallery, setGallery] = useState<string[]>([]);
   const [videoUrl, setVideoUrl] = useState("");
   const [location, setLocation] = useState<LocationValue | null>(null);
   const [startPrice, setStartPrice] = useState("10");
@@ -68,11 +70,15 @@ export function NewAuctionView() {
       // seed createAuctionTx uses so the metadata file is keyed cleanly.
       let metadataUri = "";
       const hasEnriched =
-        description.trim() || videoUrl.trim() || location !== null;
+        description.trim() ||
+        videoUrl.trim() ||
+        location !== null ||
+        gallery.length > 0;
       if (hasEnriched && publicKey) {
         metadataUri = await uploadAuctionMetadata(publicKey.toBase58(), auctionId, {
           memo: memo.trim(),
           description: description.trim() || undefined,
+          gallery: gallery.length > 0 ? gallery : undefined,
           videoUrl: videoUrl.trim() || undefined,
           location: location ?? undefined,
           createdAt: new Date().toISOString(),
@@ -147,6 +153,16 @@ export function NewAuctionView() {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Full specs, rental window, house rules, rental terms, etc."
             style={{ ...inputStyle, resize: "vertical", minHeight: 64 }}
+          />
+        </Field>
+
+        <Field label="Photos (optional — up to 10)">
+          <GalleryUploader
+            value={gallery}
+            onChange={setGallery}
+            ownerPubkey={publicKey?.toBase58() ?? ""}
+            keyPrefix="auction-gallery"
+            maxImages={10}
           />
         </Field>
 

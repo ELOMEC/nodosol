@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { GalleryUploader } from "@/components/GalleryUploader";
 import { LocationPicker, LocationValue } from "@/components/LocationPicker";
 import { USDC_UNIT, getUsdcMint } from "@/lib/constants";
 import { uploadRentalMetadata } from "@/lib/rentalMetadata";
@@ -31,6 +32,7 @@ export function NewRentalView() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [videoUrl, setVideoUrl] = useState("");
+  const [gallery, setGallery] = useState<string[]>([]);
   const [location, setLocation] = useState<LocationValue | null>(null);
   const [amenities, setAmenities] = useState("");
   const [terms, setTerms] = useState("");
@@ -99,6 +101,7 @@ export function NewRentalView() {
       await uploadRentalMetadata(plan.toBase58(), {
         title: title.trim(),
         description: description.trim() || undefined,
+        gallery: gallery.length > 0 ? gallery : undefined,
         videoUrl: videoUrl.trim() || undefined,
         location: location ?? undefined,
         amenities: amenities
@@ -161,6 +164,16 @@ export function NewRentalView() {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Neighborhood notes, layout, walk-to time to the center…"
             style={{ ...inputStyle, resize: "vertical", minHeight: 64 }}
+          />
+        </Field>
+
+        <Field label="Photos (up to 10 — first is the cover)">
+          <GalleryUploader
+            value={gallery}
+            onChange={setGallery}
+            ownerPubkey={publicKey?.toBase58() ?? ""}
+            keyPrefix="rental-gallery"
+            maxImages={10}
           />
         </Field>
 
