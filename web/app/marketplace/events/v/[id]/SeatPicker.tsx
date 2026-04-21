@@ -11,8 +11,10 @@ type Props = {
   tierName: string;
   region: VenueLayoutRegion;
   busy: boolean;
+  initialSelection?: { rowLabel: string; seatNumber: number };
   onCancel: () => void;
   onPick: (seat: { rowLabel: string; seatNumber: number }) => void;
+  onShare?: (seat: { rowLabel: string; seatNumber: number }) => void;
 };
 
 export function SeatPicker({
@@ -21,11 +23,15 @@ export function SeatPicker({
   tierName,
   region,
   busy,
+  initialSelection,
   onCancel,
   onPick,
+  onShare,
 }: Props) {
   const [seats, setSeats] = useState<SeatDoc[] | null>(null);
-  const [selected, setSelected] = useState<{ rowLabel: string; seatNumber: number } | null>(null);
+  const [selected, setSelected] = useState<{ rowLabel: string; seatNumber: number } | null>(
+    initialSelection ?? null
+  );
   const [error, setError] = useState<string | null>(null);
 
   const rows = region.rows ?? 0;
@@ -175,6 +181,26 @@ export function SeatPicker({
             )}
           </div>
           <div style={{ display: "flex", gap: "0.5rem" }}>
+            {onShare && (
+              <button
+                type="button"
+                disabled={!selected}
+                onClick={() => selected && onShare(selected)}
+                title="Copy a link that opens this seat pre-selected"
+                style={{
+                  padding: "0.5rem 0.9rem",
+                  borderRadius: 7,
+                  border: "1px solid var(--shell-border, #eef0f3)",
+                  background: "var(--shell-card, #fff)",
+                  color: selected ? "var(--shell-fg, #111827)" : "#9ca3af",
+                  fontSize: "0.82rem",
+                  fontWeight: 600,
+                  cursor: selected ? "pointer" : "not-allowed",
+                }}
+              >
+                Share seat
+              </button>
+            )}
             <button
               type="button"
               onClick={onCancel}

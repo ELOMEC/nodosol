@@ -14,7 +14,8 @@ import {
   Transaction,
 } from "@solana/web3.js";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { USDC_UNIT } from "@/lib/constants";
 import {
@@ -85,7 +86,38 @@ export function EventDetailView({ address }: { address: string }) {
   const [seatPicker, setSeatPicker] = useState<{
     tier: TicketTierDoc;
     region: VenueLayoutRegion;
+    initialSeat?: { rowLabel: string; seatNumber: number };
   } | null>(null);
+  const deeplinkAppliedRef = useRef(false);
+  const searchParams = useSearchParams();
+  const [shareToast, setShareToast] = useState<string | null>(null);
+
+  function buildShareUrl(tier: TicketTierDoc, seat?: { rowLabel: string; seatNumber: number }): string {
+    if (typeof window === "undefined") return "";
+    const url = new URL(window.location.href);
+    url.search = "";
+    url.searchParams.set("tier", tier.tierId.toString());
+    if (seat) {
+      url.searchParams.set("row", seat.rowLabel);
+      url.searchParams.set("seat", seat.seatNumber.toString());
+    }
+    return url.toString();
+  }
+
+  async function shareTier(tier: TicketTierDoc, seat?: { rowLabel: string; seatNumber: number }) {
+    const link = buildShareUrl(tier, seat);
+    try {
+      await navigator.clipboard.writeText(link);
+      setShareToast(
+        seat
+          ? `Link to ${tier.name} · ${seat.rowLabel}${seat.seatNumber} copied`
+          : `Link to ${tier.name} copied`
+      );
+    } catch {
+      setShareToast("Could not copy — select the URL manually.");
+    }
+    setTimeout(() => setShareToast(null), 2400);
+  }
 
   const load = useCallback(async () => {
     setState({ kind: "loading" });
@@ -201,6 +233,37 @@ export function EventDetailView({ address }: { address: string }) {
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Apply deep-link params (?tier=X, ?tier=X&row=A&seat=7) once data is ready.
+  useEffect(() => {
+    if (state.kind !== "ready") return;
+    if (deeplinkAppliedRef.current) return;
+    const tierParam = searchParams?.get("tier");
+    if (!tierParam) return;
+    const tierId = parseInt(tierParam, 10);
+    if (!Number.isInteger(tierId)) return;
+    const tier = state.tiers.find((t) => t.tierId === tierId);
+    if (!tier) return;
+    deeplinkAppliedRef.current = true;
+    setSelectedTierId(tierId);
+
+    const rowParam = searchParams?.get("row");
+    const seatParam = searchParams?.get("seat");
+    if (rowParam && seatParam) {
+      const seatNumber = parseInt(seatParam, 10);
+      if (!Number.isInteger(seatNumber) || seatNumber <= 0) return;
+      const region = state.customTemplate?.regions.find(
+        (r) => r.tierRef === tier.sectionCode
+      ) as VenueLayoutRegion | undefined;
+      if (region && (region.rows ?? 0) > 0 && (region.seatsPerRow ?? 0) > 0) {
+        setSeatPicker({
+          tier,
+          region,
+          initialSeat: { rowLabel: rowParam.toUpperCase(), seatNumber },
+        });
+      }
+    }
+  }, [state, searchParams]);
 
   function regionForTier(tier: TicketTierDoc): VenueLayoutRegion | null {
     if (state.kind !== "ready") return null;
@@ -473,6 +536,7 @@ export function EventDetailView({ address }: { address: string }) {
                     onLeave={() => setHoverTierId(null)}
                     onClick={() => setSelectedTierId((prev) => (prev === t.tierId ? null : t.tierId))}
                     onBuy={() => void buyTier(ev, t)}
+                    onShare={() => void shareTier(t)}
                   />
                 ))}
             </div>
@@ -486,11 +550,34 @@ export function EventDetailView({ address }: { address: string }) {
           tierName={seatPicker.tier.name}
           region={seatPicker.region}
           busy={busyTier === seatPicker.tier.tierId}
+          initialSelection={seatPicker.initialSeat}
           onCancel={() => {
             if (busyTier === null) setSeatPicker(null);
           }}
           onPick={(seat) => void buySeatedTier(ev, seatPicker.tier, seat)}
+          onShare={(seat) => void shareTier(seatPicker.tier, seat)}
         />
+      )}
+      {shareToast && (
+        <div
+          role="status"
+          style={{
+            position: "fixed",
+            left: "50%",
+            bottom: 28,
+            transform: "translateX(-50%)",
+            background: "#111827",
+            color: "#fff",
+            padding: "0.65rem 1rem",
+            borderRadius: 9,
+            fontSize: "0.85rem",
+            fontWeight: 600,
+            zIndex: 200,
+            boxShadow: "0 10px 24px rgba(0,0,0,0.3)",
+          }}
+        >
+          {shareToast}
+        </div>
       )}
     </>
   );
@@ -670,6 +757,7 @@ function TierRow({
   onLeave,
   onClick,
   onBuy,
+  onShare,
 }: {
   tier: TicketTierDoc;
   selected: boolean;
@@ -683,6 +771,7 @@ function TierRow({
   onLeave: () => void;
   onClick: () => void;
   onBuy: () => void;
+  onShare: () => void;
 }) {
   const priceUsdc = tier.price / 1_000_000;
   const left = tier.capacity - tier.sold;
@@ -760,6 +849,26 @@ function TierRow({
           <div style={{ fontSize: "1.05rem", fontWeight: 700 }}>${priceUsdc.toFixed(priceUsdc >= 100 ? 0 : 2)}</div>
           <div style={{ fontSize: "0.65rem", color: "var(--shell-muted, #9ca3af)" }}>USDC</div>
         </div>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onShare();
+          }}
+          title="Copy a link that pre-selects this tier"
+          style={{
+            background: "transparent",
+            border: "1px solid var(--shell-border, #eef0f3)",
+            padding: "0.35rem 0.55rem",
+            borderRadius: 6,
+            fontSize: "0.72rem",
+            fontWeight: 600,
+            color: "var(--shell-fg, #111827)",
+            cursor: "pointer",
+          }}
+        >
+          Share
+        </button>
         {!connected ? (
           <WalletMultiButton />
         ) : isOwn ? null : (
