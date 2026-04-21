@@ -6,6 +6,7 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { PublicKey } from "@solana/web3.js";
 import Link from "next/link";
+import { QRCodeSVG } from "qrcode.react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { USDC_UNIT } from "@/lib/constants";
@@ -500,8 +501,9 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
                 Check-in code
               </div>
               <div style={{ fontSize: "0.78rem", color: "#3730a3" }}>
-                Door staff will ask for a signed code at the gate. Generate it on
-                this device — it stays valid for 5 minutes, then regenerate if needed.
+                Door staff scans the QR or types the code at the gate. Generate
+                it on this device — it stays valid for 5 minutes, then regenerate
+                if needed.
               </div>
               {checkInCode ? (
                 <CheckInCodeDisplay
@@ -902,21 +904,54 @@ function CheckInCodeDisplay({
     : `Valid for ${Math.floor(remainingSec / 60)}:${(remainingSec % 60).toString().padStart(2, "0")}`;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.45rem" }}>
-      <div
-        style={{
-          background: "#fff",
-          border: "1px solid #c7d2fe",
-          borderRadius: 8,
-          padding: "0.6rem 0.75rem",
-          fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-          fontSize: "0.7rem",
-          wordBreak: "break-all",
-          color: "#1e1b4b",
-        }}
-      >
-        {code}
-      </div>
+    <div style={{ display: "flex", flexDirection: "column", gap: "0.55rem" }}>
+      {!expired && (
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid #c7d2fe",
+            borderRadius: 8,
+            padding: "0.75rem",
+            alignSelf: "center",
+            display: "inline-block",
+          }}
+        >
+          <QRCodeSVG
+            value={code}
+            size={200}
+            level="M"
+            includeMargin={false}
+            style={{ display: "block" }}
+          />
+        </div>
+      )}
+      <details>
+        <summary
+          style={{
+            fontSize: "0.72rem",
+            color: "#4338ca",
+            cursor: "pointer",
+            fontWeight: 600,
+          }}
+        >
+          Show raw code (for copy-paste)
+        </summary>
+        <div
+          style={{
+            background: "#fff",
+            border: "1px solid #c7d2fe",
+            borderRadius: 8,
+            padding: "0.6rem 0.75rem",
+            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+            fontSize: "0.7rem",
+            wordBreak: "break-all",
+            color: "#1e1b4b",
+            marginTop: "0.3rem",
+          }}
+        >
+          {code}
+        </div>
+      </details>
       <div style={{ display: "flex", gap: "0.4rem", alignItems: "center", flexWrap: "wrap" }}>
         <button
           type="button"
