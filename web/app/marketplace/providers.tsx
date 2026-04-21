@@ -10,6 +10,7 @@ import { PhantomWalletAdapter } from "@solana/wallet-adapter-phantom";
 import { ReactNode, useMemo } from "react";
 
 import "@solana/wallet-adapter-react-ui/styles.css";
+import { PrivyProviders } from "../../components/PrivyProviders";
 
 const DEFAULT_RPC = "https://api.devnet.solana.com";
 
@@ -21,10 +22,12 @@ export function MarketplaceProviders({ children }: { children: ReactNode }) {
   );
 
   return (
-    <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider wallets={wallets} autoConnect>
-        <WalletModalProvider>{children}</WalletModalProvider>
-      </WalletProvider>
-    </ConnectionProvider>
+    <PrivyProviders>
+      <ConnectionProvider endpoint={endpoint}>
+        <WalletProvider wallets={wallets} autoConnect>
+          <WalletModalProvider>{children}</WalletModalProvider>
+        </WalletProvider>
+      </ConnectionProvider>
+    </PrivyProviders>
   );
 }

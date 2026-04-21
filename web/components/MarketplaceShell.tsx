@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { NotificationsBell } from "./NotificationsBell";
+import { PrivyLoginButton } from "./PrivyLoginButton";
 import { ThemeToggle } from "./ThemeToggle";
 import { WalletPill } from "./WalletPill";
 
@@ -221,6 +222,7 @@ function Topbar() {
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
         <ThemeToggle />
         <NotificationsBell />
+        <PrivyLoginButton />
         <WalletPill />
       </div>
     </header>

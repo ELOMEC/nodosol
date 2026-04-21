@@ -10,12 +10,14 @@
     "init-marketplace": "tsx init-marketplace.ts",
     "init-otc": "tsx init-otc.ts",
     "init-event-tickets": "tsx init-event-tickets.ts",
-    "fund-user": "tsx fund-user.ts --"
+    "fund-user": "tsx fund-user.ts --",
+    "seed-demo": "tsx seed-demo-data.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
     "@solana/spl-token": "^0.4.12",
-    "@solana/web3.js": "^1.98.0"
+    "@solana/web3.js": "^1.98.0",
+    "@supabase/supabase-js": "^2.45.0"
   },
   "devDependencies": {
     "@types/node": "^22.10.10",
