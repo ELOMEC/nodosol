@@ -17,6 +17,7 @@ export function MarketplaceShell({
     | "tokenize"
     | "otc"
     | "auctions"
+    | "rentals"
     | "events"
     | "tickets"
     | "resale"
@@ -36,6 +37,7 @@ export function MarketplaceShell({
     { href: "/marketplace/tokenize", label: "Tokenize", icon: IconPlus(), active: active === "tokenize" },
     { href: "/marketplace/otc", label: "OTC deals", icon: IconHandshake(), active: active === "otc" },
     { href: "/marketplace/auctions", label: "Auctions", icon: IconChart(), active: active === "auctions" },
+    { href: "/marketplace/rentals", label: "Rentals", icon: IconRepeat(), active: active === "rentals" },
     { href: "/marketplace/events", label: "Events", icon: IconTicket(), active: active === "events" },
     { href: "/marketplace/tickets", label: "My tickets", icon: IconTicket(), active: active === "tickets" },
     { href: "/marketplace/resale", label: "Resale board", icon: IconHandshake(), active: active === "resale" },

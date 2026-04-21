@@ -32,6 +32,16 @@ export function planVaultPda(plan: PublicKey): [PublicKey, number] {
   );
 }
 
+export function subscriptionPda(
+  plan: PublicKey,
+  subscriber: PublicKey
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [SUBSCRIPTION_SEED, plan.toBuffer(), subscriber.toBuffer()],
+    SUBSCRIPTION_PROGRAM_ID
+  );
+}
+
 export function subscriptionProgram(provider: AnchorProvider): Program {
   return new Program(subscriptionIdl as Idl, provider);
 }
