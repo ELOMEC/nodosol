@@ -15,6 +15,7 @@ import {
   SystemProgram,
   Transaction,
 } from "@solana/web3.js";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { getUsdcMint, USDC_UNIT } from "@/lib/constants";
@@ -605,53 +606,63 @@ function PublicEventCard({
         flexDirection: "column",
       }}
     >
-      <div
-        style={{
-          background: event.imageUrl
-            ? `center / cover no-repeat url(${event.imageUrl})`
-            : "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)",
-          height: 140,
-          position: "relative",
-        }}
+      <Link
+        href={`/marketplace/events/${event.address}`}
+        style={{ textDecoration: "none", color: "inherit", display: "block" }}
       >
         <div
           style={{
-            position: "absolute",
-            top: 10,
-            left: 10,
-            background: "rgba(255,255,255,0.92)",
-            padding: "0.18rem 0.55rem",
-            borderRadius: 4,
-            fontSize: "0.7rem",
-            fontWeight: 600,
-            color: "#374151",
+            background: event.imageUrl
+              ? `center / cover no-repeat url(${event.imageUrl})`
+              : "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)",
+            height: 140,
+            position: "relative",
           }}
         >
-          cNFT ticket
+          <div
+            style={{
+              position: "absolute",
+              top: 10,
+              left: 10,
+              background: "rgba(255,255,255,0.92)",
+              padding: "0.18rem 0.55rem",
+              borderRadius: 4,
+              fontSize: "0.7rem",
+              fontWeight: 600,
+              color: "#374151",
+            }}
+          >
+            cNFT ticket
+          </div>
         </div>
-      </div>
+      </Link>
       <div style={{ padding: "1rem 1.1rem 1.1rem", display: "flex", flexDirection: "column", flex: 1 }}>
-        <div style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.15rem", lineHeight: 1.3 }}>
-          {event.name || "(unnamed event)"}
-        </div>
-        <div style={{ fontSize: "0.75rem", color: "#6b7280", marginBottom: "0.8rem" }}>
-          {event.symbol} · by {shorten(event.creator)}
-        </div>
-
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.85rem" }}>
-          <div>
-            <div style={{ fontSize: "1.2rem", fontWeight: 600 }}>${event.price.toFixed(2)}</div>
-            <div style={{ fontSize: "0.72rem", color: "#9ca3af" }}>per ticket · USDC</div>
+        <Link
+          href={`/marketplace/events/${event.address}`}
+          style={{ textDecoration: "none", color: "inherit" }}
+        >
+          <div style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.15rem", lineHeight: 1.3 }}>
+            {event.name || "(unnamed event)"}
           </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: "0.82rem", fontWeight: 600, color: "#4338ca" }}>{left} left</div>
-            <div style={{ fontSize: "0.7rem", color: "#9ca3af" }}>of {event.capacity}</div>
+          <div style={{ fontSize: "0.75rem", color: "#6b7280", marginBottom: "0.8rem" }}>
+            {event.symbol} · by {shorten(event.creator)}
           </div>
-        </div>
 
-        <div style={{ fontSize: "0.72rem", color: "#9ca3af", marginBottom: "0.85rem" }}>
-          Sale ends {endsDate.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
-        </div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.85rem" }}>
+            <div>
+              <div style={{ fontSize: "1.2rem", fontWeight: 600 }}>${event.price.toFixed(2)}</div>
+              <div style={{ fontSize: "0.72rem", color: "#9ca3af" }}>per ticket · USDC</div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontSize: "0.82rem", fontWeight: 600, color: "#4338ca" }}>{left} left</div>
+              <div style={{ fontSize: "0.7rem", color: "#9ca3af" }}>of {event.capacity}</div>
+            </div>
+          </div>
+
+          <div style={{ fontSize: "0.72rem", color: "#9ca3af", marginBottom: "0.85rem" }}>
+            Sale ends {endsDate.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+          </div>
+        </Link>
 
         {!connected ? (
           <WalletMultiButton />

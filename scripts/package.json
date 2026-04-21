@@ -11,7 +11,8 @@
     "init-otc": "tsx init-otc.ts",
     "init-event-tickets": "tsx init-event-tickets.ts",
     "fund-user": "tsx fund-user.ts --",
-    "seed-demo": "tsx seed-demo-data.ts"
+    "seed-demo": "tsx seed-demo-data.ts",
+    "seed-plans": "tsx seed-demo-plans.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.31.1",
