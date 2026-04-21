@@ -23,6 +23,7 @@ export function MarketplaceShell({
     | "creator"
     | "creator-tips"
     | "creator-plans"
+    | "creator-events"
     | "admin"
     | "admin-issuers";
   children: ReactNode;
@@ -40,6 +41,7 @@ export function MarketplaceShell({
     { href: "/creator", label: "Overview", icon: IconChart(), active: active === "creator" },
     { href: "/creator/tips", label: "Tip jar", icon: IconCoins(), active: active === "creator-tips" },
     { href: "/creator/plans", label: "Subscriptions", icon: IconRepeat(), active: active === "creator-plans" },
+    { href: "/creator/events", label: "Events", icon: IconTicket(), active: active === "creator-events" },
   ];
   const adminNav: NavItem[] = [
     { href: "/admin", label: "Programs", icon: IconShield(), active: active === "admin" },

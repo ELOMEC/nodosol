@@ -154,8 +154,8 @@ function ReadyView({ profile, plans }: { profile: CreatorProfileDoc | null; plan
       <div style={{ marginTop: "1rem" }}>
         <SectionCard
           title="Events"
-          subtitle="Compressed NFT tickets with fee split + secondary market via Magic Eden / Tensor"
-          href="/marketplace/events"
+          subtitle="Multi-tier cNFT tickets with venue map pricing + fee split"
+          href="/creator/events"
           cta="Manage events"
         >
           <div style={{ fontSize: "0.88rem", color: "#6b7280", padding: "0.5rem 0" }}>
