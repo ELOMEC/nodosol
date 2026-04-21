@@ -118,6 +118,35 @@ pub struct TierStatusChanged {
 }
 
 #[event]
+pub struct TicketResaleListed {
+    pub listing: Pubkey,
+    pub seller: Pubkey,
+    pub merkle_tree: Pubkey,
+    pub leaf_index: u32,
+    pub price: u64,
+    pub expires_at: i64,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct TicketResaleCancelled {
+    pub listing: Pubkey,
+    pub seller: Pubkey,
+    pub timestamp: i64,
+}
+
+#[event]
+pub struct TicketResaleFilled {
+    pub listing: Pubkey,
+    pub seller: Pubkey,
+    pub buyer: Pubkey,
+    pub merkle_tree: Pubkey,
+    pub leaf_index: u32,
+    pub price: u64,
+    pub timestamp: i64,
+}
+
+#[event]
 pub struct TierTicketMinted {
     pub event: Pubkey,
     pub tier: Pubkey,

@@ -1,47 +1,31 @@
 "use client";
 
 import { AnchorProvider, BN, Wallet } from "@coral-xyz/anchor";
-import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  TOKEN_2022_PROGRAM_ID,
-  createAssociatedTokenAccountInstruction,
-  createTransferCheckedInstruction,
-  getAssociatedTokenAddressSync,
-  getMint,
-} from "@solana/spl-token";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import {
-  ComputeBudgetProgram,
-  PublicKey,
-  Transaction,
-} from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { USDC_UNIT } from "@/lib/constants";
 import { eventTicketsProgram } from "@/lib/eventTickets";
-import { getAsset } from "@/lib/helius";
 import {
-  cancelListing,
-  listActiveListings,
-  listListingsForSeller,
-  markListingSold,
-  markListingSoldPending,
-  TicketListingDoc,
-} from "@/lib/ticketListings";
+  buyTicketResaleTx,
+  cancelTicketResaleTx,
+  fetchAllActiveListings,
+  OnChainResaleListing,
+} from "@/lib/ticketResale";
 
 type EventIndex = Map<
   string,
-  { name: string; symbol: string; creator: string; paymentMint: string }
+  { name: string; symbol: string; creator: string; paymentMint: string; merkleTree: string }
 >;
 
 type State =
   | { kind: "loading" }
   | {
       kind: "ready";
-      listings: TicketListingDoc[];
-      myListings: TicketListingDoc[];
+      listings: OnChainResaleListing[];
+      myListings: OnChainResaleListing[];
       events: EventIndex;
     }
   | { kind: "error"; message: string };
@@ -58,45 +42,56 @@ export function ResaleView() {
   const load = useCallback(async () => {
     setState({ kind: "loading" });
     try {
-      const [listings, myListings] = await Promise.all([
-        listActiveListings({ limit: 200 }),
-        publicKey ? listListingsForSeller(publicKey.toBase58()) : Promise.resolve([]),
-      ]);
-      const events: EventIndex = new Map();
-      const anyListings = listings.length > 0 || myListings.length > 0;
-      if (anyListings) {
-        try {
-          const provider = new AnchorProvider(
-            connection,
-            wallet as unknown as Wallet,
-            { commitment: "confirmed" }
-          );
-          const program = eventTicketsProgram(provider);
-          const api = (program.account as Record<string, {
-            all: () => Promise<Array<{
-              publicKey: PublicKey;
-              account: {
-                creator: PublicKey;
-                name: string;
-                symbol: string;
-                paymentMint: PublicKey;
-              };
-            }>>;
-          }>).event;
-          const items = await api.all();
-          for (const x of items) {
-            events.set(x.publicKey.toBase58(), {
-              name: x.account.name,
-              symbol: x.account.symbol,
-              creator: x.account.creator.toBase58(),
-              paymentMint: x.account.paymentMint.toBase58(),
-            });
+      const provider = new AnchorProvider(
+        connection,
+        wallet as unknown as Wallet,
+        { commitment: "confirmed" }
+      );
+      const program = eventTicketsProgram(provider);
+
+      const [listings, events] = await Promise.all([
+        fetchAllActiveListings(program),
+        (async (): Promise<EventIndex> => {
+          const eventsMap: EventIndex = new Map();
+          try {
+            const api = (program.account as Record<string, {
+              all: () => Promise<Array<{
+                publicKey: PublicKey;
+                account: {
+                  creator: PublicKey;
+                  name: string;
+                  symbol: string;
+                  paymentMint: PublicKey;
+                  merkleTree: PublicKey;
+                };
+              }>>;
+            }>).event;
+            const items = await api.all();
+            for (const x of items) {
+              eventsMap.set(x.publicKey.toBase58(), {
+                name: x.account.name,
+                symbol: x.account.symbol,
+                creator: x.account.creator.toBase58(),
+                paymentMint: x.account.paymentMint.toBase58(),
+                merkleTree: x.account.merkleTree.toBase58(),
+              });
+            }
+          } catch {
+            // empty index is fine
           }
-        } catch {
-          // event index remains empty — listings still render with pubkeys
-        }
-      }
-      setState({ kind: "ready", listings, myListings, events });
+          return eventsMap;
+        })(),
+      ]);
+
+      const me = publicKey?.toBase58();
+      const mine = me ? listings.filter((l) => l.seller === me) : [];
+
+      setState({
+        kind: "ready",
+        listings,
+        myListings: mine,
+        events,
+      });
     } catch (err) {
       console.error(err);
       setState({
@@ -110,144 +105,63 @@ export function ResaleView() {
     void load();
   }, [load]);
 
-  async function payForListing(listing: TicketListingDoc) {
-    if (!publicKey || state.kind !== "ready") return;
-    const eventMeta = state.events.get(listing.eventPubkey);
-    if (!eventMeta) {
-      window.alert("Could not resolve the event's payment mint — refresh and try again.");
-      return;
-    }
-    if (listing.sellerPubkey === publicKey.toBase58()) {
+  async function buy(listing: OnChainResaleListing) {
+    if (!publicKey) return;
+    if (listing.seller === publicKey.toBase58()) {
       window.alert("You are the seller of this listing.");
       return;
     }
+    // We need the assetId — derive from Helius getAssetsByGroup? Or just
+    // compute: Bubblegum asset_id = get_asset_id(merkleTree, nonce). The
+    // client-side hash formula matches on-chain:
+    //   Pubkey::find_program_address([b"asset", merkleTree, nonce], BUBBLEGUM).0
+    const assetId = await deriveCnftAssetId(
+      new PublicKey(listing.merkleTree),
+      BigInt(listing.nonce)
+    );
     if (
       !window.confirm(
-        `Send $${(listing.priceUsdcBase / USDC_UNIT).toFixed(2)} USDC to ${listing.sellerPubkey.slice(0, 6)}…${listing.sellerPubkey.slice(-4)}?\n\nThe seller will then transfer the cNFT ticket to your wallet. This is an honor-system swap for V0 — atomic settlement is coming.`
+        `Buy this ticket for $${listing.priceUsdc.toFixed(2)} USDC?\n\nYou'll sign one transaction that sends USDC to the seller and moves the cNFT into your wallet atomically. No trust gap.`
       )
     ) {
       return;
     }
-    setBusyListing(listing.id);
+    setBusyListing(listing.address);
     try {
-      const paymentMint = new PublicKey(eventMeta.paymentMint);
-      const seller = new PublicKey(listing.sellerPubkey);
-      const mintInfo = await getMint(connection, paymentMint, "confirmed", TOKEN_2022_PROGRAM_ID);
-      const decimals = mintInfo.decimals;
-
-      const buyerAta = getAssociatedTokenAddressSync(
-        paymentMint,
-        publicKey,
-        false,
-        TOKEN_2022_PROGRAM_ID
-      );
-      const sellerAta = getAssociatedTokenAddressSync(
-        paymentMint,
-        seller,
-        false,
-        TOKEN_2022_PROGRAM_ID
-      );
-
-      const ixs = [];
-
-      // Ensure seller's ATA exists — pay buyer creates it if missing.
-      const sellerAtaInfo = await connection.getAccountInfo(sellerAta);
-      if (!sellerAtaInfo) {
-        ixs.push(
-          createAssociatedTokenAccountInstruction(
-            publicKey,
-            sellerAta,
-            seller,
-            paymentMint,
-            TOKEN_2022_PROGRAM_ID,
-            ASSOCIATED_TOKEN_PROGRAM_ID
-          )
-        );
-      }
-
-      ixs.push(
-        createTransferCheckedInstruction(
-          buyerAta,
-          paymentMint,
-          sellerAta,
-          publicKey,
-          BigInt(listing.priceUsdcBase),
-          decimals,
-          [],
-          TOKEN_2022_PROGRAM_ID
-        )
-      );
-
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }));
-      for (const ix of ixs) tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction(
-        { signature: sig, blockhash, lastValidBlockHeight },
-        "confirmed"
-      );
-
-      await markListingSoldPending({
-        id: listing.id,
-        buyerPubkey: publicKey.toBase58(),
-        paymentSig: sig,
+      const sig = await buyTicketResaleTx({
+        connection,
+        wallet,
+        listing,
+        assetId,
       });
-
-      // Sanity-check the seller still owns the cNFT at payment time — if not,
-      // we surface a warning but the payment has landed.
-      try {
-        const asset = await getAsset(listing.assetId);
-        if (asset && asset.ownership?.owner && asset.ownership.owner !== listing.sellerPubkey) {
-          window.alert(
-            `Paid ${listing.priceUsdcBase / USDC_UNIT} USDC, but the cNFT is no longer owned by ${listing.sellerPubkey.slice(0, 6)}… — contact seller.`
-          );
-        } else {
-          window.alert(
-            `Paid. Seller must now transfer the cNFT to your wallet in Phantom. Tx: ${sig.slice(0, 12)}…`
-          );
-        }
-      } catch {
-        window.alert(`Paid. Tx: ${sig.slice(0, 12)}…`);
-      }
-
+      window.alert(
+        `Swap complete. cNFT is in your wallet. Tx: ${sig.slice(0, 12)}…`
+      );
       await load();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Payment failed.");
+      window.alert(err instanceof Error ? err.message : "Buy failed.");
     } finally {
       setBusyListing(null);
     }
   }
 
-  async function markTransferred(listing: TicketListingDoc) {
+  async function cancelMine(listing: OnChainResaleListing) {
     if (!publicKey) return;
-    const sig = window.prompt(
-      "Paste the cNFT transfer tx signature (optional — leave blank if you don't have one):",
-      ""
+    if (!window.confirm("Cancel this listing? The cNFT will return to your wallet.")) return;
+    const assetId = await deriveCnftAssetId(
+      new PublicKey(listing.merkleTree),
+      BigInt(listing.nonce)
     );
-    setBusyListing(listing.id);
+    setBusyListing(listing.address);
     try {
-      await markListingSold({
-        id: listing.id,
-        sellerPubkey: publicKey.toBase58(),
-        transferSig: sig ? sig.trim() : null,
+      const sig = await cancelTicketResaleTx({
+        connection,
+        wallet,
+        listing,
+        assetId,
       });
-      await load();
-    } catch (err) {
-      console.error(err);
-      window.alert(err instanceof Error ? err.message : "Mark failed");
-    } finally {
-      setBusyListing(null);
-    }
-  }
-
-  async function cancelMyListing(listing: TicketListingDoc) {
-    if (!publicKey) return;
-    if (!window.confirm("Cancel this listing?")) return;
-    setBusyListing(listing.id);
-    try {
-      await cancelListing(listing.id, publicKey.toBase58());
+      window.alert(`Cancelled. Tx: ${sig.slice(0, 12)}…`);
       await load();
     } catch (err) {
       console.error(err);
@@ -258,15 +172,15 @@ export function ResaleView() {
   }
 
   const visible = useMemo(() => {
-    if (state.kind !== "ready") return [] as TicketListingDoc[];
+    if (state.kind !== "ready") return [] as OnChainResaleListing[];
     if (!eventFilter) return state.listings;
-    return state.listings.filter((l) => l.eventPubkey === eventFilter);
+    return state.listings.filter((l) => l.event === eventFilter);
   }, [state, eventFilter]);
 
   const eventOptions = useMemo(() => {
     if (state.kind !== "ready") return [] as Array<{ pubkey: string; label: string; count: number }>;
     const counts = new Map<string, number>();
-    for (const l of state.listings) counts.set(l.eventPubkey, (counts.get(l.eventPubkey) ?? 0) + 1);
+    for (const l of state.listings) counts.set(l.event, (counts.get(l.event) ?? 0) + 1);
     return Array.from(counts.entries()).map(([pubkey, count]) => {
       const meta = state.events.get(pubkey);
       return {
@@ -279,18 +193,15 @@ export function ResaleView() {
 
   return (
     <>
-      <header style={{ marginBottom: "1.25rem", display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: "1rem" }}>
-        <div>
-          <h1 style={{ fontSize: "1.55rem", letterSpacing: "-0.02em", fontWeight: 600, marginBottom: "0.3rem" }}>
-            Resale board
-          </h1>
-          <p style={{ color: "#6b7280", fontSize: "0.88rem", maxWidth: 720 }}>
-            Secondary-market listings for Nodosol cNFT tickets. Prices are set by
-            sellers. Paying sends USDC from your wallet to theirs; the seller then
-            transfers the cNFT in Phantom. Atomic on-chain settlement is coming
-            in the next program upgrade.
-          </p>
-        </div>
+      <header style={{ marginBottom: "1.25rem" }}>
+        <h1 style={{ fontSize: "1.55rem", letterSpacing: "-0.02em", fontWeight: 600, marginBottom: "0.3rem" }}>
+          Resale board
+        </h1>
+        <p style={{ color: "#6b7280", fontSize: "0.88rem", maxWidth: 720 }}>
+          Secondary-market listings for Nodosol cNFT tickets. Listings hold the
+          cNFT in on-chain escrow; buyers get atomic USDC + cNFT swap in a
+          single transaction. No trust gap.
+        </p>
       </header>
 
       {!connected ? (
@@ -298,7 +209,7 @@ export function ResaleView() {
           <Centered>
             <div style={{ fontWeight: 600, marginBottom: "0.4rem" }}>Connect wallet</div>
             <div style={{ fontSize: "0.88rem", color: "#6b7280", marginBottom: "1rem" }}>
-              Browse listings anonymously or connect to pay a seller directly.
+              Browse anonymously or connect to buy / manage your listings.
             </div>
             <WalletMultiButton />
           </Centered>
@@ -309,31 +220,22 @@ export function ResaleView() {
         <Card><Centered>Failed: {state.message}</Centered></Card>
       ) : (
         <>
-          {state.myListings.filter(
-            (l) => l.settlementStatus === "listed" || l.settlementStatus === "sold_pending"
-          ).length > 0 && (
+          {state.myListings.length > 0 && (
             <div style={{ marginBottom: "1rem" }}>
               <Card>
                 <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.04em", marginBottom: "0.6rem" }}>
-                  My listings
+                  My active listings
                 </div>
                 <div style={{ display: "grid", gap: "0.5rem" }}>
-                  {state.myListings
-                    .filter(
-                      (l) =>
-                        l.settlementStatus === "listed" ||
-                        l.settlementStatus === "sold_pending"
-                    )
-                    .map((l) => (
-                      <SellerListingRow
-                        key={l.id}
-                        listing={l}
-                        eventMeta={state.events.get(l.eventPubkey)}
-                        busy={busyListing === l.id}
-                        onMarkTransferred={() => void markTransferred(l)}
-                        onCancel={() => void cancelMyListing(l)}
-                      />
-                    ))}
+                  {state.myListings.map((l) => (
+                    <SellerListingRow
+                      key={l.address}
+                      listing={l}
+                      eventMeta={state.events.get(l.event)}
+                      busy={busyListing === l.address}
+                      onCancel={() => void cancelMine(l)}
+                    />
+                  ))}
                 </div>
               </Card>
             </div>
@@ -385,12 +287,12 @@ export function ResaleView() {
             <div style={{ marginTop: "1rem", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px, 1fr))", gap: "0.85rem" }}>
               {visible.map((l) => (
                 <ListingCard
-                  key={l.id}
+                  key={l.address}
                   listing={l}
-                  eventMeta={state.events.get(l.eventPubkey)}
-                  busy={busyListing === l.id}
-                  youAreSeller={publicKey?.toBase58() === l.sellerPubkey}
-                  onPay={() => void payForListing(l)}
+                  eventMeta={state.events.get(l.event)}
+                  busy={busyListing === l.address}
+                  youAreSeller={publicKey?.toBase58() === l.seller}
+                  onBuy={() => void buy(l)}
                 />
               ))}
             </div>
@@ -401,23 +303,109 @@ export function ResaleView() {
   );
 }
 
+/**
+ * Compute the Bubblegum asset_id for a leaf.
+ *
+ * Metaplex derives: [b"asset", tree, nonce_le_bytes] against BUBBLEGUM program.
+ */
+async function deriveCnftAssetId(tree: PublicKey, nonce: bigint): Promise<string> {
+  const BUBBLEGUM = new PublicKey("BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY");
+  const nonceBuf = Buffer.alloc(8);
+  nonceBuf.writeBigUInt64LE(nonce);
+  const [pda] = PublicKey.findProgramAddressSync(
+    [Buffer.from("asset"), tree.toBuffer(), nonceBuf],
+    BUBBLEGUM
+  );
+  return pda.toBase58();
+}
+
+function SellerListingRow({
+  listing,
+  eventMeta,
+  busy,
+  onCancel,
+}: {
+  listing: OnChainResaleListing;
+  eventMeta: { name: string; symbol: string } | undefined;
+  busy: boolean;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      style={{
+        border: "1px solid var(--shell-border, #eef0f3)",
+        borderRadius: 9,
+        padding: "0.65rem 0.85rem",
+        display: "grid",
+        gridTemplateColumns: "1fr auto",
+        gap: "0.75rem",
+        alignItems: "center",
+      }}
+    >
+      <div>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.2rem" }}>
+          <span style={{ fontSize: "0.88rem", fontWeight: 600 }}>
+            {eventMeta ? eventMeta.name : `leaf ${listing.leafIndex}`}
+          </span>
+          <span
+            style={{
+              fontSize: "0.62rem",
+              padding: "0.1rem 0.45rem",
+              borderRadius: 4,
+              background: "#10b981",
+              color: "#fff",
+              fontWeight: 700,
+              letterSpacing: "0.04em",
+              textTransform: "uppercase",
+            }}
+          >
+            Escrowed
+          </span>
+        </div>
+        <div style={{ fontSize: "0.76rem", color: "#6b7280" }}>
+          ${listing.priceUsdc.toFixed(2)} USDC
+          {listing.expiresAt > 0 && (
+            <> · expires {new Date(listing.expiresAt * 1000).toLocaleString()}</>
+          )}
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: "0.35rem" }}>
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={busy}
+          style={{
+            padding: "0.4rem 0.8rem",
+            borderRadius: 6,
+            border: "1px solid #fecaca",
+            background: "transparent",
+            color: "#b91c1c",
+            fontSize: "0.76rem",
+            fontWeight: 600,
+            cursor: busy ? "not-allowed" : "pointer",
+          }}
+        >
+          {busy ? "…" : "Cancel · return cNFT"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ListingCard({
   listing,
   eventMeta,
   busy,
   youAreSeller,
-  onPay,
+  onBuy,
 }: {
-  listing: TicketListingDoc;
+  listing: OnChainResaleListing;
   eventMeta: { name: string; symbol: string } | undefined;
   busy: boolean;
   youAreSeller: boolean;
-  onPay: () => void;
+  onBuy: () => void;
 }) {
-  const priceUsdc = listing.priceUsdcBase / USDC_UNIT;
-  const expired = listing.expiresAt
-    ? new Date(listing.expiresAt).getTime() < Date.now()
-    : false;
+  const expired = listing.expiresAt > 0 && listing.expiresAt * 1000 < Date.now();
   return (
     <div
       style={{
@@ -433,7 +421,7 @@ function ListingCard({
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
         <div>
           <div style={{ fontSize: "0.92rem", fontWeight: 600 }}>
-            {eventMeta ? eventMeta.name : "Unknown event"}
+            {eventMeta ? eventMeta.name : `leaf ${listing.leafIndex}`}
           </div>
           {eventMeta && (
             <div style={{ fontSize: "0.7rem", color: "#6b7280" }}>
@@ -442,51 +430,31 @@ function ListingCard({
           )}
         </div>
         <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: "1.2rem", fontWeight: 700 }}>${priceUsdc.toFixed(2)}</div>
+          <div style={{ fontSize: "1.2rem", fontWeight: 700 }}>${listing.priceUsdc.toFixed(2)}</div>
           <div style={{ fontSize: "0.62rem", color: "#9ca3af" }}>USDC</div>
         </div>
       </div>
-      {listing.note && (
-        <div style={{ fontSize: "0.78rem", color: "#4b5563", fontStyle: "italic" }}>
-          “{listing.note}”
-        </div>
-      )}
       <div style={{ fontSize: "0.7rem", color: "#6b7280", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
         <span>
-          Seller <code style={{ color: "#9ca3af" }}>{listing.sellerPubkey.slice(0, 6)}…{listing.sellerPubkey.slice(-4)}</code>
+          Seller <code style={{ color: "#9ca3af" }}>{listing.seller.slice(0, 6)}…{listing.seller.slice(-4)}</code>
         </span>
-        {listing.expiresAt && (
+        {listing.expiresAt > 0 && (
           <span style={{ color: expired ? "#b91c1c" : undefined }}>
-            {expired ? "Expired" : `Expires ${new Date(listing.expiresAt).toLocaleString()}`}
+            {expired ? "Expired" : `Expires ${new Date(listing.expiresAt * 1000).toLocaleString()}`}
           </span>
         )}
       </div>
       <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.2rem" }}>
-        <Link
-          href={`/marketplace/tickets/${listing.assetId}`}
-          style={{
-            padding: "0.45rem 0.85rem",
-            borderRadius: 7,
-            border: "1px solid var(--shell-border, #eef0f3)",
-            background: "var(--shell-pill-bg, #f7f8fa)",
-            color: "var(--shell-fg, #111827)",
-            fontSize: "0.78rem",
-            fontWeight: 600,
-            textDecoration: "none",
-          }}
-        >
-          Ticket details
-        </Link>
         <button
           type="button"
-          onClick={onPay}
+          onClick={onBuy}
           disabled={busy || youAreSeller || expired}
           title={
             youAreSeller
               ? "You are the seller"
               : expired
               ? "Listing expired"
-              : "Pay the seller in USDC"
+              : "Atomic USDC + cNFT swap"
           }
           style={{
             padding: "0.45rem 1rem",
@@ -499,140 +467,8 @@ function ListingCard({
             cursor: busy || youAreSeller || expired ? "not-allowed" : "pointer",
           }}
         >
-          {busy ? "Paying…" : youAreSeller ? "Your listing" : "Buy (send USDC)"}
+          {busy ? "Swapping…" : youAreSeller ? "Your listing" : "Buy · atomic swap"}
         </button>
-      </div>
-    </div>
-  );
-}
-
-function SellerListingRow({
-  listing,
-  eventMeta,
-  busy,
-  onMarkTransferred,
-  onCancel,
-}: {
-  listing: TicketListingDoc;
-  eventMeta: { name: string; symbol: string } | undefined;
-  busy: boolean;
-  onMarkTransferred: () => void;
-  onCancel: () => void;
-}) {
-  const priceUsdc = listing.priceUsdcBase / USDC_UNIT;
-  const pending = listing.settlementStatus === "sold_pending";
-  return (
-    <div
-      style={{
-        border: `1px solid ${pending ? "#f59e0b" : "var(--shell-border, #eef0f3)"}`,
-        background: pending ? "#fffbeb" : "var(--shell-card, #fff)",
-        borderRadius: 9,
-        padding: "0.65rem 0.85rem",
-        display: "grid",
-        gridTemplateColumns: "1fr auto",
-        gap: "0.75rem",
-        alignItems: "center",
-      }}
-    >
-      <div>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.2rem" }}>
-          <span style={{ fontSize: "0.88rem", fontWeight: 600 }}>
-            {eventMeta ? eventMeta.name : `Asset ${listing.assetId.slice(0, 8)}…`}
-          </span>
-          <span
-            style={{
-              fontSize: "0.62rem",
-              padding: "0.1rem 0.45rem",
-              borderRadius: 4,
-              background: pending ? "#f59e0b" : "#e0e7ff",
-              color: pending ? "#fff" : "#3730a3",
-              fontWeight: 700,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
-            }}
-          >
-            {pending ? "Paid — transfer pending" : "Listed"}
-          </span>
-        </div>
-        <div style={{ fontSize: "0.76rem", color: "#6b7280" }}>
-          ${priceUsdc.toFixed(2)} USDC
-          {listing.buyerPubkey && (
-            <>
-              {" · "}
-              Buyer{" "}
-              <code style={{ color: "#9ca3af" }}>
-                {listing.buyerPubkey.slice(0, 6)}…{listing.buyerPubkey.slice(-4)}
-              </code>
-            </>
-          )}
-          {listing.paymentSig && (
-            <>
-              {" · "}
-              <a
-                href={`https://explorer.solana.com/tx/${listing.paymentSig}?cluster=devnet`}
-                target="_blank"
-                rel="noreferrer"
-                style={{ color: "#4338ca", textDecoration: "none" }}
-              >
-                payment tx ↗
-              </a>
-            </>
-          )}
-        </div>
-      </div>
-      <div style={{ display: "flex", gap: "0.35rem" }}>
-        <Link
-          href={`/marketplace/tickets/${listing.assetId}`}
-          style={{
-            padding: "0.4rem 0.7rem",
-            borderRadius: 6,
-            border: "1px solid var(--shell-border, #eef0f3)",
-            background: "var(--shell-pill-bg, #f7f8fa)",
-            color: "var(--shell-fg, #111827)",
-            fontSize: "0.74rem",
-            fontWeight: 600,
-            textDecoration: "none",
-          }}
-        >
-          Ticket
-        </Link>
-        {pending ? (
-          <button
-            type="button"
-            onClick={onMarkTransferred}
-            disabled={busy}
-            style={{
-              padding: "0.4rem 0.8rem",
-              borderRadius: 6,
-              border: "none",
-              background: busy ? "#c7d2fe" : "#4f46e5",
-              color: "#fff",
-              fontSize: "0.76rem",
-              fontWeight: 600,
-              cursor: busy ? "not-allowed" : "pointer",
-            }}
-          >
-            {busy ? "…" : "Mark transferred"}
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={onCancel}
-            disabled={busy}
-            style={{
-              padding: "0.4rem 0.8rem",
-              borderRadius: 6,
-              border: "1px solid #fecaca",
-              background: "transparent",
-              color: "#b91c1c",
-              fontSize: "0.76rem",
-              fontWeight: 600,
-              cursor: busy ? "not-allowed" : "pointer",
-            }}
-          >
-            Cancel
-          </button>
-        )}
       </div>
     </div>
   );

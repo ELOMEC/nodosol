@@ -147,6 +147,129 @@
       "args": []
     },
     {
+      "name": "buy_ticket_resale",
+      "discriminator": [
+        215,
+        182,
+        225,
+        179,
+        109,
+        180,
+        113,
+        196
+      ],
+      "accounts": [
+        {
+          "name": "buyer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "seller",
+          "docs": [
+            "listing's `has_one` check binds this to `listing.seller`."
+          ],
+          "writable": true
+        },
+        {
+          "name": "listing",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  115,
+                  97,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "listing.merkle_tree",
+                "account": "TicketResaleListing"
+              },
+              {
+                "kind": "account",
+                "path": "listing.leaf_index",
+                "account": "TicketResaleListing"
+              }
+            ]
+          }
+        },
+        {
+          "name": "payment_mint"
+        },
+        {
+          "name": "buyer_payment_account",
+          "writable": true
+        },
+        {
+          "name": "seller_payment_account",
+          "writable": true
+        },
+        {
+          "name": "payment_token_program"
+        },
+        {
+          "name": "tree_config",
+          "writable": true
+        },
+        {
+          "name": "merkle_tree",
+          "writable": true
+        },
+        {
+          "name": "bubblegum_program",
+          "address": "BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY"
+        },
+        {
+          "name": "log_wrapper",
+          "address": "noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV"
+        },
+        {
+          "name": "compression_program",
+          "address": "cmtDvXumGCrqC1Age74AVPhSRVXJMd8PJS91L8KbNCK"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "root",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "data_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "creator_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        }
+      ]
+    },
+    {
       "name": "buy_tier_ticket",
       "discriminator": [
         110,
@@ -314,6 +437,111 @@
         {
           "name": "seat_number",
           "type": "u16"
+        }
+      ]
+    },
+    {
+      "name": "cancel_ticket_resale",
+      "discriminator": [
+        223,
+        107,
+        38,
+        81,
+        248,
+        146,
+        4,
+        199
+      ],
+      "accounts": [
+        {
+          "name": "seller",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "listing"
+          ]
+        },
+        {
+          "name": "listing",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  115,
+                  97,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "listing.merkle_tree",
+                "account": "TicketResaleListing"
+              },
+              {
+                "kind": "account",
+                "path": "listing.leaf_index",
+                "account": "TicketResaleListing"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tree_config",
+          "writable": true
+        },
+        {
+          "name": "merkle_tree",
+          "writable": true
+        },
+        {
+          "name": "bubblegum_program",
+          "address": "BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY"
+        },
+        {
+          "name": "log_wrapper",
+          "address": "noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV"
+        },
+        {
+          "name": "compression_program",
+          "address": "cmtDvXumGCrqC1Age74AVPhSRVXJMd8PJS91L8KbNCK"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "root",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "data_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "creator_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
         }
       ]
     },
@@ -750,6 +978,149 @@
         }
       ],
       "args": []
+    },
+    {
+      "name": "list_ticket_resale",
+      "discriminator": [
+        178,
+        250,
+        210,
+        204,
+        69,
+        91,
+        192,
+        135
+      ],
+      "accounts": [
+        {
+          "name": "seller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "event",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  101,
+                  118,
+                  101,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "event.creator",
+                "account": "Event"
+              },
+              {
+                "kind": "account",
+                "path": "event.event_id",
+                "account": "Event"
+              }
+            ]
+          }
+        },
+        {
+          "name": "listing",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  114,
+                  101,
+                  115,
+                  97,
+                  108,
+                  101
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "merkle_tree"
+              },
+              {
+                "kind": "arg",
+                "path": "leaf_index"
+              }
+            ]
+          }
+        },
+        {
+          "name": "tree_config",
+          "writable": true
+        },
+        {
+          "name": "merkle_tree",
+          "writable": true
+        },
+        {
+          "name": "bubblegum_program",
+          "address": "BGUMAp9Gq7iTEuizy4pqaxsTyUCBK68MDfK752saRPUY"
+        },
+        {
+          "name": "log_wrapper",
+          "address": "noopb9bkMVfRPU8AsbpTUg8AQkHtKwMYZiFUjNRtMmV"
+        },
+        {
+          "name": "compression_program",
+          "address": "cmtDvXumGCrqC1Age74AVPhSRVXJMd8PJS91L8KbNCK"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "leaf_index",
+          "type": "u32"
+        },
+        {
+          "name": "nonce",
+          "type": "u64"
+        },
+        {
+          "name": "root",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "data_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "creator_hash",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "price",
+          "type": "u64"
+        },
+        {
+          "name": "expires_at",
+          "type": "i64"
+        }
+      ]
     },
     {
       "name": "update_config_authority",
@@ -1311,6 +1682,19 @@
       ]
     },
     {
+      "name": "TicketResaleListing",
+      "discriminator": [
+        59,
+        105,
+        118,
+        15,
+        60,
+        21,
+        83,
+        232
+      ]
+    },
+    {
       "name": "TicketTier",
       "discriminator": [
         123,
@@ -1440,6 +1824,45 @@
         144,
         104,
         109
+      ]
+    },
+    {
+      "name": "TicketResaleCancelled",
+      "discriminator": [
+        201,
+        60,
+        211,
+        75,
+        118,
+        195,
+        180,
+        72
+      ]
+    },
+    {
+      "name": "TicketResaleFilled",
+      "discriminator": [
+        72,
+        126,
+        151,
+        170,
+        131,
+        134,
+        34,
+        147
+      ]
+    },
+    {
+      "name": "TicketResaleListed",
+      "discriminator": [
+        139,
+        232,
+        255,
+        173,
+        169,
+        203,
+        179,
+        210
       ]
     },
     {
@@ -1666,6 +2089,36 @@
       "code": 6028,
       "name": "RowLabelTooLong",
       "msg": "Row label is too long"
+    },
+    {
+      "code": 6029,
+      "name": "ResaleNotActive",
+      "msg": "Resale listing is not active"
+    },
+    {
+      "code": 6030,
+      "name": "ResaleExpired",
+      "msg": "Resale listing has expired"
+    },
+    {
+      "code": 6031,
+      "name": "ResaleNotExpired",
+      "msg": "Resale listing has not expired yet"
+    },
+    {
+      "code": 6032,
+      "name": "NotSeller",
+      "msg": "Only the seller may perform this action"
+    },
+    {
+      "code": 6033,
+      "name": "SellerCannotBuy",
+      "msg": "Seller cannot buy their own resale listing"
+    },
+    {
+      "code": 6034,
+      "name": "ResaleTreeMismatch",
+      "msg": "Resale merkle tree does not match the listing"
     }
   ],
   "types": [
@@ -2052,6 +2505,173 @@
           {
             "name": "timestamp",
             "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TicketResaleCancelled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "listing",
+            "type": "pubkey"
+          },
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TicketResaleFilled",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "listing",
+            "type": "pubkey"
+          },
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "buyer",
+            "type": "pubkey"
+          },
+          {
+            "name": "merkle_tree",
+            "type": "pubkey"
+          },
+          {
+            "name": "leaf_index",
+            "type": "u32"
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TicketResaleListed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "listing",
+            "type": "pubkey"
+          },
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "merkle_tree",
+            "type": "pubkey"
+          },
+          {
+            "name": "leaf_index",
+            "type": "u32"
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "expires_at",
+            "type": "i64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "TicketResaleListing",
+      "docs": [
+        "A custody-style secondary-market listing for a cNFT ticket.",
+        "",
+        "During the listing window the cNFT leaf is owned by the listing PDA",
+        "(the seller transfers into custody on `list_ticket_resale`). Cancel",
+        "and buy both CPI into Bubblegum `transfer` with the listing PDA as",
+        "signer to move the leaf out. The PDA is then closed, refunding rent",
+        "to the seller.",
+        "",
+        "PDA seeds: `[b\"resale\", merkle_tree, leaf_index_le]`. That combo is",
+        "globally unique per cNFT."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "seller",
+            "type": "pubkey"
+          },
+          {
+            "name": "event",
+            "type": "pubkey"
+          },
+          {
+            "name": "merkle_tree",
+            "type": "pubkey"
+          },
+          {
+            "name": "payment_mint",
+            "type": "pubkey"
+          },
+          {
+            "name": "leaf_index",
+            "docs": [
+              "Bubblegum leaf index — together with merkle_tree uniquely identifies the cNFT."
+            ],
+            "type": "u32"
+          },
+          {
+            "name": "nonce",
+            "docs": [
+              "Nonce from the cNFT leaf (equals leaf_index for v1 but stored for CPI)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "price",
+            "type": "u64"
+          },
+          {
+            "name": "created_at",
+            "type": "i64"
+          },
+          {
+            "name": "expires_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                16
+              ]
+            }
           }
         ]
       }

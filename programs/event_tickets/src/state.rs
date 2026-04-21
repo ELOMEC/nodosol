@@ -102,3 +102,37 @@ pub enum TierStatus {
     Paused,
     Closed,
 }
+
+/// A custody-style secondary-market listing for a cNFT ticket.
+///
+/// During the listing window the cNFT leaf is owned by the listing PDA
+/// (the seller transfers into custody on `list_ticket_resale`). Cancel
+/// and buy both CPI into Bubblegum `transfer` with the listing PDA as
+/// signer to move the leaf out. The PDA is then closed, refunding rent
+/// to the seller.
+///
+/// PDA seeds: `[b"resale", merkle_tree, leaf_index_le]`. That combo is
+/// globally unique per cNFT.
+#[account]
+#[derive(InitSpace)]
+pub struct TicketResaleListing {
+    pub seller: Pubkey,
+    pub event: Pubkey,
+    pub merkle_tree: Pubkey,
+    pub payment_mint: Pubkey,
+    /// Bubblegum leaf index — together with merkle_tree uniquely identifies the cNFT.
+    pub leaf_index: u32,
+    /// Nonce from the cNFT leaf (equals leaf_index for v1 but stored for CPI).
+    pub nonce: u64,
+    pub price: u64,
+    pub created_at: i64,
+    pub expires_at: i64,
+    pub bump: u8,
+    pub reserved: [u8; 16],
+}
+
+impl TicketResaleListing {
+    pub fn is_expired(&self, now: i64) -> bool {
+        self.expires_at > 0 && now >= self.expires_at
+    }
+}

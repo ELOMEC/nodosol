@@ -13,6 +13,9 @@ pub mod update_tier_status;
 pub mod withdraw_event_revenue;
 pub mod update_event_status;
 pub mod close_event;
+pub mod list_ticket_resale;
+pub mod cancel_ticket_resale;
+pub mod buy_ticket_resale;
 
 pub use initialize_config::*;
 pub use update_fee_bps::*;
@@ -29,3 +32,6 @@ pub use update_tier_status::*;
 pub use withdraw_event_revenue::*;
 pub use update_event_status::*;
 pub use close_event::*;
+pub use list_ticket_resale::*;
+pub use cancel_ticket_resale::*;
+pub use buy_ticket_resale::*;

@@ -121,4 +121,45 @@ pub mod event_tickets {
     pub fn close_event(ctx: Context<CloseEvent>) -> Result<()> {
         handle_close_event(ctx)
     }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn list_ticket_resale<'info>(
+        ctx: Context<'info, ListTicketResale<'info>>,
+        leaf_index: u32,
+        nonce: u64,
+        root: [u8; 32],
+        data_hash: [u8; 32],
+        creator_hash: [u8; 32],
+        price: u64,
+        expires_at: i64,
+    ) -> Result<()> {
+        handle_list_ticket_resale(
+            ctx,
+            leaf_index,
+            nonce,
+            root,
+            data_hash,
+            creator_hash,
+            price,
+            expires_at,
+        )
+    }
+
+    pub fn cancel_ticket_resale<'info>(
+        ctx: Context<'info, CancelTicketResale<'info>>,
+        root: [u8; 32],
+        data_hash: [u8; 32],
+        creator_hash: [u8; 32],
+    ) -> Result<()> {
+        handle_cancel_ticket_resale(ctx, root, data_hash, creator_hash)
+    }
+
+    pub fn buy_ticket_resale<'info>(
+        ctx: Context<'info, BuyTicketResale<'info>>,
+        root: [u8; 32],
+        data_hash: [u8; 32],
+        creator_hash: [u8; 32],
+    ) -> Result<()> {
+        handle_buy_ticket_resale(ctx, root, data_hash, creator_hash)
+    }
 }

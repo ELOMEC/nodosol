@@ -21,11 +21,13 @@ import { getAsset, HeliusAsset } from "@/lib/helius";
 import { toHttp } from "@/lib/metadataImages";
 import { parseSeatFromName, parseTierLabelFromName } from "@/lib/ticketName";
 import {
-  cancelListing,
-  createListing,
-  getActiveListingForAsset,
-  TicketListingDoc,
-} from "@/lib/ticketListings";
+  buyTicketResaleTx,
+  cancelTicketResaleTx,
+  fetchListingForAsset,
+  listTicketResaleTx,
+  OnChainResaleListing,
+  resaleListingPda,
+} from "@/lib/ticketResale";
 import { getVenueTemplate, VenueTemplate } from "@/lib/venue-templates";
 import {
   getEventVenueMapping,
@@ -50,7 +52,7 @@ type Loaded = {
   event: EventMeta | null;
   template: VenueTemplate | null;
   matchedTier: TicketTierDoc | null;
-  activeListing: TicketListingDoc | null;
+  activeListing: OnChainResaleListing | null;
 };
 
 type State =
@@ -178,9 +180,17 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
         // Program not deployed or DAS issues — render what we have.
       }
 
-      let activeListing: TicketListingDoc | null = null;
+      let activeListing: OnChainResaleListing | null = null;
       try {
-        activeListing = await getActiveListingForAsset(assetId);
+        const treeStr = asset.compression?.tree;
+        const leafId = asset.compression?.leaf_id;
+        if (treeStr && leafId !== undefined && leafId !== null) {
+          activeListing = await fetchListingForAsset(
+            program,
+            new PublicKey(treeStr),
+            leafId
+          );
+        }
       } catch (err) {
         console.warn("listing lookup failed", err);
       }
@@ -263,21 +273,28 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
   async function submitListing(input: {
     priceUsdc: number;
     expiresAt: string | null;
-    note: string | null;
   }) {
     if (state.kind !== "ready" || !publicKey || !state.loaded.event) return;
+    const asset = state.loaded.asset;
+    const tree = asset.compression?.tree;
+    if (!tree) {
+      window.alert("Asset is missing compression info.");
+      return;
+    }
     setListingBusy(true);
     try {
-      const priceBase = BigInt(Math.round(input.priceUsdc * USDC_UNIT));
-      await createListing({
+      const expiresUnix = input.expiresAt ? Math.floor(new Date(input.expiresAt).getTime() / 1000) : 0;
+      const sig = await listTicketResaleTx({
+        connection,
+        wallet,
+        event: new PublicKey(state.loaded.event.address),
+        merkleTree: new PublicKey(tree),
         assetId,
-        eventPubkey: state.loaded.event.address,
-        sellerPubkey: publicKey.toBase58(),
-        priceUsdcBase: priceBase,
-        note: input.note,
-        expiresAt: input.expiresAt,
+        priceUsdc: input.priceUsdc,
+        expiresAt: expiresUnix,
       });
       setListingOpen(false);
+      window.alert(`Listed on-chain. The cNFT is now in escrow. Tx: ${sig.slice(0, 12)}…`);
       await load();
     } catch (err) {
       console.error(err);
@@ -291,10 +308,16 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
     if (state.kind !== "ready" || !publicKey) return;
     const listing = state.loaded.activeListing;
     if (!listing) return;
-    if (!window.confirm("Cancel this resale listing?")) return;
+    if (!window.confirm("Cancel this resale listing? The cNFT will be transferred back to your wallet.")) return;
     setListingBusy(true);
     try {
-      await cancelListing(listing.id, publicKey.toBase58());
+      const sig = await cancelTicketResaleTx({
+        connection,
+        wallet,
+        listing,
+        assetId,
+      });
+      window.alert(`Cancelled. cNFT returned to wallet. Tx: ${sig.slice(0, 12)}…`);
       await load();
     } catch (err) {
       console.error(err);
@@ -329,7 +352,12 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
   const name = asset.content?.metadata?.name ?? "(unnamed)";
   const image = asset.content?.links?.image;
   const explorerUrl = `https://explorer.solana.com/address/${assetId}?cluster=devnet`;
-  const ownerMatch = asset.ownership?.owner === publicKey?.toBase58();
+  const me = publicKey?.toBase58();
+  const directOwner = asset.ownership?.owner === me;
+  const listingSellerIsMe = state.loaded.activeListing?.seller === me;
+  // Holder == direct cNFT owner OR this wallet listed the ticket (it's
+  // currently custodied by the listing PDA).
+  const ownerMatch = !!me && (directOwner || listingSellerIsMe);
 
   return (
     <Shell>
@@ -613,17 +641,16 @@ function ResalePanel({
   onSubmit,
   onCancel,
 }: {
-  listing: TicketListingDoc | null;
+  listing: OnChainResaleListing | null;
   open: boolean;
   busy: boolean;
   onOpen: () => void;
   onClose: () => void;
-  onSubmit: (v: { priceUsdc: number; expiresAt: string | null; note: string | null }) => void;
+  onSubmit: (v: { priceUsdc: number; expiresAt: string | null }) => void;
   onCancel: () => void;
 }) {
   const [price, setPrice] = useState("");
   const [expiry, setExpiry] = useState<"1d" | "3d" | "1w" | "none">("1w");
-  const [note, setNote] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
   function expiresToIso(v: typeof expiry): string | null {
@@ -645,12 +672,12 @@ function ResalePanel({
     onSubmit({
       priceUsdc: p,
       expiresAt: expiresToIso(expiry),
-      note: note.trim() || null,
     });
   }
 
   if (listing) {
-    const priceUsdc = listing.priceUsdcBase / USDC_UNIT;
+    const priceUsdc = listing.priceUsdc;
+    const expiresMs = listing.expiresAt * 1000;
     return (
       <div
         style={{
@@ -664,24 +691,19 @@ function ResalePanel({
         }}
       >
         <div style={{ fontSize: "0.72rem", color: "#065f46", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-          Listed for resale
+          Listed for resale · on-chain escrow
         </div>
         <div style={{ fontSize: "1.05rem", fontWeight: 700, color: "#065f46" }}>
           ${priceUsdc.toFixed(2)} USDC
         </div>
-        {listing.expiresAt && (
+        {expiresMs > 0 && (
           <div style={{ fontSize: "0.78rem", color: "#047857" }}>
-            Expires {new Date(listing.expiresAt).toLocaleString()}
+            Expires {new Date(expiresMs).toLocaleString()}
           </div>
         )}
-        {listing.note && (
-          <div style={{ fontSize: "0.78rem", color: "#047857", fontStyle: "italic" }}>
-            “{listing.note}”
-          </div>
-        )}
-        <div style={{ fontSize: "0.72rem", color: "#6b7280" }}>
-          Settlement is off-chain honor-system for V0 — when a buyer pays, Nodosol
-          flags the listing, you transfer the cNFT in Phantom and confirm.
+        <div style={{ fontSize: "0.72rem", color: "#065f46" }}>
+          cNFT is held by the listing PDA until someone buys or you cancel.
+          Buy swaps USDC + cNFT atomically in one transaction — no trust gap.
         </div>
         <button
           type="button"
@@ -699,7 +721,7 @@ function ResalePanel({
             cursor: busy ? "not-allowed" : "pointer",
           }}
         >
-          {busy ? "Cancelling…" : "Cancel listing"}
+          {busy ? "Cancelling…" : "Cancel listing · return cNFT"}
         </button>
       </div>
     );
@@ -721,7 +743,7 @@ function ResalePanel({
         <div>
           <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>Resell this ticket</div>
           <div style={{ fontSize: "0.76rem", color: "#6b7280" }}>
-            Post a listing on the Nodosol resale board.
+            cNFT goes into on-chain escrow; buyer pays in atomic swap.
           </div>
         </div>
         <button
@@ -761,15 +783,16 @@ function ResalePanel({
       <div
         style={{
           fontSize: "0.72rem",
-          background: "#fef3c7",
-          color: "#92400e",
+          background: "#eef2ff",
+          color: "#3730a3",
           padding: "0.45rem 0.6rem",
           borderRadius: 7,
         }}
       >
-        V0: settlement is honor-system — buyer sends USDC to your wallet in-app,
-        then you transfer the cNFT to them in Phantom. Atomic on-chain swap is
-        coming in the next program upgrade.
+        Publishing transfers the cNFT into a program-controlled PDA (on-chain
+        escrow) in the same transaction as the listing is created. Buyers hit
+        one atomic ix that swaps USDC + cNFT. You can cancel anytime — the
+        cNFT comes straight back to your wallet.
       </div>
 
       <label style={smallLabel}>Price (USDC)</label>
@@ -794,15 +817,6 @@ function ResalePanel({
         <option value="1w">1 week</option>
         <option value="none">No expiry</option>
       </select>
-
-      <label style={smallLabel}>Note (optional)</label>
-      <input
-        type="text"
-        value={note}
-        onChange={(e) => setNote(e.target.value)}
-        placeholder="e.g. section change needed, corporate package, etc."
-        style={smallInput}
-      />
 
       {err && <div style={{ fontSize: "0.75rem", color: "#b91c1c" }}>{err}</div>}
 

@@ -4,6 +4,7 @@ pub const CONFIG_SEED: &[u8] = b"config";
 pub const EVENT_SEED: &[u8] = b"event";
 pub const VAULT_SEED: &[u8] = b"vault";
 pub const TIER_SEED: &[u8] = b"tier";
+pub const RESALE_SEED: &[u8] = b"resale";
 
 pub const BPS_DENOMINATOR: u64 = 10_000;
 pub const MAX_FEE_BPS: u16 = 1_000; // 10%

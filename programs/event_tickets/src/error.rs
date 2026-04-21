@@ -60,4 +60,16 @@ pub enum EventTicketsError {
     CapacityBelowSold,
     #[msg("Row label is too long")]
     RowLabelTooLong,
+    #[msg("Resale listing is not active")]
+    ResaleNotActive,
+    #[msg("Resale listing has expired")]
+    ResaleExpired,
+    #[msg("Resale listing has not expired yet")]
+    ResaleNotExpired,
+    #[msg("Only the seller may perform this action")]
+    NotSeller,
+    #[msg("Seller cannot buy their own resale listing")]
+    SellerCannotBuy,
+    #[msg("Resale merkle tree does not match the listing")]
+    ResaleTreeMismatch,
 }
