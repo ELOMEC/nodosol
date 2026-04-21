@@ -128,4 +128,8 @@ pub struct TierTicketMinted {
     pub seller_share: u64,
     pub fee: u64,
     pub timestamp: i64,
+    /// Off-chain venue row label ("" when not a seated tier).
+    pub row_label: String,
+    /// Off-chain seat number within the row (0 when not a seated tier).
+    pub seat_number: u16,
 }

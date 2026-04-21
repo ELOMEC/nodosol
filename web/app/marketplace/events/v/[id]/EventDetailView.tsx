@@ -238,7 +238,10 @@ export function EventDetailView({ address }: { address: string }) {
     const eventPk = new PublicKey(ev.address);
     const [tierAddr] = tierPda(eventPk, tier.tierId);
     const ix = await program.methods
-      .buyTierTicket()
+      .buyTierTicket(
+        seat ? seat.rowLabel.slice(0, 4) : "",
+        seat ? seat.seatNumber : 0
+      )
       .accounts({
         buyer: publicKey,
         event: eventPk,

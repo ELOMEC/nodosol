@@ -306,7 +306,16 @@
           "address": "11111111111111111111111111111111"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "row_label",
+          "type": "string"
+        },
+        {
+          "name": "seat_number",
+          "type": "u16"
+        }
+      ]
     },
     {
       "name": "close_event",
@@ -1652,6 +1661,11 @@
       "code": 6027,
       "name": "CapacityBelowSold",
       "msg": "New capacity cannot be below tickets already sold"
+    },
+    {
+      "code": 6028,
+      "name": "RowLabelTooLong",
+      "msg": "Row label is too long"
     }
   ],
   "types": [
@@ -2298,6 +2312,20 @@
           {
             "name": "timestamp",
             "type": "i64"
+          },
+          {
+            "name": "row_label",
+            "docs": [
+              "Off-chain venue row label (\"\" when not a seated tier)."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "seat_number",
+            "docs": [
+              "Off-chain seat number within the row (0 when not a seated tier)."
+            ],
+            "type": "u16"
           }
         ]
       }

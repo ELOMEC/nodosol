@@ -11,7 +11,7 @@ use anchor_spl::{
 use crate::{
     constants::{
         ACCOUNT_COMPRESSION_PROGRAM_ID, BPS_DENOMINATOR, BUBBLEGUM_PROGRAM_ID, CONFIG_SEED,
-        EVENT_SEED, NOOP_PROGRAM_ID, TIER_SEED, VAULT_SEED,
+        EVENT_SEED, MAX_ROW_LABEL_LEN, NOOP_PROGRAM_ID, TIER_SEED, VAULT_SEED,
     },
     error::EventTicketsError,
     events::TierTicketMinted,
@@ -106,8 +106,17 @@ pub struct BuyTierTicket<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handle_buy_tier_ticket(ctx: Context<BuyTierTicket>) -> Result<()> {
+pub fn handle_buy_tier_ticket(
+    ctx: Context<BuyTierTicket>,
+    row_label: String,
+    seat_number: u16,
+) -> Result<()> {
     let now = Clock::get()?.unix_timestamp;
+
+    require!(
+        row_label.len() <= MAX_ROW_LABEL_LEN,
+        EventTicketsError::RowLabelTooLong
+    );
 
     {
         let event = &ctx.accounts.event;
@@ -170,12 +179,29 @@ pub fn handle_buy_tier_ticket(ctx: Context<BuyTierTicket>) -> Result<()> {
         decimals,
     )?;
 
-    // --- Bubblegum mint_v1 CPI — include tier info in the cNFT name. ---
-    let display_name = format!(
-        "{} · {}",
-        ctx.accounts.event.name,
-        ctx.accounts.tier.name
-    );
+    // --- Bubblegum mint_v1 CPI — include tier (and seat, if provided) in the cNFT name. ---
+    // Display-name format when seated: "{event} · {tier} · {row}{seat}" (e.g. "B4F · VIP · A7").
+    // GA sentinel is row_label="" and seat_number=0, in which case we fall back
+    // to the two-part name. Bubblegum's MetadataArgs caps the name at 32 ASCII
+    // chars; we truncate the combined string rather than error so long event /
+    // tier names still mint — the authoritative seat record is off-chain.
+    let has_seat = !row_label.is_empty() && seat_number > 0;
+    let raw_name = if has_seat {
+        format!(
+            "{} · {} · {}{}",
+            ctx.accounts.event.name,
+            ctx.accounts.tier.name,
+            row_label,
+            seat_number
+        )
+    } else {
+        format!(
+            "{} · {}",
+            ctx.accounts.event.name,
+            ctx.accounts.tier.name
+        )
+    };
+    let display_name: String = raw_name.chars().take(32).collect();
     let metadata = serialize_metadata_args(
         &display_name,
         &ctx.accounts.event.symbol,
@@ -265,6 +291,8 @@ pub fn handle_buy_tier_ticket(ctx: Context<BuyTierTicket>) -> Result<()> {
         seller_share: creator_share,
         fee,
         timestamp: now,
+        row_label,
+        seat_number,
     });
     Ok(())
 }

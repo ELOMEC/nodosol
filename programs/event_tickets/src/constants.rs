@@ -13,6 +13,7 @@ pub const MAX_SYMBOL_LEN: usize = 16;
 pub const MAX_URI_LEN: usize = 256;
 pub const MAX_TIER_NAME_LEN: usize = 48;
 pub const MAX_SECTION_CODE_LEN: usize = 16;
+pub const MAX_ROW_LABEL_LEN: usize = 4;
 pub const MAX_TIERS_PER_EVENT: u16 = 128;
 
 // Tree sizing. max_depth=14 → 16,384 leaves. Rent stays reasonable per event.

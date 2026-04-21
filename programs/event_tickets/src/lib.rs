@@ -96,8 +96,12 @@ pub mod event_tickets {
         handle_update_tier_status(ctx, new_status)
     }
 
-    pub fn buy_tier_ticket(ctx: Context<BuyTierTicket>) -> Result<()> {
-        handle_buy_tier_ticket(ctx)
+    pub fn buy_tier_ticket(
+        ctx: Context<BuyTierTicket>,
+        row_label: String,
+        seat_number: u16,
+    ) -> Result<()> {
+        handle_buy_tier_ticket(ctx, row_label, seat_number)
     }
 
     pub fn withdraw_event_revenue(

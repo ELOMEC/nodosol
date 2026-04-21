@@ -58,4 +58,6 @@ pub enum EventTicketsError {
     SectionCodeTooLong,
     #[msg("New capacity cannot be below tickets already sold")]
     CapacityBelowSold,
+    #[msg("Row label is too long")]
+    RowLabelTooLong,
 }
