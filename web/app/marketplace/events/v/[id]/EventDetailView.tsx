@@ -39,7 +39,10 @@ import {
   getEventVenueMapping,
   getVenueLayout,
   layoutToTemplate,
+  VenueLayoutRegion,
 } from "@/lib/venueLayouts";
+import { confirmSeatMint, releaseReservation, reserveSeat } from "@/lib/seats";
+import { SeatPicker } from "./SeatPicker";
 
 type EventData = {
   address: string;
@@ -79,6 +82,10 @@ export function EventDetailView({ address }: { address: string }) {
   const [busyTier, setBusyTier] = useState<number | null>(null);
   const [hoverTierId, setHoverTierId] = useState<number | null>(null);
   const [selectedTierId, setSelectedTierId] = useState<number | null>(null);
+  const [seatPicker, setSeatPicker] = useState<{
+    tier: TicketTierDoc;
+    region: VenueLayoutRegion;
+  } | null>(null);
 
   const load = useCallback(async () => {
     setState({ kind: "loading" });
@@ -195,58 +202,143 @@ export function EventDetailView({ address }: { address: string }) {
     void load();
   }, [load]);
 
+  function regionForTier(tier: TicketTierDoc): VenueLayoutRegion | null {
+    if (state.kind !== "ready") return null;
+    const template = state.customTemplate;
+    if (!template) return null;
+    const match = template.regions.find((r) => r.tierRef === tier.sectionCode);
+    return (match as VenueLayoutRegion | undefined) ?? null;
+  }
+
+  function tierIsSeated(tier: TicketTierDoc): boolean {
+    const r = regionForTier(tier);
+    return !!r && (r.rows ?? 0) > 0 && (r.seatsPerRow ?? 0) > 0;
+  }
+
+  async function mintTicket(
+    ev: EventData,
+    tier: TicketTierDoc,
+    seat: { rowLabel: string; seatNumber: number } | null
+  ): Promise<string> {
+    if (!publicKey) throw new Error("Wallet not connected");
+    const provider = new AnchorProvider(connection, wallet as unknown as Wallet, {
+      commitment: "confirmed",
+    });
+    const program = eventTicketsProgram(provider);
+    const cfg = await fetchEventTicketsConfig(program);
+    const paymentMint = new PublicKey(ev.paymentMint);
+    const buyerAta = getAssociatedTokenAddressSync(
+      paymentMint,
+      publicKey,
+      false,
+      TOKEN_2022_PROGRAM_ID
+    );
+    const merkleTree = new PublicKey(ev.merkleTree);
+    const [tc] = treeConfigPda(merkleTree);
+    const eventPk = new PublicKey(ev.address);
+    const [tierAddr] = tierPda(eventPk, tier.tierId);
+    const ix = await program.methods
+      .buyTierTicket()
+      .accounts({
+        buyer: publicKey,
+        event: eventPk,
+        tier: tierAddr,
+        vault: new PublicKey(ev.vault),
+        paymentMint,
+        buyerPaymentAccount: buyerAta,
+        config: cfg.address,
+        treasury: cfg.treasury,
+        paymentTokenProgram: TOKEN_2022_PROGRAM_ID,
+        treeConfig: tc,
+        leafOwner: publicKey,
+        leafDelegate: publicKey,
+        merkleTree,
+        bubblegumProgram: BUBBLEGUM_PROGRAM_ID,
+        logWrapper: NOOP_PROGRAM_ID,
+        compressionProgram: ACCOUNT_COMPRESSION_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .instruction();
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+    const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
+    tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 500_000 }));
+    tx.add(ix);
+    const sig = await wallet.sendTransaction(tx, connection);
+    await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+    if (seat) {
+      try {
+        await confirmSeatMint({
+          eventPubkey: ev.address,
+          tierId: tier.tierId,
+          rowLabel: seat.rowLabel,
+          seatNumber: seat.seatNumber,
+          ownerPubkey: publicKey.toBase58(),
+          mintSig: sig,
+        });
+      } catch (err) {
+        console.error("seat confirmation failed — mint succeeded on-chain", err);
+      }
+    }
+    return sig;
+  }
+
   async function buyTier(ev: EventData, tier: TicketTierDoc) {
     if (!publicKey) return;
+    if (tierIsSeated(tier)) {
+      const region = regionForTier(tier);
+      if (region) {
+        setSeatPicker({ tier, region });
+        return;
+      }
+    }
     setBusyTier(tier.tierId);
     try {
-      const provider = new AnchorProvider(connection, wallet as unknown as Wallet, {
-        commitment: "confirmed",
-      });
-      const program = eventTicketsProgram(provider);
-      const cfg = await fetchEventTicketsConfig(program);
-      const paymentMint = new PublicKey(ev.paymentMint);
-      const buyerAta = getAssociatedTokenAddressSync(
-        paymentMint,
-        publicKey,
-        false,
-        TOKEN_2022_PROGRAM_ID
-      );
-      const merkleTree = new PublicKey(ev.merkleTree);
-      const [tc] = treeConfigPda(merkleTree);
-      const eventPk = new PublicKey(ev.address);
-      const [tierAddr] = tierPda(eventPk, tier.tierId);
-      const ix = await program.methods
-        .buyTierTicket()
-        .accounts({
-          buyer: publicKey,
-          event: eventPk,
-          tier: tierAddr,
-          vault: new PublicKey(ev.vault),
-          paymentMint,
-          buyerPaymentAccount: buyerAta,
-          config: cfg.address,
-          treasury: cfg.treasury,
-          paymentTokenProgram: TOKEN_2022_PROGRAM_ID,
-          treeConfig: tc,
-          leafOwner: publicKey,
-          leafDelegate: publicKey,
-          merkleTree,
-          bubblegumProgram: BUBBLEGUM_PROGRAM_ID,
-          logWrapper: NOOP_PROGRAM_ID,
-          compressionProgram: ACCOUNT_COMPRESSION_PROGRAM_ID,
-          systemProgram: SystemProgram.programId,
-        })
-        .instruction();
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 500_000 }));
-      tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+      const sig = await mintTicket(ev, tier, null);
       window.alert(`Ticket minted: ${tier.name}. Tx: ${sig}`);
       await load();
     } catch (err) {
       console.error(err);
+      window.alert(err instanceof Error ? err.message : "Buy failed");
+    } finally {
+      setBusyTier(null);
+    }
+  }
+
+  async function buySeatedTier(
+    ev: EventData,
+    tier: TicketTierDoc,
+    seat: { rowLabel: string; seatNumber: number }
+  ) {
+    if (!publicKey) return;
+    setBusyTier(tier.tierId);
+    let reserved = false;
+    try {
+      await reserveSeat({
+        eventPubkey: ev.address,
+        tierId: tier.tierId,
+        rowLabel: seat.rowLabel,
+        seatNumber: seat.seatNumber,
+        buyerPubkey: publicKey.toBase58(),
+      });
+      reserved = true;
+      const sig = await mintTicket(ev, tier, seat);
+      setSeatPicker(null);
+      window.alert(`Ticket minted — ${tier.name} · ${seat.rowLabel}${seat.seatNumber}. Tx: ${sig}`);
+      await load();
+    } catch (err) {
+      console.error(err);
+      if (reserved) {
+        try {
+          await releaseReservation({
+            eventPubkey: ev.address,
+            tierId: tier.tierId,
+            rowLabel: seat.rowLabel,
+            seatNumber: seat.seatNumber,
+          });
+        } catch {
+          // best effort
+        }
+      }
       window.alert(err instanceof Error ? err.message : "Buy failed");
     } finally {
       setBusyTier(null);
@@ -383,6 +475,19 @@ export function EventDetailView({ address }: { address: string }) {
             </div>
           </div>
         </div>
+      )}
+      {seatPicker && (
+        <SeatPicker
+          eventPubkey={ev.address}
+          tierId={seatPicker.tier.tierId}
+          tierName={seatPicker.tier.name}
+          region={seatPicker.region}
+          busy={busyTier === seatPicker.tier.tierId}
+          onCancel={() => {
+            if (busyTier === null) setSeatPicker(null);
+          }}
+          onPick={(seat) => void buySeatedTier(ev, seatPicker.tier, seat)}
+        />
       )}
     </>
   );

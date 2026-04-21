@@ -3,7 +3,32 @@ import { VenueRegion, VenueTemplate } from "./venue-templates";
 
 export type VenueLayoutRegion = VenueRegion & {
   defaultColor?: string;
+  /** Optional category (e.g. "VIP", "Standard") — groups tiers in the buyer UI. */
+  category?: string;
+  /** If set, this region is seat-level; capacity = rows × seatsPerRow. */
+  rows?: number;
+  seatsPerRow?: number;
+  /** Optional row labels. Defaults to A, B, C... If provided length must equal rows. */
+  rowLabels?: string[];
 };
+
+/** Compute row labels for a region, defaulting to A, B, C… */
+export function rowLabelsFor(region: VenueLayoutRegion): string[] {
+  const rows = region.rows ?? 0;
+  if (rows <= 0) return [];
+  if (region.rowLabels && region.rowLabels.length === rows) return region.rowLabels;
+  return Array.from({ length: rows }, (_, i) => alphaLabel(i));
+}
+
+function alphaLabel(i: number): string {
+  let n = i;
+  let out = "";
+  do {
+    out = String.fromCharCode(65 + (n % 26)) + out;
+    n = Math.floor(n / 26) - 1;
+  } while (n >= 0);
+  return out;
+}
 
 export type VenueLayoutDoc = {
   id: string;

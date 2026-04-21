@@ -679,21 +679,27 @@ function RegionRow({
   onChange: (patch: Partial<EditorRegion>) => void;
   onDelete: () => void;
 }) {
+  const seated = (region.rows ?? 0) > 0 && (region.seatsPerRow ?? 0) > 0;
+  const seatCount = seated ? (region.rows ?? 0) * (region.seatsPerRow ?? 0) : 0;
   return (
     <div
       onClick={onSelect}
       style={{
         border: selected ? "2px solid #4f46e5" : "1px solid var(--shell-border, #eef0f3)",
         borderRadius: 7,
-        padding: "0.5rem 0.65rem",
-        display: "grid",
-        gridTemplateColumns: "auto 1fr 1fr auto auto",
-        gap: "0.4rem",
-        alignItems: "center",
+        padding: "0.55rem 0.7rem",
         cursor: "pointer",
         background: selected ? "#eef2ff" : "var(--shell-card, #fff)",
       }}
     >
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "auto 1fr 1fr auto auto",
+          gap: "0.4rem",
+          alignItems: "center",
+        }}
+      >
       <input
         type="color"
         value={region.defaultColor ?? "#4f46e5"}
@@ -766,7 +772,86 @@ function RegionRow({
       >
         ×
       </button>
+      </div>
+
+      {selected && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            marginTop: "0.55rem",
+            paddingTop: "0.55rem",
+            borderTop: "1px dashed var(--shell-border, #eef0f3)",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 1fr",
+            gap: "0.45rem",
+          }}
+        >
+          <LabeledField label="Category (optional)">
+            <input
+              type="text"
+              value={region.category ?? ""}
+              onChange={(e) => onChange({ category: e.target.value })}
+              placeholder="e.g. VIP, Standard"
+              style={smallInput}
+            />
+          </LabeledField>
+          <LabeledField label="Rows">
+            <input
+              type="number"
+              min={0}
+              value={region.rows ?? ""}
+              onChange={(e) =>
+                onChange({
+                  rows: e.target.value === "" ? undefined : Math.max(0, parseInt(e.target.value, 10) || 0),
+                })
+              }
+              placeholder="0 = no seats"
+              style={smallInput}
+            />
+          </LabeledField>
+          <LabeledField label="Seats per row">
+            <input
+              type="number"
+              min={0}
+              value={region.seatsPerRow ?? ""}
+              onChange={(e) =>
+                onChange({
+                  seatsPerRow: e.target.value === "" ? undefined : Math.max(0, parseInt(e.target.value, 10) || 0),
+                })
+              }
+              placeholder="0 = no seats"
+              style={smallInput}
+            />
+          </LabeledField>
+          {seated && (
+            <div style={{ gridColumn: "1 / -1", fontSize: "0.72rem", color: "#4f46e5", fontWeight: 600 }}>
+              Seated zone · {seatCount} seats total ({region.rows} rows × {region.seatsPerRow} seats)
+            </div>
+          )}
+        </div>
+      )}
     </div>
+  );
+}
+
+const smallInput: React.CSSProperties = {
+  padding: "0.3rem 0.5rem",
+  borderRadius: 5,
+  border: "1px solid var(--shell-border, #eef0f3)",
+  background: "var(--shell-card, #fff)",
+  color: "var(--shell-fg, #111827)",
+  fontSize: "0.78rem",
+  width: "100%",
+};
+
+function LabeledField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
+      <span style={{ fontSize: "0.65rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+        {label}
+      </span>
+      {children}
+    </label>
   );
 }
 

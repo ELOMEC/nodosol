@@ -37,6 +37,7 @@ import {
   listVenueLayoutsByCreator,
   upsertEventVenueMapping,
   VenueLayoutDoc,
+  VenueLayoutRegion,
 } from "@/lib/venueLayouts";
 
 type EventMeta = {
@@ -221,13 +222,21 @@ export function TierEditor({ address }: { address: string }) {
     const next: Record<string, TierFormState> = {};
     let colorCursor = 0;
     for (const region of template.regions) {
+      const seated = regionIsSeated(region);
+      const computedCapacity = seated
+        ? (region as VenueLayoutRegion).rows! * (region as VenueLayoutRegion).seatsPerRow!
+        : null;
       const existing = state.tiers.find((t) => t.sectionCode === region.tierRef);
       next[region.tierRef] = {
         sectionCode: region.tierRef,
         label: region.label,
         name: existing?.name ?? region.label,
         priceUsdc: existing ? (existing.price / USDC_UNIT).toString() : "",
-        capacity: existing ? existing.capacity.toString() : "",
+        capacity: existing
+          ? existing.capacity.toString()
+          : computedCapacity !== null
+          ? computedCapacity.toString()
+          : "",
         colorHex: existing?.colorHex ?? DEFAULT_COLORS[colorCursor % DEFAULT_COLORS.length],
         status: existing?.status ?? "active",
         existing: existing ?? null,
@@ -501,6 +510,11 @@ export function TierEditor({ address }: { address: string }) {
   );
 }
 
+function regionIsSeated(region: VenueRegion | VenueLayoutRegion): boolean {
+  const r = region as VenueLayoutRegion;
+  return (r.rows ?? 0) > 0 && (r.seatsPerRow ?? 0) > 0;
+}
+
 function assignTierId(
   template: VenueTemplate,
   sectionCode: string,
@@ -672,6 +686,9 @@ function TierRow({
 }) {
   if (!form) return null;
   const isNew = !form.existing;
+  const seated = regionIsSeated(region);
+  const r = region as VenueLayoutRegion;
+  const seatedCapacity = seated ? (r.rows ?? 0) * (r.seatsPerRow ?? 0) : null;
   return (
     <div
       style={{
@@ -681,7 +698,7 @@ function TierRow({
         background: isNew ? "var(--shell-pill-bg, #f9fafb)" : "var(--shell-card, #fff)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.5rem", flexWrap: "wrap" }}>
         <div
           style={{
             width: 14,
@@ -693,6 +710,36 @@ function TierRow({
         />
         <div style={{ fontWeight: 600, fontSize: "0.88rem" }}>{region.label}</div>
         <code style={{ fontSize: "0.72rem", color: "#9ca3af" }}>{region.tierRef}</code>
+        {r.category && (
+          <span
+            style={{
+              fontSize: "0.66rem",
+              padding: "0.1rem 0.5rem",
+              borderRadius: 999,
+              background: "#fef3c7",
+              color: "#92400e",
+              fontWeight: 700,
+              textTransform: "uppercase",
+              letterSpacing: "0.04em",
+            }}
+          >
+            {r.category}
+          </span>
+        )}
+        {seated && (
+          <span
+            style={{
+              fontSize: "0.66rem",
+              padding: "0.1rem 0.5rem",
+              borderRadius: 999,
+              background: "#dbeafe",
+              color: "#1e40af",
+              fontWeight: 600,
+            }}
+          >
+            {r.rows}R × {r.seatsPerRow}S = {seatedCapacity} seats
+          </span>
+        )}
         {!isNew && (
           <span
             style={{
@@ -736,9 +783,11 @@ function TierRow({
           type="number"
           inputMode="numeric"
           placeholder="Capacity"
-          value={form.capacity}
+          value={seated && seatedCapacity !== null ? seatedCapacity.toString() : form.capacity}
           onChange={(e) => onChange({ capacity: e.target.value })}
-          style={inputStyle(false)}
+          disabled={seated}
+          title={seated ? "Capacity is derived from rows × seats per row in the venue layout" : undefined}
+          style={inputStyle(seated)}
         />
         {isNew ? (
           <input
