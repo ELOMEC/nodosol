@@ -1,9 +1,19 @@
 "use client";
 
 import { AnchorProvider, BN, Wallet } from "@coral-xyz/anchor";
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  TOKEN_2022_PROGRAM_ID,
+  createAssociatedTokenAccountInstruction,
+  getAssociatedTokenAddressSync,
+} from "@solana/spl-token";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
-import { PublicKey } from "@solana/web3.js";
+import {
+  ComputeBudgetProgram,
+  PublicKey,
+  Transaction,
+} from "@solana/web3.js";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -13,6 +23,7 @@ import {
   decodeEventStatus,
   EventStatusKey,
   eventTicketsProgram,
+  eventVaultPda,
   fetchTiersForEvent,
   TicketTierDoc,
 } from "@/lib/eventTickets";
@@ -34,6 +45,7 @@ type EventMeta = {
   endsAt: number;
   status: EventStatusKey;
   treeInitialised: boolean;
+  paymentMint: string;
 };
 
 type State =
@@ -53,6 +65,8 @@ export function EventDashboardView({ address }: { address: string }) {
   const { publicKey, connected } = wallet;
 
   const [state, setState] = useState<State>({ kind: "loading" });
+  const [withdrawOpen, setWithdrawOpen] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
 
   const load = useCallback(async () => {
     setState({ kind: "loading" });
@@ -79,6 +93,7 @@ export function EventDashboardView({ address }: { address: string }) {
           endsAt: BN;
           status: Record<string, unknown>;
           treeInitialised: boolean;
+          paymentMint: PublicKey;
         }>;
       }>).event;
       const raw = await api.fetch(eventPk);
@@ -100,6 +115,7 @@ export function EventDashboardView({ address }: { address: string }) {
         endsAt: raw.endsAt.toNumber(),
         status: decodeEventStatus(raw.status),
         treeInitialised: raw.treeInitialised,
+        paymentMint: raw.paymentMint.toBase58(),
       };
 
       const [tiers, checkIns, seatedCount] = await Promise.all([
@@ -121,6 +137,82 @@ export function EventDashboardView({ address }: { address: string }) {
   useEffect(() => {
     if (connected) void load();
   }, [connected, load]);
+
+  async function withdraw(amountUsdc: number) {
+    if (!publicKey || state.kind !== "ready") return;
+    const { event } = state;
+    const amountBase = BigInt(Math.round(amountUsdc * USDC_UNIT));
+    if (amountBase <= 0n) {
+      window.alert("Amount must be greater than zero.");
+      return;
+    }
+    setWithdrawing(true);
+    try {
+      const provider = new AnchorProvider(
+        connection,
+        wallet as unknown as Wallet,
+        { commitment: "confirmed" }
+      );
+      const program = eventTicketsProgram(provider);
+      const eventPk = new PublicKey(event.address);
+      const paymentMint = new PublicKey(event.paymentMint);
+      const [vault] = eventVaultPda(eventPk);
+      const destination = getAssociatedTokenAddressSync(
+        paymentMint,
+        publicKey,
+        false,
+        TOKEN_2022_PROGRAM_ID
+      );
+
+      const ixs = [];
+      // Create destination ATA if it doesn't exist yet.
+      const destInfo = await connection.getAccountInfo(destination);
+      if (!destInfo) {
+        ixs.push(
+          createAssociatedTokenAccountInstruction(
+            publicKey,
+            destination,
+            publicKey,
+            paymentMint,
+            TOKEN_2022_PROGRAM_ID,
+            ASSOCIATED_TOKEN_PROGRAM_ID
+          )
+        );
+      }
+
+      const withdrawIx = await program.methods
+        .withdrawEventRevenue(new BN(amountBase.toString()))
+        .accounts({
+          creator: publicKey,
+          event: eventPk,
+          paymentMint,
+          vault,
+          destination,
+          paymentTokenProgram: TOKEN_2022_PROGRAM_ID,
+        } as never)
+        .instruction();
+      ixs.push(withdrawIx);
+
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
+      tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }));
+      for (const ix of ixs) tx.add(ix);
+      const sig = await wallet.sendTransaction(tx, connection);
+      await connection.confirmTransaction(
+        { signature: sig, blockhash, lastValidBlockHeight },
+        "confirmed"
+      );
+
+      window.alert(`Withdrew $${amountUsdc.toFixed(2)}. Tx: ${sig.slice(0, 12)}…`);
+      setWithdrawOpen(false);
+      await load();
+    } catch (err) {
+      console.error(err);
+      window.alert(err instanceof Error ? err.message : "Withdraw failed.");
+    } finally {
+      setWithdrawing(false);
+    }
+  }
 
   if (!connected) {
     return (
@@ -188,12 +280,31 @@ export function EventDashboardView({ address }: { address: string }) {
           {
             label: "Revenue",
             value: `$${event.totalRevenueUsdc.toFixed(2)}`,
-            sub: `Creator share after ${(event.totalRevenueUsdc > 0 ? 0 : 0).toFixed(0)}% platform fee`,
+            sub: "Creator share after platform fee",
           },
           {
             label: "Withdrawable",
             value: `$${event.withdrawableUsdc.toFixed(2)}`,
             sub: `$${event.totalWithdrawnUsdc.toFixed(2)} withdrawn so far`,
+            action:
+              isOwner && event.withdrawableUsdc > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setWithdrawOpen(true)}
+                  style={{
+                    padding: "0.35rem 0.75rem",
+                    borderRadius: 6,
+                    border: "none",
+                    background: "#4f46e5",
+                    color: "#fff",
+                    fontSize: "0.76rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Withdraw
+                </button>
+              ) : undefined,
           },
           {
             label: "Checked in",
@@ -202,6 +313,17 @@ export function EventDashboardView({ address }: { address: string }) {
           },
         ]}
       />
+
+      {withdrawOpen && (
+        <WithdrawModal
+          maxUsdc={event.withdrawableUsdc}
+          busy={withdrawing}
+          onCancel={() => {
+            if (!withdrawing) setWithdrawOpen(false);
+          }}
+          onConfirm={(amount) => void withdraw(amount)}
+        />
+      )}
 
       <div
         style={{
@@ -422,7 +544,7 @@ function CheckInRow({ checkIn }: { checkIn: CheckInDoc }) {
 function StatGrid({
   stats,
 }: {
-  stats: Array<{ label: string; value: string; sub: string }>;
+  stats: Array<{ label: string; value: string; sub: string; action?: React.ReactNode }>;
 }) {
   return (
     <div
@@ -447,8 +569,145 @@ function StatGrid({
           </div>
           <div style={{ fontSize: "1.35rem", fontWeight: 700, letterSpacing: "-0.02em" }}>{s.value}</div>
           <div style={{ fontSize: "0.72rem", color: "#9ca3af", marginTop: "0.2rem" }}>{s.sub}</div>
+          {s.action && <div style={{ marginTop: "0.55rem" }}>{s.action}</div>}
         </div>
       ))}
+    </div>
+  );
+}
+
+function WithdrawModal({
+  maxUsdc,
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  maxUsdc: number;
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: (amountUsdc: number) => void;
+}) {
+  const [raw, setRaw] = useState(maxUsdc.toFixed(2));
+  const amount = parseFloat(raw);
+  const invalid = !Number.isFinite(amount) || amount <= 0 || amount > maxUsdc + 1e-9;
+
+  return (
+    <div
+      role="dialog"
+      aria-modal
+      onClick={onCancel}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(17,24,39,0.55)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 120,
+        padding: "1rem",
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: "var(--shell-card, #fff)",
+          color: "var(--shell-fg, #111827)",
+          borderRadius: 14,
+          width: 420,
+          maxWidth: "100%",
+          padding: "1.2rem 1.4rem",
+          boxShadow: "0 18px 48px rgba(0,0,0,0.25)",
+        }}
+      >
+        <div style={{ fontSize: "1.05rem", fontWeight: 600, marginBottom: "0.3rem" }}>
+          Withdraw revenue
+        </div>
+        <div style={{ fontSize: "0.82rem", color: "#6b7280", marginBottom: "0.85rem" }}>
+          Transfers USDC from the event vault to your wallet. You can pull out up to{" "}
+          <strong>${maxUsdc.toFixed(2)}</strong>. Creates the destination ATA automatically if you don&apos;t have one yet.
+        </div>
+
+        <label style={{ fontSize: "0.72rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+          Amount (USDC)
+        </label>
+        <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.25rem", marginBottom: "0.3rem" }}>
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            value={raw}
+            onChange={(e) => setRaw(e.target.value)}
+            style={{
+              flex: 1,
+              padding: "0.55rem 0.7rem",
+              borderRadius: 7,
+              border: "1px solid var(--shell-border, #eef0f3)",
+              background: "var(--shell-card, #fff)",
+              color: "var(--shell-fg, #111827)",
+              fontSize: "0.95rem",
+              fontWeight: 600,
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setRaw(maxUsdc.toFixed(2))}
+            style={{
+              padding: "0.4rem 0.75rem",
+              borderRadius: 6,
+              border: "1px solid var(--shell-border, #eef0f3)",
+              background: "var(--shell-pill-bg, #f7f8fa)",
+              color: "var(--shell-fg, #111827)",
+              fontSize: "0.78rem",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Max
+          </button>
+        </div>
+        {invalid && (
+          <div style={{ fontSize: "0.72rem", color: "#b91c1c", marginBottom: "0.5rem" }}>
+            Amount must be between 0 and ${maxUsdc.toFixed(2)}.
+          </div>
+        )}
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.45rem", marginTop: "0.75rem" }}>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            style={{
+              padding: "0.5rem 1rem",
+              borderRadius: 7,
+              border: "1px solid var(--shell-border, #eef0f3)",
+              background: "var(--shell-card, #fff)",
+              color: "var(--shell-fg, #111827)",
+              fontSize: "0.82rem",
+              fontWeight: 600,
+              cursor: busy ? "not-allowed" : "pointer",
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            disabled={busy || invalid}
+            onClick={() => onConfirm(amount)}
+            style={{
+              padding: "0.5rem 1.1rem",
+              borderRadius: 7,
+              border: "none",
+              background: busy || invalid ? "#c7d2fe" : "#4f46e5",
+              color: "#fff",
+              fontSize: "0.85rem",
+              fontWeight: 600,
+              cursor: busy || invalid ? "not-allowed" : "pointer",
+            }}
+          >
+            {busy ? "Withdrawing…" : "Withdraw"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
