@@ -231,6 +231,21 @@ function EventCard({ event }: { event: EventRow }) {
       </div>
       <div style={{ display: "flex", gap: "0.4rem" }}>
         <Link
+          href={`/creator/events/${event.address}`}
+          style={{
+            padding: "0.5rem 0.9rem",
+            borderRadius: 7,
+            border: "1px solid #4f46e5",
+            background: "#eef2ff",
+            color: "#4338ca",
+            fontSize: "0.8rem",
+            fontWeight: 600,
+            textDecoration: "none",
+          }}
+        >
+          Dashboard
+        </Link>
+        <Link
           href={`/creator/events/${event.address}/tiers`}
           style={{
             padding: "0.5rem 0.9rem",
