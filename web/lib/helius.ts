@@ -86,3 +86,23 @@ export async function getAssetsByOwner(owner: string): Promise<HeliusAsset[]> {
 export function filterCompressed(assets: HeliusAsset[]): HeliusAsset[] {
   return assets.filter((a) => a.compression?.compressed === true);
 }
+
+/** Fetch a single asset by its Helius ID (cNFT asset id). */
+export async function getAsset(assetId: string): Promise<HeliusAsset | null> {
+  const resp = await fetch(getHeliusEndpoint(), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: "nodosol-get-asset",
+      method: "getAsset",
+      params: { id: assetId },
+    }),
+  });
+  if (!resp.ok) throw new Error(`Helius DAS returned ${resp.status}`);
+  const payload = (await resp.json()) as
+    | { result: HeliusAsset | null }
+    | { error: { message: string } };
+  if ("error" in payload) throw new Error(payload.error.message ?? "Helius error");
+  return payload.result ?? null;
+}

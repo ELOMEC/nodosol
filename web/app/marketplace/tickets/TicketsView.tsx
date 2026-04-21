@@ -11,6 +11,7 @@ import { USDC_UNIT } from "@/lib/constants";
 import { eventTicketsProgram } from "@/lib/eventTickets";
 import { filterCompressed, getAssetsByOwner, HeliusAsset } from "@/lib/helius";
 import { toHttp } from "@/lib/metadataImages";
+import { parseSeatFromName } from "@/lib/ticketName";
 
 type EventIndex = Map<
   string,
@@ -242,7 +243,12 @@ function ReadyView({
 
 function TicketCard({ ticket }: { ticket: TicketRow }) {
   const explorerUrl = `https://explorer.solana.com/address/${ticket.assetId}?cluster=devnet`;
+  const seat = parseSeatFromName(ticket.name);
   return (
+    <Link
+      href={`/marketplace/tickets/${ticket.assetId}`}
+      style={{ textDecoration: "none", color: "inherit", display: "block" }}
+    >
     <div style={{ background: "#ffffff", border: "1px solid #eef0f3", borderRadius: 12, overflow: "hidden" }}>
       <div
         style={{
@@ -275,6 +281,24 @@ function TicketCard({ ticket }: { ticket: TicketRow }) {
         >
           cNFT ticket
         </div>
+        {seat && (
+          <div
+            style={{
+              position: "absolute",
+              top: 10,
+              right: 10,
+              background: "#4f46e5",
+              color: "#fff",
+              padding: "0.2rem 0.6rem",
+              borderRadius: 5,
+              fontSize: "0.74rem",
+              fontWeight: 700,
+              letterSpacing: "0.03em",
+            }}
+          >
+            Row {seat.rowLabel} · Seat {seat.seatNumber}
+          </div>
+        )}
       </div>
       <div style={{ padding: "0.95rem 1.05rem 1.05rem" }}>
         <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: "0.15rem" }}>{ticket.name}</div>
@@ -291,6 +315,7 @@ function TicketCard({ ticket }: { ticket: TicketRow }) {
             href={explorerUrl}
             target="_blank"
             rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
             style={{ fontSize: "0.75rem", color: "#4338ca", fontWeight: 600, textDecoration: "none" }}
           >
             Explorer ↗
@@ -298,6 +323,7 @@ function TicketCard({ ticket }: { ticket: TicketRow }) {
         </div>
       </div>
     </div>
+    </Link>
   );
 }
 
