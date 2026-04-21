@@ -12,6 +12,7 @@
     "@coral-xyz/anchor": "^0.31.1",
     "@dialectlabs/blinks": "^0.22.5",
     "@privy-io/react-auth": "^2.0.0",
+    "@react-google-maps/api": "^2.20.8",
     "@solana/actions": "^1.6.6",
     "@solana/spl-token": "^0.4.12",
     "@solana/wallet-adapter-backpack": "^0.1.14",

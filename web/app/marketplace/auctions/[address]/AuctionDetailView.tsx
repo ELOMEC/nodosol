@@ -7,6 +7,7 @@ import { PublicKey } from "@solana/web3.js";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { LocationView } from "@/components/LocationView";
 import {
   auctionsProgram,
   cacheBidEnvelope,
@@ -26,12 +27,14 @@ import {
   revealBidTx,
   settleAuctionTx,
 } from "@/lib/auctions";
+import { AuctionMetadata, fetchAuctionMetadata } from "@/lib/auctionMetadata";
 import { USDC_UNIT } from "@/lib/constants";
 
 type Loaded = {
   auction: OnChainAuction;
   bids: OnChainSealedBid[];
   myBid: OnChainSealedBid | null;
+  metadata: AuctionMetadata | null;
 };
 
 type State =
@@ -81,7 +84,10 @@ export function AuctionDetailView({ address }: { address: string }) {
       const myBid = publicKey
         ? await fetchMyBid(program, auctionPk, publicKey)
         : null;
-      setState({ kind: "ready", loaded: { auction, bids, myBid } });
+      const metadata = auction.metadataUri
+        ? await fetchAuctionMetadata(auction.metadataUri)
+        : null;
+      setState({ kind: "ready", loaded: { auction, bids, myBid, metadata } });
     } catch (err) {
       console.error(err);
       setState({ kind: "error", message: err instanceof Error ? err.message : "Load failed" });
@@ -279,14 +285,37 @@ export function AuctionDetailView({ address }: { address: string }) {
         </Card>
       </div>
 
+      {state.loaded.metadata?.description && (
+        <Card>
+          <SectionTitle>Description</SectionTitle>
+          <div style={{ fontSize: "0.88rem", color: "var(--shell-fg, #111827)", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>
+            {state.loaded.metadata.description}
+          </div>
+        </Card>
+      )}
+
+      {state.loaded.metadata?.location && (
+        <Card>
+          <SectionTitle>Location</SectionTitle>
+          <LocationView location={state.loaded.metadata.location} />
+        </Card>
+      )}
+
+      {state.loaded.metadata?.videoUrl && (
+        <Card>
+          <SectionTitle>Video</SectionTitle>
+          <VideoEmbed url={state.loaded.metadata.videoUrl} />
+        </Card>
+      )}
+
       {auction.metadataUri && (
         <Card>
-          <SectionTitle>Metadata URI</SectionTitle>
+          <SectionTitle>Raw metadata</SectionTitle>
           <a
             href={auction.metadataUri}
             target="_blank"
             rel="noreferrer"
-            style={{ fontSize: "0.82rem", color: "#4338ca", textDecoration: "none", wordBreak: "break-all" }}
+            style={{ fontSize: "0.76rem", color: "#6b7280", textDecoration: "none", wordBreak: "break-all" }}
           >
             {auction.metadataUri} ↗
           </a>
@@ -661,6 +690,59 @@ function formatDur(secs: number): string {
   if (h > 0) return `${h}h ${m}m`;
   if (m > 0) return `${m}m ${s}s`;
   return `${s}s`;
+}
+
+function VideoEmbed({ url }: { url: string }) {
+  // Detect YouTube/Vimeo URLs and render an iframe; fallback to a
+  // native <video> for direct mp4/webm links; otherwise plain link.
+  const yt =
+    url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([\w-]{11})/)?.[1];
+  if (yt) {
+    return (
+      <div style={{ position: "relative", paddingTop: "56.25%", borderRadius: 10, overflow: "hidden", background: "#111" }}>
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/${yt}`}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
+          title="Auction video"
+        />
+      </div>
+    );
+  }
+  const vimeo = url.match(/vimeo\.com\/(\d+)/)?.[1];
+  if (vimeo) {
+    return (
+      <div style={{ position: "relative", paddingTop: "56.25%", borderRadius: 10, overflow: "hidden", background: "#111" }}>
+        <iframe
+          src={`https://player.vimeo.com/video/${vimeo}`}
+          allow="autoplay; fullscreen; picture-in-picture"
+          allowFullScreen
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: 0 }}
+          title="Auction video"
+        />
+      </div>
+    );
+  }
+  if (/\.(mp4|webm|ogg)(\?|#|$)/i.test(url)) {
+    return (
+      <video
+        controls
+        src={url}
+        style={{ width: "100%", borderRadius: 10, background: "#000" }}
+      />
+    );
+  }
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      style={{ fontSize: "0.82rem", color: "#4338ca", textDecoration: "none", wordBreak: "break-all" }}
+    >
+      {url} ↗
+    </a>
+  );
 }
 
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {

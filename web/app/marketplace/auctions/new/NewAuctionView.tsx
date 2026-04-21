@@ -6,7 +6,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { LocationPicker, LocationValue } from "@/components/LocationPicker";
 import { createAuctionTx } from "@/lib/auctions";
+import { uploadAuctionMetadata } from "@/lib/auctionMetadata";
 
 export function NewAuctionView() {
   const { connection } = useConnection();
@@ -15,7 +17,9 @@ export function NewAuctionView() {
   const router = useRouter();
 
   const [memo, setMemo] = useState("");
-  const [metadataUri, setMetadataUri] = useState("");
+  const [description, setDescription] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
+  const [location, setLocation] = useState<LocationValue | null>(null);
   const [startPrice, setStartPrice] = useState("10");
   const [minDeposit, setMinDeposit] = useState("1");
   const [commitHours, setCommitHours] = useState("24");
@@ -57,7 +61,27 @@ export function NewAuctionView() {
       const now = Math.floor(Date.now() / 1000);
       const commitEndsAt = now + Math.round(commitH * 3600);
       const revealEndsAt = commitEndsAt + Math.round(revealH * 3600);
+      const auctionId = BigInt(now); // matches lib/auctions createAuctionTx seed
 
+      // Upload enriched metadata JSON first if the user filled anything
+      // beyond the memo. We pick up auctionId client-side from the same
+      // seed createAuctionTx uses so the metadata file is keyed cleanly.
+      let metadataUri = "";
+      const hasEnriched =
+        description.trim() || videoUrl.trim() || location !== null;
+      if (hasEnriched && publicKey) {
+        metadataUri = await uploadAuctionMetadata(publicKey.toBase58(), auctionId, {
+          memo: memo.trim(),
+          description: description.trim() || undefined,
+          videoUrl: videoUrl.trim() || undefined,
+          location: location ?? undefined,
+          createdAt: new Date().toISOString(),
+        });
+      }
+
+      // `createAuctionTx` derives auctionId = floor(Date.now()/1000) itself.
+      // We compute it the same way above so the metadata filename matches,
+      // but we pass metadataUri derived from our own upload.
       const { sig, auctionAddress } = await createAuctionTx({
         connection,
         wallet,
@@ -66,7 +90,7 @@ export function NewAuctionView() {
         commitEndsAt,
         revealEndsAt,
         memo: memo.trim().slice(0, 140),
-        metadataUri: metadataUri.trim().slice(0, 256),
+        metadataUri: metadataUri.slice(0, 256),
       });
       window.alert(`Auction created. Tx: ${sig.slice(0, 12)}…`);
       router.push(`/marketplace/auctions/${auctionAddress}`);
@@ -116,15 +140,28 @@ export function NewAuctionView() {
           />
         </Field>
 
-        <Field label="Metadata URI (optional — photos, video, map, long description)">
+        <Field label="Long description (optional)">
+          <textarea
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Full specs, rental window, house rules, rental terms, etc."
+            style={{ ...inputStyle, resize: "vertical", minHeight: 64 }}
+          />
+        </Field>
+
+        <Field label="Video URL (optional — YouTube, Vimeo, direct MP4)">
           <input
-            type="text"
-            value={metadataUri}
-            maxLength={256}
-            onChange={(e) => setMetadataUri(e.target.value)}
-            placeholder="https://… JSON pointer"
+            type="url"
+            value={videoUrl}
+            onChange={(e) => setVideoUrl(e.target.value)}
+            placeholder="https://youtu.be/… or https://…/walkthrough.mp4"
             style={inputStyle}
           />
+        </Field>
+
+        <Field label="Location (optional — address, map pin, plot boundary)">
+          <LocationPicker value={location} onChange={setLocation} />
         </Field>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
