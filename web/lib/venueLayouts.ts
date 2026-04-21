@@ -1,4 +1,4 @@
-import { getSupabaseClient } from "./supabase";
+import { ASSET_MEDIA_BUCKET, getSupabaseClient } from "./supabase";
 import { VenueRegion, VenueTemplate } from "./venue-templates";
 
 export type VenueLayoutRegion = VenueRegion & {
@@ -179,6 +179,26 @@ export async function deleteEventVenueMapping(eventPubkey: string): Promise<void
     .delete()
     .eq("event_pubkey", eventPubkey);
   if (error) throw error;
+}
+
+/**
+ * Upload a background floor-plan image (PNG/SVG/JPG) to the asset-media
+ * bucket and return its public URL. Creator traces zones over this image
+ * inside the venue editor.
+ */
+export async function uploadVenueBackground(
+  creatorPubkey: string,
+  file: File
+): Promise<string> {
+  const supabase = getSupabaseClient();
+  const ext = file.name.split(".").pop()?.toLowerCase() ?? "png";
+  const key = `venue-bg/${creatorPubkey}/${Date.now()}.${ext}`;
+  const { error } = await supabase.storage
+    .from(ASSET_MEDIA_BUCKET)
+    .upload(key, file, { contentType: file.type || "image/png", upsert: false });
+  if (error) throw error;
+  const { data } = supabase.storage.from(ASSET_MEDIA_BUCKET).getPublicUrl(key);
+  return data.publicUrl;
 }
 
 /** Adapt a stored layout to the VenueTemplate shape used by the SVG renderer. */

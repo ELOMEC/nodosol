@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   getVenueLayout,
   saveVenueLayout,
+  uploadVenueBackground,
   VenueLayoutDoc,
   VenueLayoutRegion,
 } from "@/lib/venueLayouts";
@@ -53,6 +54,9 @@ export function VenueEditor({ id }: { id: string }) {
   const [draftPoly, setDraftPoly] = useState<DraftPolygon | null>(null);
   const [snap, setSnap] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
+  const [backgroundOpacity, setBackgroundOpacity] = useState(0.5);
+  const [uploadingBg, setUploadingBg] = useState(false);
 
   const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -70,6 +74,7 @@ export function VenueEditor({ id }: { id: string }) {
       setStageD(layout.stageD);
       setStageLabel(layout.stageLabel ?? "STAGE");
       setRegions(layout.regions);
+      setBackgroundUrl(layout.backgroundUrl);
       setState({ kind: "ready", layout });
     } catch (err) {
       console.error(err);
@@ -115,10 +120,20 @@ export function VenueEditor({ id }: { id: string }) {
     } else if (tool === "stage") {
       setDraftRect({ x1: pt.x, y1: pt.y, x2: pt.x, y2: pt.y });
     } else if (tool === "polygon") {
+      // Double-click finishes the polygon (requires 3+ points).
       if (evt.detail === 2 && draftPoly && draftPoly.points.length >= 3) {
-        // Double-click closes polygon.
         commitPolygon();
         return;
+      }
+      // Click within ~18 units of the first point closes the polygon too.
+      if (draftPoly && draftPoly.points.length >= 3) {
+        const first = draftPoly.points[0];
+        const dx = first.x - pt.x;
+        const dy = first.y - pt.y;
+        if (Math.sqrt(dx * dx + dy * dy) < 18) {
+          commitPolygon();
+          return;
+        }
       }
       const prev = draftPoly?.points ?? [];
       setDraftPoly({ points: [...prev, pt] });
@@ -243,7 +258,7 @@ export function VenueEditor({ id }: { id: string }) {
         viewBox,
         stageD,
         stageLabel: stageD ? stageLabel : null,
-        backgroundUrl: null,
+        backgroundUrl,
         regions,
       });
       router.replace(`/creator/venues/${saved.id}`);
@@ -311,7 +326,29 @@ export function VenueEditor({ id }: { id: string }) {
             viewBox={viewBox}
             onViewBox={setViewBox}
             onClearPolygon={() => setDraftPoly(null)}
+            onFinishPolygon={() => {
+              if (draftPoly && draftPoly.points.length >= 3) commitPolygon();
+            }}
             polygonInProgress={draftPoly !== null}
+            polygonPoints={draftPoly?.points.length ?? 0}
+            backgroundUrl={backgroundUrl}
+            backgroundOpacity={backgroundOpacity}
+            onBackgroundOpacity={setBackgroundOpacity}
+            onBackgroundUpload={async (file) => {
+              if (!publicKey) return;
+              setUploadingBg(true);
+              try {
+                const url = await uploadVenueBackground(publicKey.toBase58(), file);
+                setBackgroundUrl(url);
+              } catch (err) {
+                console.error(err);
+                window.alert(err instanceof Error ? err.message : "Upload failed");
+              } finally {
+                setUploadingBg(false);
+              }
+            }}
+            onBackgroundClear={() => setBackgroundUrl(null)}
+            uploadingBg={uploadingBg}
             saving={saving}
             onSave={() => void save()}
           />
@@ -333,6 +370,13 @@ export function VenueEditor({ id }: { id: string }) {
               onMouseUp={onMouseUp}
             >
               <GridPattern viewBox={viewBox} />
+              {backgroundUrl && (
+                <BackgroundLayer
+                  url={backgroundUrl}
+                  viewBox={viewBox}
+                  opacity={backgroundOpacity}
+                />
+              )}
               {stageD && (
                 <g>
                   <path d={stageD} fill="#1f2937" opacity={0.85} />
@@ -391,9 +435,20 @@ export function VenueEditor({ id }: { id: string }) {
                     strokeWidth={2}
                     strokeDasharray="6 4"
                   />
-                  {draftPoly.points.map((p, i) => (
-                    <circle key={i} cx={p.x} cy={p.y} r={5} fill="#4f46e5" />
-                  ))}
+                  {draftPoly.points.map((p, i) => {
+                    const isFirst = i === 0 && draftPoly.points.length >= 3;
+                    return (
+                      <circle
+                        key={i}
+                        cx={p.x}
+                        cy={p.y}
+                        r={isFirst ? 10 : 5}
+                        fill={isFirst ? "#fff" : "#4f46e5"}
+                        stroke="#4f46e5"
+                        strokeWidth={isFirst ? 3 : 0}
+                      />
+                    );
+                  })}
                 </g>
               )}
             </svg>
@@ -509,7 +564,15 @@ function Toolbar({
   viewBox,
   onViewBox,
   onClearPolygon,
+  onFinishPolygon,
   polygonInProgress,
+  polygonPoints,
+  backgroundUrl,
+  backgroundOpacity,
+  onBackgroundOpacity,
+  onBackgroundUpload,
+  onBackgroundClear,
+  uploadingBg,
   saving,
   onSave,
 }: {
@@ -522,7 +585,15 @@ function Toolbar({
   viewBox: string;
   onViewBox: (v: string) => void;
   onClearPolygon: () => void;
+  onFinishPolygon: () => void;
   polygonInProgress: boolean;
+  polygonPoints: number;
+  backgroundUrl: string | null;
+  backgroundOpacity: number;
+  onBackgroundOpacity: (v: number) => void;
+  onBackgroundUpload: (file: File) => void | Promise<void>;
+  onBackgroundClear: () => void;
+  uploadingBg: boolean;
   saving: boolean;
   onSave: () => void;
 }) {
@@ -547,6 +618,24 @@ function Toolbar({
       <ToolBtn active={tool === "rect"} onClick={() => onTool("rect")}>▭ Rect</ToolBtn>
       <ToolBtn active={tool === "polygon"} onClick={() => onTool("polygon")}>⬡ Polygon</ToolBtn>
       <ToolBtn active={tool === "stage"} onClick={() => onTool("stage")}>◼ Stage</ToolBtn>
+      {polygonInProgress && polygonPoints >= 3 && (
+        <button
+          type="button"
+          onClick={onFinishPolygon}
+          style={{
+            padding: "0.4rem 0.7rem",
+            borderRadius: 6,
+            border: "1px solid #4f46e5",
+            background: "#eef2ff",
+            color: "#4338ca",
+            fontSize: "0.78rem",
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          ✓ Finish ({polygonPoints} pts)
+        </button>
+      )}
       {polygonInProgress && (
         <button
           type="button"
@@ -569,6 +658,14 @@ function Toolbar({
         <input type="checkbox" checked={snap} onChange={(e) => onSnap(e.target.checked)} />
         Snap to 25
       </label>
+      <BackgroundControls
+        url={backgroundUrl}
+        opacity={backgroundOpacity}
+        onOpacity={onBackgroundOpacity}
+        onUpload={onBackgroundUpload}
+        onClear={onBackgroundClear}
+        uploading={uploadingBg}
+      />
       <select
         value={viewBox}
         onChange={(e) => onViewBox(e.target.value)}
@@ -608,6 +705,124 @@ function Toolbar({
   );
 }
 
+function BackgroundControls({
+  url,
+  opacity,
+  onOpacity,
+  onUpload,
+  onClear,
+  uploading,
+}: {
+  url: string | null;
+  opacity: number;
+  onOpacity: (v: number) => void;
+  onUpload: (file: File) => void | Promise<void>;
+  onClear: () => void;
+  uploading: boolean;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "0.35rem",
+        padding: "0.1rem 0.5rem",
+        borderRadius: 6,
+        border: "1px solid var(--shell-border, #eef0f3)",
+      }}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/svg+xml"
+        style={{ display: "none" }}
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (file) await onUpload(file);
+          if (inputRef.current) inputRef.current.value = "";
+        }}
+      />
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={uploading}
+        title="Upload a floor-plan image to trace zones over"
+        style={{
+          padding: "0.3rem 0.55rem",
+          borderRadius: 5,
+          border: "none",
+          background: "transparent",
+          color: "var(--shell-fg, #111827)",
+          fontSize: "0.76rem",
+          fontWeight: 600,
+          cursor: uploading ? "not-allowed" : "pointer",
+        }}
+      >
+        {uploading ? "Uploading…" : url ? "Replace BG" : "+ Background"}
+      </button>
+      {url && (
+        <>
+          <input
+            type="range"
+            min={0}
+            max={1}
+            step={0.05}
+            value={opacity}
+            onChange={(e) => onOpacity(parseFloat(e.target.value))}
+            title={`Background opacity ${Math.round(opacity * 100)}%`}
+            style={{ width: 70 }}
+          />
+          <button
+            type="button"
+            onClick={onClear}
+            title="Remove background"
+            style={{
+              padding: "0.15rem 0.45rem",
+              borderRadius: 4,
+              border: "1px solid var(--shell-border, #eef0f3)",
+              background: "transparent",
+              color: "#6b7280",
+              fontSize: "0.72rem",
+              cursor: "pointer",
+            }}
+          >
+            ×
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+function BackgroundLayer({
+  url,
+  viewBox,
+  opacity,
+}: {
+  url: string;
+  viewBox: string;
+  opacity: number;
+}) {
+  const parts = viewBox.split(/\s+/).map(Number);
+  const x = parts[0] || 0;
+  const y = parts[1] || 0;
+  const w = parts[2] || 1000;
+  const h = parts[3] || 700;
+  return (
+    <image
+      href={url}
+      x={x}
+      y={y}
+      width={w}
+      height={h}
+      opacity={opacity}
+      preserveAspectRatio="xMidYMid meet"
+      style={{ pointerEvents: "none" }}
+    />
+  );
+}
+
 function ToolBtn({
   active,
   onClick,
@@ -642,7 +857,9 @@ function HelpOverlay({ tool, polygonPoints }: { tool: Tool; polygonPoints: numbe
     tool === "rect"
       ? "Click + drag to draw a rectangular zone."
       : tool === "polygon"
-      ? `Click to drop vertices (${polygonPoints} placed). Double-click to close the shape.`
+      ? polygonPoints >= 3
+        ? `${polygonPoints} vertices placed. Click the highlighted first dot, double-click, or press ✓ Finish in the toolbar to close the shape.`
+        : `Click to drop vertices (${polygonPoints} placed). Need at least 3 to close.`
       : tool === "stage"
       ? "Click + drag to mark the stage / focus area (dark rectangle)."
       : "Click a zone to select. Use the right panel to rename, recolor, or delete.";
