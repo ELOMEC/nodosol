@@ -51,9 +51,22 @@ export type AssetMetadataJson = {
   description: string;
   image: string;
   attributes?: Array<{ trait_type: string; value: string | number }>;
+  /** Multi-image gallery — public URLs. image[0] (the `image` field) is the cover. */
+  gallery?: string[];
+  /** External video walkthrough (YouTube / Vimeo / direct MP4). */
+  videoUrl?: string;
+  /** Geographic metadata for physical / real-estate assets. */
+  location?: {
+    address: string;
+    lat: number;
+    lng: number;
+    polygon?: Array<{ lat: number; lng: number }>;
+  };
   properties?: {
     category: string;
     delivery_required: boolean;
+    /** Sale mode the tokenizer intends — display only; listings live in their own program. */
+    sale_mode?: "fixed" | "first_come" | "auction" | "private_commit" | "rental";
   };
 };
 

@@ -36,7 +36,11 @@ import {
   mintProgram,
   registryProgram,
 } from "@/lib/rwa";
+import { GalleryUploader } from "@/components/GalleryUploader";
+import { LocationPicker, LocationValue } from "@/components/LocationPicker";
 import { uploadAssetMedia, AssetMetadataJson } from "@/lib/supabase";
+
+type SaleMode = "fixed" | "first_come" | "auction" | "private_commit" | "rental";
 
 type FormState = {
   name: string;
@@ -48,6 +52,10 @@ type FormState = {
   longDesc: string;
   metadataUri: string;
   imageUrl: string;
+  gallery: string[];
+  videoUrl: string;
+  location: LocationValue | null;
+  saleMode: SaleMode;
 };
 
 const INITIAL: FormState = {
@@ -60,6 +68,10 @@ const INITIAL: FormState = {
   longDesc: "",
   metadataUri: "",
   imageUrl: "",
+  gallery: [],
+  videoUrl: "",
+  location: null,
+  saleMode: "fixed",
 };
 
 type MediaState =
@@ -163,9 +175,18 @@ export function TokenizeForm() {
         symbol: form.symbol,
         description: form.longDesc || form.shortDesc || "",
         image: imageUrl,
+        gallery: form.gallery.length > 0 ? [imageUrl, ...form.gallery] : undefined,
+        videoUrl: form.videoUrl.trim() || undefined,
+        location: form.location ? {
+          address: form.location.address,
+          lat: form.location.lat,
+          lng: form.location.lng,
+          polygon: form.location.polygon,
+        } : undefined,
         properties: {
           category: form.category,
           delivery_required: form.deliveryRequired,
+          sale_mode: form.saleMode,
         },
       };
       const jsonKey = `${slug}/${ts}-metadata.json`;
@@ -383,7 +404,7 @@ export function TokenizeForm() {
               onChange={(e) => setForm({ ...form, longDesc: e.target.value })}
             />
           </Field>
-          <Field label="Image">
+          <Field label="Cover image">
             <MediaUploader
               form={form}
               media={media}
@@ -393,6 +414,43 @@ export function TokenizeForm() {
                 setMedia({ kind: "idle" });
               }}
             />
+          </Field>
+          <Field label="Extra gallery photos (optional — up to 10)">
+            <GalleryUploader
+              value={form.gallery}
+              onChange={(urls) => setForm((prev) => ({ ...prev, gallery: urls }))}
+              ownerPubkey={publicKey?.toBase58() ?? ""}
+              keyPrefix="asset-gallery"
+              maxImages={10}
+            />
+          </Field>
+          <Field label="Video walkthrough (optional — YouTube / Vimeo / direct MP4)">
+            <input
+              style={inputStyle}
+              type="url"
+              value={form.videoUrl}
+              onChange={(e) => setForm({ ...form, videoUrl: e.target.value })}
+              placeholder="https://youtu.be/… or https://…/walkthrough.mp4"
+            />
+          </Field>
+          <Field label="Location (optional — physical assets, real estate, venues)">
+            <LocationPicker
+              value={form.location}
+              onChange={(v) => setForm((prev) => ({ ...prev, location: v }))}
+            />
+          </Field>
+          <Field label="Intended sale mode (display-only — listing lives in its own program)">
+            <select
+              style={inputStyle}
+              value={form.saleMode}
+              onChange={(e) => setForm({ ...form, saleMode: e.target.value as SaleMode })}
+            >
+              <option value="fixed">Fixed price (marketplace)</option>
+              <option value="first_come">First-come (marketplace)</option>
+              <option value="auction">Sealed-bid auction</option>
+              <option value="private_commit">Private commit (invite-only)</option>
+              <option value="rental">Recurring rental (monthly subscription)</option>
+            </select>
           </Field>
           <Field label="Metadata URI (auto-generated on upload)">
             <input
