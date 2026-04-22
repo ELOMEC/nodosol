@@ -12,6 +12,7 @@ import {
   PublicKey,
   SystemProgram,
   Transaction,
+  VersionedTransaction,
 } from "@solana/web3.js";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -25,6 +26,7 @@ import {
   marketplaceProgram,
 } from "@/lib/marketplace";
 import { mintProgram } from "@/lib/rwa";
+import { decodeSimulationError } from "@/lib/solanaErrors";
 
 type Listing = {
   address: string;
@@ -278,6 +280,21 @@ export function MarketplaceView() {
       const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
       tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }));
       tx.add(ix);
+
+      // Preflight simulate so we get a readable program error instead of
+      // Phantom's generic "Unexpected error".
+      const vtx = new VersionedTransaction(tx.compileMessage());
+      const sim = await connection.simulateTransaction(vtx, {
+        sigVerify: false,
+        replaceRecentBlockhash: true,
+        commitment: "confirmed",
+      });
+      if (sim.value.err) {
+        const logs = sim.value.logs ?? [];
+        console.error("buyListing simulate failed", sim.value.err, logs);
+        throw new Error(decodeSimulationError(sim.value.err, logs));
+      }
+
       const sig = await wallet.sendTransaction(tx, connection);
       await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
       setBuyModal(null);

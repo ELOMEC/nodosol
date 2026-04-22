@@ -36,6 +36,7 @@ import {
   mintProgram,
   registryProgram,
 } from "@/lib/rwa";
+import { decodeSimulationError } from "@/lib/solanaErrors";
 
 type AssetDoc = {
   address: string;
@@ -357,6 +358,19 @@ export function AssetDetailView({ mint }: { mint: string }) {
       const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
       tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }));
       tx.add(ix);
+
+      const vtx = new VersionedTransaction(tx.compileMessage());
+      const sim = await connection.simulateTransaction(vtx, {
+        sigVerify: false,
+        replaceRecentBlockhash: true,
+        commitment: "confirmed",
+      });
+      if (sim.value.err) {
+        const logs = sim.value.logs ?? [];
+        console.error("buyListing simulate failed", sim.value.err, logs);
+        throw new Error(decodeSimulationError(sim.value.err, logs));
+      }
+
       const sig = await wallet.sendTransaction(tx, connection);
       await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
       setBuyQty("1");
