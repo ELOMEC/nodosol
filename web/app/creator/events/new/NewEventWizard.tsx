@@ -40,6 +40,7 @@ import {
   upsertEventVenueMapping,
   VenueLayoutDoc,
 } from "@/lib/venueLayouts";
+import { simulateAndSend } from "@/lib/tx";
 
 type Basics = {
   name: string;
@@ -203,15 +204,13 @@ export function NewEventWizard() {
         .instruction();
 
       {
-        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-        const tx = new Transaction({ feePayer: creator, recentBlockhash: blockhash });
-        tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }));
-        tx.add(createIx);
-        const sig = await wallet.sendTransaction(tx, connection);
-        await connection.confirmTransaction(
-          { signature: sig, blockhash, lastValidBlockHeight },
-          "confirmed"
-        );
+        const sig = await simulateAndSend(connection, wallet, {
+          feePayer: creator,
+          instructions: [
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+          createIx,
+        ],
+        });
       }
 
       // 4. initialize_event_tree — allocates Merkle tree account + Bubblegum config.
@@ -239,19 +238,15 @@ export function NewEventWizard() {
           systemProgram: SystemProgram.programId,
         } as never)
         .instruction();
-      {
-        const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-        const tx = new Transaction({ feePayer: creator, recentBlockhash: blockhash });
-        tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 500_000 }));
-        tx.add(createAccIx);
-        tx.add(initIx);
-        tx.partialSign(merkleTreeKp);
-        const sig = await wallet.sendTransaction(tx, connection, { signers: [merkleTreeKp] });
-        await connection.confirmTransaction(
-          { signature: sig, blockhash, lastValidBlockHeight },
-          "confirmed"
-        );
-      }
+      await simulateAndSend(connection, wallet, {
+        feePayer: creator,
+        instructions: [
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 500_000 }),
+          createAccIx,
+          initIx,
+        ],
+        signers: [merkleTreeKp],
+      });
 
       // 5. Bind custom venue (off-chain Supabase record).
       if (venue.kind === "custom") {

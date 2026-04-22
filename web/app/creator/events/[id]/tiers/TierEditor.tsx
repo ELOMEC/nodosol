@@ -39,6 +39,7 @@ import {
   VenueLayoutDoc,
   VenueLayoutRegion,
 } from "@/lib/venueLayouts";
+import { simulateAndSend } from "@/lib/tx";
 
 type EventMeta = {
   address: string;
@@ -534,13 +535,13 @@ async function sendIxs(
   ixs: Awaited<ReturnType<typeof buildCreateTierIx>>[]
 ): Promise<string> {
   const connection = program.provider.connection;
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-  const tx = new Transaction({ feePayer: payer, recentBlockhash: blockhash });
-  tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }));
-  for (const ix of ixs) tx.add(ix);
-  const sig = await wallet.sendTransaction(tx, connection);
-  await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
-  return sig;
+  return simulateAndSend(connection, wallet, {
+    feePayer: payer,
+    instructions: [
+      ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+      ...ixs,
+    ],
+  });
 }
 
 function TemplatePicker({

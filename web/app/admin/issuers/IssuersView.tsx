@@ -19,6 +19,7 @@ import {
   jurisdictionsToString,
   registryProgram,
 } from "@/lib/rwa";
+import { simulateAndSend } from "@/lib/tx";
 
 type IssuerRow = {
   address: string;
@@ -152,14 +153,12 @@ export function IssuersView() {
       })
       .instruction();
 
-    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-    const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-    tx.add(ix);
-    const sig = await wallet.sendTransaction(tx, connection);
-    await connection.confirmTransaction(
-      { signature: sig, blockhash, lastValidBlockHeight },
-      "confirmed"
-    );
+    const sig = await simulateAndSend(connection, wallet, {
+      feePayer: publicKey,
+      instructions: [
+      ix,
+    ],
+    });
     await reload();
   }
 
@@ -181,14 +180,12 @@ export function IssuersView() {
           issuer: new PublicKey(row.address),
         })
         .instruction();
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction(
-        { signature: sig, blockhash, lastValidBlockHeight },
-        "confirmed"
-      );
+      const sig = await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [
+        ix,
+      ],
+      });
       await reload();
     } catch (err) {
       console.error(err);
@@ -226,14 +223,12 @@ export function IssuersView() {
           issuer: new PublicKey(row.address),
         })
         .instruction();
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction(
-        { signature: sig, blockhash, lastValidBlockHeight },
-        "confirmed"
-      );
+      const sig = await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [
+        ix,
+      ],
+      });
       await reload();
     } catch (err) {
       console.error(err);
@@ -261,14 +256,12 @@ export function IssuersView() {
           issuer: new PublicKey(row.address),
         })
         .instruction();
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction(
-        { signature: sig, blockhash, lastValidBlockHeight },
-        "confirmed"
-      );
+      const sig = await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [
+        ix,
+      ],
+      });
       await reload();
     } catch (err) {
       console.error(err);

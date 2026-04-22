@@ -22,6 +22,7 @@ import {
   planVaultPda,
   subscriptionProgram,
 } from "@/lib/subscription";
+import { simulateAndSend } from "@/lib/tx";
 
 export function NewRentalView() {
   const { connection } = useConnection();
@@ -87,15 +88,13 @@ export function NewRentalView() {
         } as never)
         .instruction();
 
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }));
-      tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction(
-        { signature: sig, blockhash, lastValidBlockHeight },
-        "confirmed"
-      );
+      const sig = await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [
+        ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }),
+        ix,
+      ],
+      });
 
       // Upload metadata AFTER the plan exists so filename = plan PDA.
       await uploadRentalMetadata(plan.toBase58(), {

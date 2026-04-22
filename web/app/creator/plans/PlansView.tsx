@@ -25,6 +25,7 @@ import {
   planVaultPda,
   subscriptionProgram,
 } from "@/lib/subscription";
+import { simulateAndSend } from "@/lib/tx";
 
 type FetchState =
   | { kind: "idle" }
@@ -101,12 +102,13 @@ export function PlansView() {
       })
       .instruction();
 
-    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-    const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-    tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }));
-    tx.add(ix);
-    const sig = await wallet.sendTransaction(tx, connection);
-    await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+    const sig = await simulateAndSend(connection, wallet, {
+      feePayer: publicKey,
+      instructions: [
+      ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }),
+      ix,
+    ],
+    });
     await reload();
   }
 
@@ -126,11 +128,12 @@ export function PlansView() {
           plan: new PublicKey(plan.address),
         })
         .instruction();
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+      const sig = await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [
+        ix,
+      ],
+      });
       await reload();
     } catch (err) {
       console.error(err);
@@ -172,11 +175,12 @@ export function PlansView() {
         })
         .instruction();
 
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+      const sig = await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [
+        ix,
+      ],
+      });
       await reload();
     } catch (err) {
       console.error(err);

@@ -7,6 +7,7 @@ import {
   PublicKey,
   SystemProgram,
   Transaction,
+  TransactionInstruction,
 } from "@solana/web3.js";
 import { useCallback, useEffect, useState } from "react";
 
@@ -18,6 +19,7 @@ import {
   configPdaFor,
   loadProgram,
 } from "@/lib/admin";
+import { simulateAndSend } from "@/lib/tx";
 
 type FetchState =
   | { kind: "idle" }
@@ -156,14 +158,10 @@ export function AdminView() {
       });
       const program = loadProgram(desc, provider);
       const { ix } = await build(program, desc, provider);
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction(
-        { signature: sig, blockhash, lastValidBlockHeight },
-        "confirmed"
-      );
+      const sig = await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [ix as TransactionInstruction],
+      });
       await reload();
     } catch (err) {
       console.error(err);

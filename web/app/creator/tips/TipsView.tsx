@@ -26,6 +26,7 @@ import {
   fetchCreatorProfile,
   tipJarProgram,
 } from "@/lib/tipJar";
+import { simulateAndSend } from "@/lib/tx";
 
 type FetchState =
   | { kind: "idle" }
@@ -95,12 +96,13 @@ export function TipsView() {
         })
         .instruction();
 
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }));
-      tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+      const sig = await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [
+        ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }),
+        ix,
+      ],
+      });
       await reload();
     } catch (err) {
       console.error(err);
@@ -141,12 +143,13 @@ export function TipsView() {
         })
         .instruction();
 
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }));
-      tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+      const sig = await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [
+        ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
+        ix,
+      ],
+      });
       await reload();
     } catch (err) {
       console.error(err);

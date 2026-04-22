@@ -28,6 +28,7 @@ import {
   TicketTierDoc,
 } from "@/lib/eventTickets";
 import { getSupabaseClient } from "@/lib/supabase";
+import { simulateAndSend } from "@/lib/tx";
 
 type EventMeta = {
   address: string;
@@ -193,15 +194,13 @@ export function EventDashboardView({ address }: { address: string }) {
         .instruction();
       ixs.push(withdrawIx);
 
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }));
-      for (const ix of ixs) tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction(
-        { signature: sig, blockhash, lastValidBlockHeight },
-        "confirmed"
-      );
+      const sig = await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }),
+          ...ixs,
+        ],
+      });
 
       window.alert(`Withdrew $${amountUsdc.toFixed(2)}. Tx: ${sig.slice(0, 12)}…`);
       setWithdrawOpen(false);

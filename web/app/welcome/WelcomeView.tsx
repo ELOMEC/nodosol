@@ -21,6 +21,7 @@ import {
   fetchCreatorProfile,
   tipJarProgram,
 } from "@/lib/tipJar";
+import { simulateAndSend } from "@/lib/tx";
 
 const FLAG_KEY = "nodosol-onboarded-v1";
 
@@ -87,15 +88,13 @@ export function WelcomeView() {
           systemProgram: SystemProgram.programId,
         })
         .instruction();
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }));
-      tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction(
-        { signature: sig, blockhash, lastValidBlockHeight },
-        "confirmed"
-      );
+      const sig = await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [
+        ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }),
+        ix,
+      ],
+      });
       setHasCreatorProfile(true);
     } catch (err) {
       console.error(err);

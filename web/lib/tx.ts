@@ -1,6 +1,7 @@
 import {
   Connection,
   PublicKey,
+  Signer,
   Transaction,
   TransactionInstruction,
   TransactionSignature,
@@ -18,6 +19,10 @@ export type Sendable = {
 type SendOptions = {
   feePayer: PublicKey;
   instructions: TransactionInstruction[];
+  /** Extra signers to partial-sign the tx before wallet.sendTransaction —
+   *  used by flows that generate a client-side keypair (e.g. a new mint
+   *  or merkle tree) that must sign alongside the user's wallet. */
+  signers?: Signer[];
   /** Optional skipSimulate for flows where the simulator's state-view
    *  diverges from real execution (e.g. legacy Compute Budget tricks).
    *  Default: simulate. */
@@ -35,7 +40,7 @@ type SendOptions = {
 export async function simulateAndSend(
   connection: Connection,
   wallet: Sendable,
-  { feePayer, instructions, skipSimulate }: SendOptions
+  { feePayer, instructions, signers, skipSimulate }: SendOptions
 ): Promise<TransactionSignature> {
   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
   const tx = new Transaction({ feePayer, recentBlockhash: blockhash });
@@ -54,6 +59,8 @@ export async function simulateAndSend(
       throw new Error(decodeSimulationError(sim.value.err, logs));
     }
   }
+
+  if (signers?.length) tx.partialSign(...signers);
 
   const sig = await wallet.sendTransaction(tx, connection);
   await connection.confirmTransaction(

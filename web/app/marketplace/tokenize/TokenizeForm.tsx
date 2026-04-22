@@ -39,6 +39,7 @@ import {
 import { GalleryUploader } from "@/components/GalleryUploader";
 import { LocationPicker, LocationValue } from "@/components/LocationPicker";
 import { uploadAssetMedia, AssetMetadataJson } from "@/lib/supabase";
+import { simulateAndSend } from "@/lib/tx";
 
 type SaleMode = "fixed" | "first_come" | "auction" | "private_commit" | "rental";
 
@@ -275,20 +276,18 @@ export function TokenizeForm() {
         })
         .instruction();
 
-      const { blockhash } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }));
-      tx.add(createMintIx);
-      tx.add(initMintIx);
-      tx.add(createAtaIx);
-      tx.add(tokenizeIx);
-      tx.partialSign(mintKeypair);
-
       setSubmit({ kind: "sending" });
-      const signature = await wallet.sendTransaction(tx, connection, {
+      const signature = await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+          createMintIx,
+          initMintIx,
+          createAtaIx,
+          tokenizeIx,
+        ],
         signers: [mintKeypair],
       });
-      await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight: (await connection.getLatestBlockhash()).lastValidBlockHeight }, "confirmed");
 
       setSubmit({
         kind: "success",
