@@ -97,10 +97,8 @@ export function TelemetryStrip() {
 
   return (
     <div
+      className="nds-telemetry-strip"
       style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(7, 1fr)",
-        gap: "0.75rem",
         padding: "1rem",
         background: "rgba(255,255,255,0.04)",
         border: "1px solid rgba(255,255,255,0.08)",

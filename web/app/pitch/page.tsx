@@ -56,7 +56,7 @@ export default function PitchPage() {
       <section style={sectionStyle}>
         <Eyebrow>The opportunity</Eyebrow>
         <h2 style={h2Style}>RWA tokenisation is the next trillion-dollar narrative — and nobody has shipped a compliant Solana-native stack at retail scale.</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "1.5rem" }}>
+        <div className="nds-grid-2" style={{ gap: "1rem", marginTop: "1.5rem" }}>
           <DataPoint headline="$30T" blurb="addressable RWA market size by 2030 per BCG / Citi estimates" />
           <DataPoint headline="<$10B" blurb="currently tokenised on-chain across all chains (0.03% penetration)" />
           <DataPoint headline="Zero" blurb="Solana-native RWA marketplaces with a real licensing posture today" />
@@ -67,7 +67,7 @@ export default function PitchPage() {
       <section style={sectionStyle}>
         <Eyebrow>The product — three pillars on one fee rail</Eyebrow>
         <h2 style={h2Style}>One Solana super-app, three monetisation surfaces.</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem", marginTop: "1.5rem" }}>
+        <div className="nds-grid-3" style={{ gap: "1rem", marginTop: "1.5rem" }}>
           <Pillar
             title="Compliant RWA"
             body="Tokenise commodities, real estate, or debt as Token-2022 assets — but only if the issuer is in our on-chain licence registry. Every sale atomically splits USDC between seller and platform treasury. Open marketplace listings + bilateral OTC escrow for private deals."
@@ -132,7 +132,7 @@ export default function PitchPage() {
       <section style={sectionStyle}>
         <Eyebrow>Architecture</Eyebrow>
         <h2 style={h2Style}>Pure on-chain state + a thin web client. No backend mutates user funds.</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginTop: "1.5rem" }}>
+        <div className="nds-grid-2" style={{ gap: "1rem", marginTop: "1.5rem" }}>
           <ProgramCard label="tip_jar" role="Creator tips" high="Config + fee split + ElGamal slot reserved for V2 confidential transfers" />
           <ProgramCard label="subscription" role="Recurring billing" high="SPL token delegate pre-approves N cycles — one-click subscribe" />
           <ProgramCard label="events (legacy)" role="PDA-based tickets" high="Non-transferable; superseded by event_tickets" />
@@ -153,7 +153,7 @@ export default function PitchPage() {
       <section style={sectionStyle}>
         <Eyebrow>Business model</Eyebrow>
         <h2 style={h2Style}>Platform fee on every USDC flow that clears through a nodosol program.</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem", marginTop: "1.25rem" }}>
+        <div className="nds-grid-3" style={{ gap: "1rem", marginTop: "1.25rem" }}>
           <DataPoint headline="2.5%" blurb="default marketplace fee on every buy_listing" />
           <DataPoint headline="3%" blurb="default OTC fee on every accept_deal" />
           <DataPoint headline="0–1%" blurb="creator programs — tuned per vertical" />
@@ -215,7 +215,7 @@ export default function PitchPage() {
           <li><strong style={{ color: "#fff" }}>USDC-native cross-border.</strong> No FX friction on international trades — relevant for commodities markets typically denominated in USD anyway.</li>
         </ul>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.9rem", marginTop: "2rem" }}>
+        <div className="nds-grid-3" style={{ gap: "0.9rem", marginTop: "2rem" }}>
           <DataPoint headline="$8B" blurb="Patreon annual GMV — one vertical we substitute" />
           <DataPoint headline="$3.5B" blurb="Eventbrite annual GMV — one vertical we substitute" />
           <DataPoint headline="$50B+" blurb="Retail commodity exchange activity addressable via compliant tokenisation" />
@@ -235,7 +235,7 @@ export default function PitchPage() {
             co-founder as part of the seed raise.
           </p>
           <h4 style={trackTitle}>Production systems already shipped and operating</h4>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.85rem", marginTop: "0.75rem" }}>
+          <div className="nds-grid-2" style={{ gap: "0.85rem", marginTop: "0.75rem" }}>
             <TrackCard
               label="DScore.live"
               role="Live basketball scoring"
@@ -283,7 +283,7 @@ export default function PitchPage() {
       <section style={{ ...sectionStyle, background: "#0f0f0f", border: "1px solid #1a1a1a", borderRadius: 14, padding: "1.75rem 2rem" }}>
         <Eyebrow>The ask</Eyebrow>
         <h2 style={h2Style}>$5M Seed round to ship mainnet, close the Balkan licence acquisition, and onboard the first five issuers.</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem", marginTop: "1.25rem" }}>
+        <div className="nds-grid-2" style={{ gap: "1.25rem", marginTop: "1.25rem" }}>
           <UseOfFunds
             percent="35%"
             title="Licence closing + legal"

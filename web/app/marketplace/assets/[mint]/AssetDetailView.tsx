@@ -406,7 +406,7 @@ export function AssetDetailView({ mint }: { mint: string }) {
     <>
       <Back />
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 360px", gap: "1.5rem", alignItems: "flex-start" }}>
+      <div className="nds-grid-detail">
         <div>
           <div
             style={{
@@ -504,7 +504,7 @@ export function AssetDetailView({ mint }: { mint: string }) {
           ) : null}
         </div>
 
-        <aside style={{ position: "sticky", top: 88, display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <aside className="nds-no-sticky-mobile" style={{ position: "sticky", top: 88, display: "flex", flexDirection: "column", gap: "1rem" }}>
           <div style={panel}>
             <div style={panelHeader}>Marketplace</div>
             <div style={{ padding: "1.1rem 1.2rem" }}>

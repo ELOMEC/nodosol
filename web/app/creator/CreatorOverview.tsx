@@ -104,14 +104,14 @@ function ReadyView({ profile, plans }: { profile: CreatorProfileDoc | null; plan
 
   return (
     <>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
+      <div className="nds-grid-4" style={{ gap: "1rem", marginBottom: "1.5rem" }}>
         <StatCard label="Tip jar" value={profile ? "Active" : "Not set up"} sub={profile ? `$${totalTips.toFixed(2)} from ${tipCount} tips` : "Initialize to start receiving"} valueColor={profile ? "#059669" : "#9ca3af"} />
         <StatCard label="Subscription plans" value={plans.length.toString()} sub={`${activePlans} active · ${totalSubscribers} total subscribers`} />
         <StatCard label="Withdrawable now" value={`$${(withdrawableTips + planWithdrawable).toFixed(2)}`} sub="Tips + plans combined" />
         <StatCard label="Lifetime revenue" value={`$${(totalTips + planRevenue).toFixed(2)}`} sub="Across all creator rails" />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+      <div className="nds-grid-2" style={{ gap: "1rem" }}>
         <SectionCard
           title="Tip jar"
           subtitle={profile ? "Active and accepting tips" : "Not initialized yet"}

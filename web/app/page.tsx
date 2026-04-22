@@ -145,7 +145,7 @@ export default function HomePage() {
         <h2 style={{ fontSize: "0.88rem", letterSpacing: 1, textTransform: "uppercase", color: "#9a9a9a", fontWeight: 600, marginBottom: "1.25rem" }}>
           Why Nodosol
         </h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem" }}>
+        <div className="nds-grid-3" style={{ gap: "1rem" }}>
           <ValueCard
             title="Regulatory moat"
             body="Licenced-issuer registry enforced on-chain: only whitelisted entities can tokenise, filtered by jurisdiction and asset class. Rare on Solana, core to institutional adoption."
@@ -165,7 +165,7 @@ export default function HomePage() {
         <h2 style={{ fontSize: "0.88rem", letterSpacing: 1, textTransform: "uppercase", color: "#9a9a9a", fontWeight: 600, marginBottom: "1.25rem" }}>
           What&apos;s live today
         </h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "1rem" }}>
+        <div className="nds-grid-2" style={{ gap: "1rem" }}>
           <FeatureCard label="Tokenize RWA" href="/marketplace/tokenize" hint="Fixed-supply Token-2022, mint authority auto-revoked" />
           <FeatureCard label="Marketplace" href="/marketplace" hint="Public listings with escrow vault, 2.5% platform fee" />
           <FeatureCard label="OTC deals" href="/marketplace/otc" hint="Bilateral escrow with 1 min–30 day expiry window" />

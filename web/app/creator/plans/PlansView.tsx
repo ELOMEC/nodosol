@@ -315,7 +315,7 @@ function PlanCard({
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem", marginBottom: "0.9rem" }}>
+      <div className="nds-grid-3" style={{ gap: "0.75rem", marginBottom: "0.9rem" }}>
         <MiniStat label="Lifetime revenue" value={`$${revenue.toFixed(2)}`} />
         <MiniStat label="Withdrawable" value={`$${withdrawable.toFixed(2)}`} />
         <MiniStat label="Withdrawn" value={`$${withdrawn.toFixed(2)}`} />

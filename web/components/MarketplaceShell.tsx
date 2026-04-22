@@ -60,10 +60,8 @@ export function MarketplaceShell({
 
   return (
     <div
+      className="nds-shell-layout"
       style={{
-        minHeight: "100vh",
-        display: "grid",
-        gridTemplateColumns: "260px 1fr",
         background: "var(--shell-bg)",
         color: "var(--shell-fg)",
         fontFamily:
@@ -71,6 +69,7 @@ export function MarketplaceShell({
       }}
     >
       <aside
+        className="nds-shell-sidebar"
         style={{
           borderRight: "1px solid var(--shell-border)",
           background: "var(--shell-card)",
@@ -178,45 +177,65 @@ export function MarketplaceShell({
         </div>
       </aside>
 
-      <div>
-        <Topbar />
-        <main style={{ padding: "1.75rem 2.25rem", maxWidth: 1320 }}>{children}</main>
+      <div style={{ minWidth: 0 }}>
+        <Topbar
+          nav={nav}
+          creatorNav={creatorNav}
+          adminNav={adminNav}
+        />
+        <main className="nds-shell-main">{children}</main>
       </div>
     </div>
   );
 }
 
-function Topbar() {
+function Topbar({
+  nav,
+  creatorNav,
+  adminNav,
+}: {
+  nav: NavItem[];
+  creatorNav: NavItem[];
+  adminNav: NavItem[];
+}) {
   return (
-    <header
-      style={{
-        height: 64,
-        borderBottom: "1px solid var(--shell-border)",
-        background: "var(--shell-card)",
-        padding: "0 2.25rem",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        position: "sticky",
-        top: 0,
-        zIndex: 10,
-      }}
-    >
-      <form
-        action="/search"
-        method="GET"
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.5rem",
-          padding: "0.5rem 0.85rem",
-          background: "var(--shell-pill-bg)",
-          borderRadius: 8,
-          width: 360,
-          color: "var(--shell-muted)",
-          fontSize: "0.88rem",
-        }}
-      >
+    <header className="nds-topbar">
+      <details className="nds-mobile-menu">
+        <summary aria-label="Menu" style={mobileMenuButtonStyle}>
+          {IconMenu()}
+        </summary>
+        <div style={mobileMenuPanelStyle}>
+          <SectionLabel>RWA</SectionLabel>
+          <nav style={{ display: "flex", flexDirection: "column", gap: "0.125rem", marginBottom: "1rem" }}>
+            {nav.map((item) => (
+              <Link key={item.href} href={item.href} style={navLinkStyle(item.active)}>
+                <span style={{ width: 18, height: 18, display: "inline-flex", alignItems: "center" }}>{item.icon}</span>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+          <SectionLabel>Creator</SectionLabel>
+          <nav style={{ display: "flex", flexDirection: "column", gap: "0.125rem", marginBottom: "1rem" }}>
+            {creatorNav.map((item) => (
+              <Link key={item.href} href={item.href} style={navLinkStyle(item.active)}>
+                <span style={{ width: 18, height: 18, display: "inline-flex", alignItems: "center" }}>{item.icon}</span>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+          <SectionLabel>Admin</SectionLabel>
+          <nav style={{ display: "flex", flexDirection: "column", gap: "0.125rem" }}>
+            {adminNav.map((item) => (
+              <Link key={item.href} href={item.href} style={navLinkStyle(item.active)}>
+                <span style={{ width: 18, height: 18, display: "inline-flex", alignItems: "center" }}>{item.icon}</span>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      </details>
+
+      <form action="/search" method="GET" className="nds-topbar-search">
         <span style={{ display: "inline-flex" }}>{IconSearch()}</span>
         <input
           name="q"
@@ -231,7 +250,7 @@ function Topbar() {
           }}
         />
       </form>
-      <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
         <ThemeToggle />
         <NotificationsBell />
         <PrivyLoginButton />
@@ -390,6 +409,41 @@ function IconSearch() {
     </svg>
   );
 }
+
+function IconMenu() {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="3" y1="6" x2="21" y2="6" />
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+  );
+}
+
+const mobileMenuButtonStyle: React.CSSProperties = {
+  listStyle: "none",
+  cursor: "pointer",
+  width: 40,
+  height: 40,
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  borderRadius: 8,
+  color: "var(--shell-fg)",
+};
+
+const mobileMenuPanelStyle: React.CSSProperties = {
+  position: "absolute",
+  top: 64,
+  left: 0,
+  right: 0,
+  background: "var(--shell-card)",
+  borderBottom: "1px solid var(--shell-border)",
+  padding: "1rem 1rem 1.5rem",
+  maxHeight: "calc(100vh - 64px)",
+  overflowY: "auto",
+  zIndex: 20,
+};
 
 function IconBell() {
   return (

@@ -228,7 +228,7 @@ function ReadyView({
   const nativeUrl = `${getAppUrl()}/b/tip/${profile.owner.toBase58()}`;
   return (
     <>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
+      <div className="nds-grid-4" style={{ gap: "1rem", marginBottom: "1.5rem" }}>
         <StatCard label="Total received" value={`$${total.toFixed(2)}`} sub={`${profile.totalTipCount} tips`} />
         <StatCard label="Vault balance" value={`$${vaultBalance.toFixed(2)}`} sub="Available to withdraw" valueColor="#059669" />
         <StatCard label="Withdrawn" value={`$${withdrawn.toFixed(2)}`} sub="Moved to your ATA" />
