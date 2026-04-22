@@ -1,15 +1,17 @@
 "use client";
 
 import bs58 from "bs58";
-import { RealtimeChannel } from "@supabase/supabase-js";
+import { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useEffect, useRef, useState } from "react";
 
 import {
   ChatMessage,
+  createAuthedSupabaseClient,
   getSupabaseAnonKey,
   getSupabaseClient,
   getSupabaseUrl,
+  requestChatJwt,
 } from "@/lib/supabase";
 
 type Props = {
@@ -27,8 +29,17 @@ type SessionSig = {
   signedAt: number; // ms
 };
 
+type SessionJwt = {
+  jwt: string;
+  client: SupabaseClient;
+  expiresAt: number; // unix seconds
+};
+
 // Re-use a signed challenge for up to 14 minutes (function enforces 15 min TTL).
 const SIG_TTL_MS = 14 * 60 * 1000;
+
+// Refresh JWT when it has less than 60 seconds of life left.
+const JWT_REFRESH_SLACK_S = 60;
 
 export function ChatPanel({
   memoHash,
@@ -47,31 +58,83 @@ export function ChatPanel({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const sessionSigRef = useRef<SessionSig | null>(null);
+  const sessionJwtRef = useRef<SessionJwt | null>(null);
+
+  async function signAuthChallenge(): Promise<SessionSig> {
+    if (!signMessage) {
+      throw new Error("Your wallet does not support message signing.");
+    }
+    setSigning(true);
+    try {
+      const timestamp = Date.now();
+      const message = `nodosol-chat-auth:v1:${viewerPubkey}:${timestamp}`;
+      const sigBytes = await signMessage(new TextEncoder().encode(message));
+      return {
+        message,
+        signatureBase58: bs58.encode(sigBytes),
+        signedAt: timestamp,
+      };
+    } finally {
+      setSigning(false);
+    }
+  }
+
+  async function ensureAuthedClient(): Promise<SupabaseClient> {
+    const now = Math.floor(Date.now() / 1000);
+    const cached = sessionJwtRef.current;
+    if (cached && cached.expiresAt - now > JWT_REFRESH_SLACK_S) {
+      return cached.client;
+    }
+    const sig = await signAuthChallenge();
+    const { jwt, expiresAt } = await requestChatJwt({
+      wallet: viewerPubkey,
+      message: sig.message,
+      signatureBase58: sig.signatureBase58,
+    });
+    const client = createAuthedSupabaseClient(jwt);
+    client.realtime.setAuth(jwt);
+    sessionJwtRef.current = { jwt, client, expiresAt };
+    return client;
+  }
 
   useEffect(() => {
     let cancelled = false;
-    const supabase = getSupabaseClient();
 
     async function init() {
-      // Best-effort client-side thread upsert: if migration 012 has been
-      // applied, RLS blocks this and we rely on post-chat-message to create
-      // the thread server-side from threadContext. Either way the chat UX
-      // works — we never want a missing thread row to break the panel.
-      const { error: upsertErr } = await supabase
-        .from("chat_threads")
-        .upsert(
-          {
-            memo_hash: memoHash,
-            seller_pubkey: sellerPubkey,
-            buyer_pubkey: buyerPubkey,
-            deal_address: dealAddress,
-          },
-          { onConflict: "memo_hash", ignoreDuplicates: true }
-        );
-      if (upsertErr) {
-        // RLS rejection after migration 012 is expected and harmless.
-        console.debug("client-side thread upsert skipped:", upsertErr.message);
+      // Best-effort client-side thread upsert over the anon client: if
+      // migration 012 is applied, RLS blocks this and post-chat-message
+      // creates the thread server-side on first authenticated write.
+      try {
+        const anon = getSupabaseClient();
+        const { error: upsertErr } = await anon
+          .from("chat_threads")
+          .upsert(
+            {
+              memo_hash: memoHash,
+              seller_pubkey: sellerPubkey,
+              buyer_pubkey: buyerPubkey,
+              deal_address: dealAddress,
+            },
+            { onConflict: "memo_hash", ignoreDuplicates: true }
+          );
+        if (upsertErr) {
+          console.debug("client-side thread upsert skipped:", upsertErr.message);
+        }
+      } catch (err) {
+        console.debug("thread upsert attempt failed", err);
       }
+
+      // Thread reads + messages + realtime must use the authed JWT after
+      // migration 013. Falls back to anon client if JWT issuance fails
+      // (e.g. Edge Function not yet deployed) so the panel still renders.
+      let supabase: SupabaseClient;
+      try {
+        supabase = await ensureAuthedClient();
+      } catch (err) {
+        console.warn("chat JWT issuance failed, falling back to anon client", err);
+        supabase = getSupabaseClient();
+      }
+      if (cancelled) return;
 
       const { data, error: fetchErr } = await supabase
         .from("chat_messages")
@@ -113,11 +176,12 @@ export function ChatPanel({
     return () => {
       cancelled = true;
       if (channelRef.current) {
-        void getSupabaseClient().removeChannel(channelRef.current);
+        const client = sessionJwtRef.current?.client ?? getSupabaseClient();
+        void client.removeChannel(channelRef.current);
         channelRef.current = null;
       }
     };
-  }, [memoHash, sellerPubkey, buyerPubkey, dealAddress]);
+  }, [memoHash, sellerPubkey, buyerPubkey, dealAddress, viewerPubkey]);
 
   useEffect(() => {
     if (scrollRef.current) {

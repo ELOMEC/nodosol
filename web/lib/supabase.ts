@@ -25,6 +25,55 @@ export function getSupabaseClient(): SupabaseClient {
   return clientSingleton;
 }
 
+/**
+ * Builds a Supabase client whose every REST request carries the given
+ * chat JWT as Authorization. Used by ChatPanel so thread/message reads
+ * and realtime subscribes go through the wallet-signed JWT instead of
+ * the anon key. Each chat session gets its own instance so JWT refresh
+ * simply swaps clients.
+ */
+export function createAuthedSupabaseClient(jwt: string): SupabaseClient {
+  return createClient(getSupabaseUrl(), getSupabaseAnonKey(), {
+    global: { headers: { Authorization: `Bearer ${jwt}` } },
+    realtime: {
+      params: { eventsPerSecond: 5 },
+    },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+    },
+  });
+}
+
+/**
+ * POSTs the signed wallet challenge to the issue-chat-jwt Edge Function
+ * and returns the minted Supabase JWT + its expiry (unix seconds).
+ */
+export async function requestChatJwt(params: {
+  wallet: string;
+  message: string;
+  signatureBase58: string;
+}): Promise<{ jwt: string; expiresAt: number }> {
+  const resp = await fetch(`${getSupabaseUrl()}/functions/v1/issue-chat-jwt`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      apikey: getSupabaseAnonKey(),
+      authorization: `Bearer ${getSupabaseAnonKey()}`,
+    },
+    body: JSON.stringify({
+      wallet: params.wallet,
+      message: params.message,
+      signature: params.signatureBase58,
+    }),
+  });
+  if (!resp.ok) {
+    const payload = (await resp.json().catch(() => ({}))) as { error?: string };
+    throw new Error(payload?.error ?? `JWT issue failed (HTTP ${resp.status})`);
+  }
+  return (await resp.json()) as { jwt: string; expiresAt: number };
+}
+
 export const ASSET_MEDIA_BUCKET = "asset-media";
 
 /**
