@@ -14,6 +14,7 @@ import {
 } from "@solana/web3.js";
 
 import auctionsIdl from "../idl/auctions.json";
+import { withConfigCache } from "./config";
 import { USDC_UNIT, getUsdcMint } from "./constants";
 import { simulateAndSend } from "./tx";
 
@@ -251,22 +252,24 @@ export async function fetchAuctionConfig(program: Program): Promise<{
   treasury: PublicKey;
   feeBps: number;
 } | null> {
-  const [address] = auctionConfigPda();
-  const api = (program.account as Record<string, {
-    fetchNullable: (addr: PublicKey) => Promise<{
-      authority: PublicKey;
-      treasury: PublicKey;
-      feeBps: number;
-    } | null>;
-  }>).auctionConfig;
-  const account = await api.fetchNullable(address);
-  if (!account) return null;
-  return {
-    address,
-    authority: account.authority,
-    treasury: account.treasury,
-    feeBps: account.feeBps,
-  };
+  return withConfigCache(program.programId, "auction-config", async () => {
+    const [address] = auctionConfigPda();
+    const api = (program.account as Record<string, {
+      fetchNullable: (addr: PublicKey) => Promise<{
+        authority: PublicKey;
+        treasury: PublicKey;
+        feeBps: number;
+      } | null>;
+    }>).auctionConfig;
+    const account = await api.fetchNullable(address);
+    if (!account) return null;
+    return {
+      address,
+      authority: account.authority,
+      treasury: account.treasury,
+      feeBps: account.feeBps,
+    };
+  });
 }
 
 // ---------- Commit helpers ----------

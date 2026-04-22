@@ -2,6 +2,7 @@ import { AnchorProvider, Program, Idl } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 
 import otcIdl from "../idl/otc_deals.json";
+import { withConfigCache } from "./config";
 
 export const OTC_PROGRAM_ID = new PublicKey(
   (otcIdl as { address: string }).address
@@ -57,20 +58,22 @@ export type OtcConfig = {
 };
 
 export async function fetchOtcConfig(program: Program): Promise<OtcConfig> {
-  const [address] = otcConfigPda();
-  const account = await (program.account as Record<string, {
-    fetch: (addr: PublicKey) => Promise<{
-      authority: PublicKey;
-      treasury: PublicKey;
-      feeBps: number;
-    }>;
-  }>).config.fetch(address);
-  return {
-    address,
-    authority: account.authority,
-    treasury: account.treasury,
-    feeBps: account.feeBps,
-  };
+  return withConfigCache(program.programId, "fee-config", async () => {
+    const [address] = otcConfigPda();
+    const account = await (program.account as Record<string, {
+      fetch: (addr: PublicKey) => Promise<{
+        authority: PublicKey;
+        treasury: PublicKey;
+        feeBps: number;
+      }>;
+    }>).config.fetch(address);
+    return {
+      address,
+      authority: account.authority,
+      treasury: account.treasury,
+      feeBps: account.feeBps,
+    };
+  });
 }
 
 /**

@@ -2,6 +2,7 @@ import { AnchorProvider, Program, Idl } from "@coral-xyz/anchor";
 import { PublicKey, SystemProgram, TransactionInstruction } from "@solana/web3.js";
 
 import eventTicketsIdl from "../idl/event_tickets.json";
+import { withConfigCache } from "./config";
 
 export const EVENT_TICKETS_PROGRAM_ID = new PublicKey(
   (eventTicketsIdl as { address: string }).address
@@ -84,20 +85,22 @@ export type EventTicketsConfig = {
 export async function fetchEventTicketsConfig(
   program: Program
 ): Promise<EventTicketsConfig> {
-  const [address] = eventTicketsConfigPda();
-  const account = await (program.account as Record<string, {
-    fetch: (addr: PublicKey) => Promise<{
-      authority: PublicKey;
-      treasury: PublicKey;
-      feeBps: number;
-    }>;
-  }>).config.fetch(address);
-  return {
-    address,
-    authority: account.authority,
-    treasury: account.treasury,
-    feeBps: account.feeBps,
-  };
+  return withConfigCache(program.programId, "fee-config", async () => {
+    const [address] = eventTicketsConfigPda();
+    const account = await (program.account as Record<string, {
+      fetch: (addr: PublicKey) => Promise<{
+        authority: PublicKey;
+        treasury: PublicKey;
+        feeBps: number;
+      }>;
+    }>).config.fetch(address);
+    return {
+      address,
+      authority: account.authority,
+      treasury: account.treasury,
+      feeBps: account.feeBps,
+    };
+  });
 }
 
 /**

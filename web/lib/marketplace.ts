@@ -2,6 +2,7 @@ import { AnchorProvider, Program, Idl } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 
 import marketplaceIdl from "../idl/marketplace.json";
+import { withConfigCache } from "./config";
 
 export const MARKETPLACE_PROGRAM_ID = new PublicKey(
   (marketplaceIdl as { address: string }).address
@@ -55,18 +56,20 @@ export type MarketplaceConfig = {
 export async function fetchMarketplaceConfig(
   program: Program
 ): Promise<MarketplaceConfig> {
-  const [address] = marketplaceConfigPda();
-  const account = (await (program.account as Record<string, {
-    fetch: (addr: PublicKey) => Promise<{
-      authority: PublicKey;
-      treasury: PublicKey;
-      feeBps: number;
-    }>;
-  }>).config.fetch(address));
-  return {
-    address,
-    authority: account.authority,
-    treasury: account.treasury,
-    feeBps: account.feeBps,
-  };
+  return withConfigCache(program.programId, "fee-config", async () => {
+    const [address] = marketplaceConfigPda();
+    const account = (await (program.account as Record<string, {
+      fetch: (addr: PublicKey) => Promise<{
+        authority: PublicKey;
+        treasury: PublicKey;
+        feeBps: number;
+      }>;
+    }>).config.fetch(address));
+    return {
+      address,
+      authority: account.authority,
+      treasury: account.treasury,
+      feeBps: account.feeBps,
+    };
+  });
 }
