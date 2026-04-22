@@ -53,9 +53,25 @@ export function ChatPanel({
     const supabase = getSupabaseClient();
 
     async function init() {
-      // Thread row is created server-side by post-chat-message on the first
-      // authenticated message (see supabase/functions/post-chat-message).
-      // Clients no longer insert into chat_threads directly.
+      // Best-effort client-side thread upsert: if migration 012 has been
+      // applied, RLS blocks this and we rely on post-chat-message to create
+      // the thread server-side from threadContext. Either way the chat UX
+      // works — we never want a missing thread row to break the panel.
+      const { error: upsertErr } = await supabase
+        .from("chat_threads")
+        .upsert(
+          {
+            memo_hash: memoHash,
+            seller_pubkey: sellerPubkey,
+            buyer_pubkey: buyerPubkey,
+            deal_address: dealAddress,
+          },
+          { onConflict: "memo_hash", ignoreDuplicates: true }
+        );
+      if (upsertErr) {
+        // RLS rejection after migration 012 is expected and harmless.
+        console.debug("client-side thread upsert skipped:", upsertErr.message);
+      }
 
       const { data, error: fetchErr } = await supabase
         .from("chat_messages")
