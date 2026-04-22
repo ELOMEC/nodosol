@@ -15,6 +15,7 @@ import {
 
 import auctionsIdl from "../idl/auctions.json";
 import { USDC_UNIT, getUsdcMint } from "./constants";
+import { simulateAndSend } from "./tx";
 
 export const AUCTIONS_PROGRAM_ID = new PublicKey(
   (auctionsIdl as { address: string }).address
@@ -629,16 +630,13 @@ export async function settleAuctionTx(input: {
     .instruction();
   ixs.push(ix);
 
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-  const tx = new Transaction({ feePayer: callerPk, recentBlockhash: blockhash });
-  tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }));
-  for (const i of ixs) tx.add(i);
-  const sig = await wallet.sendTransaction(tx, connection);
-  await connection.confirmTransaction(
-    { signature: sig, blockhash, lastValidBlockHeight },
-    "confirmed"
-  );
-  return sig;
+  return simulateAndSend(connection, wallet, {
+    feePayer: callerPk,
+    instructions: [
+      ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+      ...ixs,
+    ],
+  });
 }
 
 export async function refundBidTx(input: {

@@ -12,7 +12,6 @@ import {
   ComputeBudgetProgram,
   PublicKey,
   SystemProgram,
-  Transaction,
 } from "@solana/web3.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -28,6 +27,7 @@ import {
   otcProgram,
 } from "@/lib/otc";
 import { mintProgram } from "@/lib/rwa";
+import { simulateAndSend } from "@/lib/tx";
 
 type DealRow = {
   address: string;
@@ -291,12 +291,13 @@ export function OtcView() {
       })
       .instruction();
 
-    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-    const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-    tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }));
-    tx.add(ix);
-    const sig = await wallet.sendTransaction(tx, connection);
-    await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+    await simulateAndSend(connection, wallet, {
+      feePayer: publicKey,
+      instructions: [
+        ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+        ix,
+      ],
+    });
     await reload();
   }
 
@@ -353,12 +354,13 @@ export function OtcView() {
         })
         .instruction();
 
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }));
-      tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+      await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+          ix,
+        ],
+      });
       await reload();
     } catch (err) {
       console.error(err);
@@ -398,12 +400,13 @@ export function OtcView() {
           assetTokenProgram: TOKEN_2022_PROGRAM_ID,
         })
         .instruction();
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }));
-      tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+      await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }),
+          ix,
+        ],
+      });
       await reload();
     } catch (err) {
       console.error(err);

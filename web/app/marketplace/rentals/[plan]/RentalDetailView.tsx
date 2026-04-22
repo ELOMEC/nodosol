@@ -24,6 +24,7 @@ import {
   subscriptionPda,
   subscriptionProgram,
 } from "@/lib/subscription";
+import { simulateAndSend } from "@/lib/tx";
 
 type PlanData = {
   address: string;
@@ -195,15 +196,13 @@ export function RentalDetailView({ planAddress }: { planAddress: string }) {
         } as never)
         .instruction();
 
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }));
-      tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction(
-        { signature: sig, blockhash, lastValidBlockHeight },
-        "confirmed"
-      );
+      const sig = await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+          ix,
+        ],
+      });
       window.alert(`Subscribed. First month charged now. Tx: ${sig.slice(0, 12)}…`);
       await load();
     } catch (err) {

@@ -31,6 +31,7 @@ import {
   tierPda,
   treeConfigPda,
 } from "@/lib/eventTickets";
+import { simulateAndSend } from "@/lib/tx";
 import {
   getVenueTemplate,
   VenueRegion,
@@ -325,12 +326,13 @@ export function EventDetailView({ address }: { address: string }) {
         systemProgram: SystemProgram.programId,
       })
       .instruction();
-    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-    const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-    tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 500_000 }));
-    tx.add(ix);
-    const sig = await wallet.sendTransaction(tx, connection);
-    await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+    const sig = await simulateAndSend(connection, wallet, {
+      feePayer: publicKey,
+      instructions: [
+        ComputeBudgetProgram.setComputeUnitLimit({ units: 500_000 }),
+        ix,
+      ],
+    });
     if (seat) {
       try {
         await confirmSeatMint({
