@@ -9,12 +9,17 @@ document — update as items get resolved.
 | Program | Devnet ID | Purpose | Audit priority |
 | --- | --- | --- | --- |
 | `tip_jar` | `C2bM3p1Cco4bDj6gQe29k7UWcepxLCrVgiPPoidh549P` | Creator tips | Medium |
-| `subscription` | `8G2hbD1qJUcaVAEdfVxaHfbCgxyEzQdrpjhDMM9pSL4w` | Recurring billing via SPL delegate | **High** (delegate pattern) |
-| `events` | `4q4KxCcvY7vswq3tXgr448ghXWBtz4PzNfoddZu282Ax` | Event tickets | Medium |
+| `subscription` | `8G2hbD1qJUcaVAEdfVxaHfbCgxyEzQdrpjhDMM9pSL4w` | Recurring billing via SPL delegate (rentals vertical) | **High** (delegate pattern) |
+| `events` | `4q4KxCcvY7vswq3tXgr448ghXWBtz4PzNfoddZu282Ax` | Generic event tickets (superseded by `event_tickets`) | Low (deprecate?) |
+| `event_tickets` | `FDUwvXRETURbe2JN2PJNCKt6RPAsSLeSi7A4pFMGmtrE` | Seated ticketing + cNFT resale + royalty split | **High** (holds user funds, Bubblegum CPI) |
 | `rwa_registry` | `7BCWTrD7rcedAg3zpvtvNdManv39kzr3eHBjWyomCbdT` | Licenced issuer registry | **High** (compliance backbone) |
 | `rwa_mint` | `HLCCfvp99Z1Rnix64mC6w6dYL9EkEjVmPCL7rr27evsU` | RWA Token-2022 tokenisation | **High** (fixed supply, cross-program check) |
 | `marketplace` | `69ZFM7nHUTXcHp8TZpRtX4qr3ERK2VGxRdqXvNtbfJkZ` | Listings + escrow + fee split | **High** (holds user funds) |
 | `otc_deals` | `FmXBAWoSGanaFfP8p9gekgrFn7buEn1XUSFWebDr3Pwz` | Dual-party OTC escrow | **High** (holds user funds) |
+| `auctions` | `6c95kxTWCXacsAev4xnvNbKnLYWFGPpJT5zwT4SnWh5v` | Sealed-bid commit/reveal + USDC escrow | **High** (holds user funds, commit/reveal crypto) |
+
+**9 programs total.** Combined `.so` binary size is ~3.2 MB. Budget
+~15 SOL for mainnet deploys (rent + buffers).
 
 ## 2. Pre-mainnet hard blockers
 
@@ -39,9 +44,23 @@ These MUST be resolved before a mainnet program ID is created.
 - Script to batch-set authorities after init
 
 ### 2.4 Treasury custody
-- Current devnet treasury is the dev wallet's mock-USDC ATA — unsafe
-- Mainnet treasury: multisig-owned USDC ATA on a dedicated custody wallet
-- Run `update_treasury` on every program as part of init sequence
+- **Devnet history (2026-04-22 → 23):** treasury was originally the dev
+  wallet's mock-USDC ATA, which caused Anchor's
+  `duplicate mutable account constraint` on every buy/accept/settle from
+  the dev wallet (seller ATA == treasury ATA). Root-caused and fixed by
+  generating a standalone treasury keypair (`treasury-keypair.json`,
+  gitignored) and running `update_treasury` on all 9 programs. See
+  `scripts/fix-treasury.ts`.
+- **Lesson for mainnet:** seller wallet MUST be a different Solana
+  account than the treasury-ATA owner. Enforce at init time — the init
+  script should fail if `treasury_owner == authority`.
+- **Mainnet spec:**
+  - Treasury keypair lives in Squads multisig (cold), never in a repo
+  - Each program's config gets the SAME treasury ATA on mainnet to
+    simplify accounting and reuse withdraw tooling
+  - `update_treasury` is part of post-deploy init checklist
+  - Monthly treasury sweep to operator cold wallet (separate from
+    multisig to limit blast radius)
 
 ### 2.5 RWA legal layer
 - Licences live off-chain (Mladen's acquired entity). Reference them in
@@ -57,10 +76,23 @@ These MUST be resolved before a mainnet program ID is created.
   fraudulent transfers? Decide pre-mainnet. For now, freeze authority is
   left as `None` at mint creation time in the client.
 
-### 2.7 Chat production auth (partial — done for writes)
-- Writes: ✅ Edge Function with ed25519 verification (shipped)
-- Reads: currently open. Decide if chat bodies need to be private.
-  If yes, RLS-by-pubkey + session JWT from Sign-In With Solana.
+### 2.7 Chat production auth
+- **Writes: ✅ fully locked down (2026-04-23).** Migration 012 dropped
+  `threads_write` RLS policy; `post-chat-message` Edge Function (ed25519
+  verification + 15-min challenge freshness + rate limit 30 msg / 5 min)
+  is the only path. Client still does a best-effort `chat_threads`
+  upsert that RLS silently rejects — harmless fallback for state
+  mismatches.
+- **Reads: still open.** Memo-hash is 64-char hex = effectively
+  unguessable, so this is practical security-through-obscurity for
+  devnet. For mainnet, decide between (a) RLS-by-pubkey + Sign-In With
+  Solana JWT, or (b) keep open and accept that anyone who captures a
+  memo_hash can read the thread. Recommend (a) before mainnet open.
+- **Read-side implementation if (a):** Supabase Edge Function issues a
+  short-lived JWT after verifying a Solana signature; RLS policy on
+  `chat_messages` checks that JWT's `sub` matches `seller_pubkey` or
+  `buyer_pubkey` in the referenced thread. Client passes the JWT as
+  Supabase auth header for all reads + realtime subscribes.
 
 ## 3. Soft blockers (should fix)
 
@@ -92,6 +124,36 @@ These MUST be resolved before a mainnet program ID is created.
   this is slow. Before mainnet, add a backend indexer (Helius webhook →
   Supabase `listings_index` table, client reads from Supabase) or
   paginate.
+
+### 3.6 Duplicate-mutable-account audit
+- **Lesson from 2026-04-22/23 bug:** every instruction with `#[account(mut)]`
+  pointing at ATAs derived from the caller's pubkey can collide with
+  another `mut` account if the caller plays multiple roles (seller ==
+  treasury owner, buyer == seller, etc). Anchor rejects the whole tx
+  with `A duplicate mutable account constraint was violated` — Phantom
+  surfaces this as "Unexpected error".
+- **Audit before mainnet:** for every fund-moving instruction, list the
+  set of `mut` accounts and verify no two can derive to the same
+  address under any caller/config combination. Known clean as of
+  2026-04-23 via separate treasury wallet — but keep the rule in mind
+  when adding new instructions.
+
+### 3.7 Client transaction UX
+- **Preflight simulate is now standard (2026-04-23).** `lib/tx.ts`
+  exposes `simulateAndSend(connection, wallet, { feePayer, instructions })`
+  which runs `connection.simulateTransaction` before
+  `wallet.sendTransaction`, decoding program logs via
+  `decodeSimulationError` so failed txs surface the real reason
+  (AnchorError, SPL Token error code, insufficient funds) instead of
+  Phantom's opaque wrapper.
+- **Applied to:** marketplace buy (grid + detail), OTC propose/accept/cancel,
+  settle auction, event ticket buy, rental subscribe.
+- **Before mainnet:** migrate remaining `wallet.sendTransaction` sites
+  (commit_bid, reveal_bid, refund_bid, create_auction, cancel_auction,
+  tokenize, create_event, withdraw_revenue, list_ticket_resale,
+  buy_ticket_resale, admin flows) to `simulateAndSend`. Bad UX is a
+  launch blocker — users will bounce when their first tx is "Unexpected
+  error" with no actionable info.
 
 ## 4. Staged rollout
 
@@ -161,6 +223,71 @@ These MUST be resolved before a mainnet program ID is created.
 - cNFT tickets timeline (Bubblegum integration is 2-3 week dev task)
 - Whether to launch a token. Default: NO.
 
+## 7. Go/No-Go checklist
+
+Concrete gates that must all be green before flipping mainnet. Treat
+this as the launch-blocker list; anything unchecked means NO-GO.
+
+### Security & audit
+- [ ] External audit complete on 7 High-priority programs
+- [ ] All High/Critical findings fixed and re-reviewed
+- [ ] Medium findings either fixed or documented as accepted risk
+- [ ] Bug bounty live (Immunefi or self-hosted) with min $10k pool
+- [ ] Red-team pass on frontend/API (at least internal)
+
+### Keys & authority
+- [ ] Mainnet program keypairs generated in cold ceremony (never on dev machine)
+- [ ] Squads multisig created, threshold 2-of-3 minimum
+- [ ] Every program's upgrade authority = multisig
+- [ ] Every Config PDA's authority = multisig
+- [ ] Dev keypair `3E8Z...rqBr` NEVER used for mainnet program operations
+- [ ] `treasury-keypair.json` equivalent for mainnet held ONLY in multisig
+
+### On-chain initialization
+- [ ] 9 programs deployed to mainnet with locked program IDs
+- [ ] Init scripts adapted for mainnet USDC (`EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`)
+- [ ] All 9 Configs initialized with fee_bps=0 and multisig authority
+- [ ] `update_treasury` run on all 9 programs → multisig-owned USDC ATA
+- [ ] Init script assertion: `treasury_owner != authority` (prevents duplicate-mut bug)
+- [ ] Issuer for Mladen's licenced entity registered in `rwa_registry`
+
+### Off-chain infrastructure
+- [ ] Helius dedicated node provisioned (primary RPC)
+- [ ] Fallback RPC configured (Triton or QuickNode)
+- [ ] Supabase mainnet project created (or environment column added to devnet project)
+- [ ] Edge Functions deployed on mainnet Supabase: `post-chat-message`, `gc-tier-seats`, `charge-due`
+- [ ] Migrations 001–012 applied on mainnet Supabase
+- [ ] Cranker keypair in `charge-due` env has SOL for fees
+- [ ] Vercel production project with mainnet env vars split from preview/devnet
+
+### Frontend
+- [ ] All `wallet.sendTransaction` sites migrated to `simulateAndSend` (see 3.7)
+- [ ] Devnet banners / mock-USDC references removed from UI
+- [ ] Program IDs pulled from env, not hardcoded
+- [ ] Error paths tested: wallet reject, insufficient funds, stale state, Supabase outage
+- [ ] Analytics + Sentry wired up
+
+### Legal & compliance
+- [ ] Legal entity (Mladen's acquired RWA company) operational
+- [ ] Licence scope finalized (jurisdictions + asset classes)
+- [ ] `rwa_registry` allow-list of jurisdiction codes matches licences
+- [ ] Privacy policy + ToS live on nodosol.com
+- [ ] US MSB exposure review signed off (self-custody only)
+- [ ] Tax/accountant engaged for first-month close
+
+### Ops & monitoring
+- [ ] Helius webhooks → Supabase indexer running
+- [ ] Dashboard live (Helius or Grafana): tx success rate, CU usage, treasury balance
+- [ ] PagerDuty escalation wired to `#nodosol-ops`
+- [ ] Runbooks written (section 5.4) and shared
+- [ ] Incident response dry-run completed
+- [ ] Rollback plan: previous `.so` artefacts uploaded to IPFS + git tags
+
+### Go signal
+- [ ] 30-day devnet soak with 0 P0 incidents
+- [ ] Phase A success metrics hit (section 4)
+- [ ] Foundation network primed for warm intros
+
 ---
 
-Maintainer: Mladen · Status: living · Last update: 2026-04-20
+Maintainer: Mladen · Status: living · Last update: 2026-04-23
