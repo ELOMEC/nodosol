@@ -25,11 +25,35 @@ type Payload = {
   senderPubkey: string;
   message: string; // exact UTF-8 string that was signed
   signature: string; // base58 of 64-byte ed25519 sig
+  // Thread context — used when the thread row doesn't yet exist so the
+  // function can create it as a side-effect of the first authenticated
+  // message. Ignored if the thread already exists (on-chain values win).
+  threadContext?: {
+    sellerPubkey: string;
+    buyerPubkey: string;
+    dealAddress: string;
+  };
 };
 
 // Accept messages up to 15 minutes old.
 const MAX_AGE_MS = 15 * 60 * 1000;
 const MESSAGE_MAX_CHARS = 2000;
+
+// Rate limit: per-sender cap across all threads. Each sender may post up to
+// RATE_LIMIT_MAX messages in the last RATE_LIMIT_WINDOW_MS window.
+const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
+const RATE_LIMIT_MAX = 30;
+
+// Valid Solana pubkey (base58-decodes to 32 bytes). Used for thread context
+// validation to avoid writing garbage into the thread row.
+function isValidPubkey(s: unknown): s is string {
+  if (typeof s !== "string") return false;
+  try {
+    return bs58.decode(s).length === 32;
+  } catch {
+    return false;
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -102,15 +126,69 @@ Deno.serve(async (req) => {
   }
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
 
-  const { data: thread, error: threadErr } = await admin
+  const { data: existingThread, error: threadErr } = await admin
     .from("chat_threads")
     .select("seller_pubkey, buyer_pubkey")
     .eq("memo_hash", threadMemoHash)
     .maybeSingle();
   if (threadErr) return jsonResp({ error: threadErr.message }, 500);
-  if (!thread) return jsonResp({ error: "Thread not found" }, 404);
-  if (senderPubkey !== thread.seller_pubkey && senderPubkey !== thread.buyer_pubkey) {
+
+  let seller: string;
+  let buyer: string;
+  if (existingThread) {
+    seller = existingThread.seller_pubkey;
+    buyer = existingThread.buyer_pubkey;
+  } else {
+    // First message on this thread — create it from payload context, but
+    // only if the sender claims to be a party to the deal. The on-chain
+    // deal itself is not verified here; the 64-char memo_hash acts as the
+    // capability, and the signature gate above blocks anonymous spam.
+    const ctx = payload.threadContext;
+    if (
+      !ctx ||
+      !isValidPubkey(ctx.sellerPubkey) ||
+      !isValidPubkey(ctx.buyerPubkey) ||
+      typeof ctx.dealAddress !== "string" ||
+      ctx.dealAddress.length === 0
+    ) {
+      return jsonResp({ error: "Thread not found and no valid threadContext provided" }, 400);
+    }
+    if (senderPubkey !== ctx.sellerPubkey && senderPubkey !== ctx.buyerPubkey) {
+      return jsonResp({ error: "Sender must be seller or buyer of the thread" }, 403);
+    }
+    const { error: upsertErr } = await admin
+      .from("chat_threads")
+      .upsert(
+        {
+          memo_hash: threadMemoHash,
+          seller_pubkey: ctx.sellerPubkey,
+          buyer_pubkey: ctx.buyerPubkey,
+          deal_address: ctx.dealAddress,
+        },
+        { onConflict: "memo_hash", ignoreDuplicates: true }
+      );
+    if (upsertErr) return jsonResp({ error: upsertErr.message }, 500);
+    seller = ctx.sellerPubkey;
+    buyer = ctx.buyerPubkey;
+  }
+
+  if (senderPubkey !== seller && senderPubkey !== buyer) {
     return jsonResp({ error: "Only the deal's seller or buyer may post" }, 403);
+  }
+
+  // 3b. Per-sender rate limit across all threads.
+  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+  const { count: recentCount, error: countErr } = await admin
+    .from("chat_messages")
+    .select("id", { count: "exact", head: true })
+    .eq("sender_pubkey", senderPubkey)
+    .gte("created_at", windowStart);
+  if (countErr) return jsonResp({ error: countErr.message }, 500);
+  if ((recentCount ?? 0) >= RATE_LIMIT_MAX) {
+    return jsonResp(
+      { error: `Rate limit: ${RATE_LIMIT_MAX} messages per ${RATE_LIMIT_WINDOW_MS / 60_000} min` },
+      429
+    );
   }
 
   // 4. Insert.

@@ -53,18 +53,9 @@ export function ChatPanel({
     const supabase = getSupabaseClient();
 
     async function init() {
-      const { error: upsertErr } = await supabase
-        .from("chat_threads")
-        .upsert(
-          {
-            memo_hash: memoHash,
-            seller_pubkey: sellerPubkey,
-            buyer_pubkey: buyerPubkey,
-            deal_address: dealAddress,
-          },
-          { onConflict: "memo_hash", ignoreDuplicates: true }
-        );
-      if (upsertErr) console.error("thread upsert failed", upsertErr);
+      // Thread row is created server-side by post-chat-message on the first
+      // authenticated message (see supabase/functions/post-chat-message).
+      // Clients no longer insert into chat_threads directly.
 
       const { data, error: fetchErr } = await supabase
         .from("chat_messages")
@@ -175,6 +166,11 @@ export function ChatPanel({
           senderPubkey: viewerPubkey,
           message: sig.message,
           signature: sig.signatureBase58,
+          threadContext: {
+            sellerPubkey,
+            buyerPubkey,
+            dealAddress,
+          },
         }),
       });
       if (!resp.ok) {
