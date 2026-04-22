@@ -35,6 +35,7 @@ import {
   getAssetProof,
   HeliusCompressionDetails,
 } from "./helius";
+import { simulateAndSend } from "./tx";
 
 const RESALE_SEED = Buffer.from("resale");
 const ZERO_COMMIT = "0".repeat(64);
@@ -281,16 +282,13 @@ export async function listTicketResaleTx(input: {
     .remainingAccounts(bundle.proofAccounts)
     .instruction();
 
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-  const tx = new Transaction({ feePayer: sellerPk, recentBlockhash: blockhash });
-  tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 800_000 }));
-  tx.add(ix);
-  const sig = await wallet.sendTransaction(tx, connection);
-  await connection.confirmTransaction(
-    { signature: sig, blockhash, lastValidBlockHeight },
-    "confirmed"
-  );
-  return sig;
+  return simulateAndSend(connection, wallet, {
+    feePayer: sellerPk,
+    instructions: [
+      ComputeBudgetProgram.setComputeUnitLimit({ units: 800_000 }),
+      ix,
+    ],
+  });
 }
 
 export async function cancelTicketResaleTx(input: {
@@ -326,16 +324,13 @@ export async function cancelTicketResaleTx(input: {
     .remainingAccounts(bundle.proofAccounts)
     .instruction();
 
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-  const tx = new Transaction({ feePayer: sellerPk, recentBlockhash: blockhash });
-  tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 700_000 }));
-  tx.add(ix);
-  const sig = await wallet.sendTransaction(tx, connection);
-  await connection.confirmTransaction(
-    { signature: sig, blockhash, lastValidBlockHeight },
-    "confirmed"
-  );
-  return sig;
+  return simulateAndSend(connection, wallet, {
+    feePayer: sellerPk,
+    instructions: [
+      ComputeBudgetProgram.setComputeUnitLimit({ units: 700_000 }),
+      ix,
+    ],
+  });
 }
 
 export async function buyTicketResaleTx(input: {
@@ -411,16 +406,13 @@ export async function buyTicketResaleTx(input: {
     .instruction();
   ixs.push(ix);
 
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-  const tx = new Transaction({ feePayer: buyerPk, recentBlockhash: blockhash });
-  tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 900_000 }));
-  for (const i of ixs) tx.add(i);
-  const sig = await wallet.sendTransaction(tx, connection);
-  await connection.confirmTransaction(
-    { signature: sig, blockhash, lastValidBlockHeight },
-    "confirmed"
-  );
-  return sig;
+  return simulateAndSend(connection, wallet, {
+    feePayer: buyerPk,
+    instructions: [
+      ComputeBudgetProgram.setComputeUnitLimit({ units: 900_000 }),
+      ...ixs,
+    ],
+  });
 }
 
 /**
@@ -463,16 +455,13 @@ export async function closeExpiredResaleTx(input: {
     .remainingAccounts(bundle.proofAccounts)
     .instruction();
 
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-  const tx = new Transaction({ feePayer: callerPk, recentBlockhash: blockhash });
-  tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 700_000 }));
-  tx.add(ix);
-  const sig = await wallet.sendTransaction(tx, connection);
-  await connection.confirmTransaction(
-    { signature: sig, blockhash, lastValidBlockHeight },
-    "confirmed"
-  );
-  return sig;
+  return simulateAndSend(connection, wallet, {
+    feePayer: callerPk,
+    instructions: [
+      ComputeBudgetProgram.setComputeUnitLimit({ units: 700_000 }),
+      ix,
+    ],
+  });
 }
 
 // ---- Private-price (commit/reveal) helpers ----
@@ -589,16 +578,13 @@ export async function listTicketResalePrivateTx(input: {
     .remainingAccounts(bundle.proofAccounts)
     .instruction();
 
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-  const tx = new Transaction({ feePayer: sellerPk, recentBlockhash: blockhash });
-  tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 800_000 }));
-  tx.add(ix);
-  const sig = await wallet.sendTransaction(tx, connection);
-  await connection.confirmTransaction(
-    { signature: sig, blockhash, lastValidBlockHeight },
-    "confirmed"
-  );
-  return sig;
+  return simulateAndSend(connection, wallet, {
+    feePayer: sellerPk,
+    instructions: [
+      ComputeBudgetProgram.setComputeUnitLimit({ units: 800_000 }),
+      ix,
+    ],
+  });
 }
 
 export async function buyTicketResalePrivateTx(input: {
@@ -681,14 +667,11 @@ export async function buyTicketResalePrivateTx(input: {
     .instruction();
   ixs.push(ix);
 
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-  const tx = new Transaction({ feePayer: buyerPk, recentBlockhash: blockhash });
-  tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 900_000 }));
-  for (const i of ixs) tx.add(i);
-  const sig = await wallet.sendTransaction(tx, connection);
-  await connection.confirmTransaction(
-    { signature: sig, blockhash, lastValidBlockHeight },
-    "confirmed"
-  );
-  return sig;
+  return simulateAndSend(connection, wallet, {
+    feePayer: buyerPk,
+    instructions: [
+      ComputeBudgetProgram.setComputeUnitLimit({ units: 900_000 }),
+      ...ixs,
+    ],
+  });
 }

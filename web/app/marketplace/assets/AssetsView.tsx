@@ -30,6 +30,7 @@ import {
 } from "@/lib/marketplace";
 import { fetchImagesForUris, toHttp } from "@/lib/metadataImages";
 import { mintProgram } from "@/lib/rwa";
+import { simulateAndSend } from "@/lib/tx";
 
 type AssetRow = {
   address: string;
@@ -246,12 +247,13 @@ export function AssetsView() {
           tokenProgram: TOKEN_2022_PROGRAM_ID,
         })
         .instruction();
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }));
-      tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+      await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 200_000 }),
+          ix,
+        ],
+      });
       await reload();
     } catch (err) {
       console.error(err);
@@ -286,11 +288,10 @@ export function AssetsView() {
           listing: listingAddr,
         })
         .instruction();
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+      await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [ix],
+      });
       setEditPrice(null);
       await reload();
     } catch (err) {
@@ -331,12 +332,13 @@ export function AssetsView() {
           assetTokenProgram: TOKEN_2022_PROGRAM_ID,
         })
         .instruction();
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }));
-      tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+      await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }),
+          ix,
+        ],
+      });
       await reload();
     } catch (err) {
       console.error(err);
@@ -392,12 +394,13 @@ export function AssetsView() {
           systemProgram: SystemProgram.programId,
         })
         .instruction();
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }));
-      tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+      await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }),
+          ix,
+        ],
+      });
       setListModal(null);
       await reload();
     } catch (err) {
@@ -422,11 +425,10 @@ export function AssetsView() {
           asset: new PublicKey(row.address),
         })
         .instruction();
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
-      const tx = new Transaction({ feePayer: publicKey, recentBlockhash: blockhash });
-      tx.add(ix);
-      const sig = await wallet.sendTransaction(tx, connection);
-      await connection.confirmTransaction({ signature: sig, blockhash, lastValidBlockHeight }, "confirmed");
+      await simulateAndSend(connection, wallet, {
+        feePayer: publicKey,
+        instructions: [ix],
+      });
       await reload();
     } catch (err) {
       console.error(err);
