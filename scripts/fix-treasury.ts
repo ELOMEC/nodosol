@@ -44,6 +44,7 @@ import eventsIdl from "../web/idl/events.json" with { type: "json" };
 import marketplaceIdl from "../web/idl/marketplace.json" with { type: "json" };
 import otcDealsIdl from "../web/idl/otc_deals.json" with { type: "json" };
 import eventTicketsIdl from "../web/idl/event_tickets.json" with { type: "json" };
+import auctionsIdl from "../web/idl/auctions.json" with { type: "json" };
 
 const RPC_URL = process.env.SOLANA_RPC_URL ?? "https://api.devnet.solana.com";
 const WALLET_PATH =
@@ -115,6 +116,7 @@ async function main() {
     { name: "marketplace", idl: marketplaceIdl },
     { name: "otc_deals", idl: otcDealsIdl },
     { name: "event_tickets", idl: eventTicketsIdl },
+    { name: "auctions", idl: auctionsIdl },
   ];
 
   for (const { name, idl } of programs) {
@@ -144,7 +146,7 @@ async function main() {
   // 4. Patch devnet-state.json so web/scripts pick up the new treasury.
   state.treasury = treasuryAta.toBase58();
   state.treasuryWallet = treasuryWallet.publicKey.toBase58();
-  for (const section of ["marketplace", "otc", "event_tickets"]) {
+  for (const section of ["marketplace", "otc", "event_tickets", "auctions"]) {
     if (state[section]) state[section].treasury = treasuryAta.toBase58();
   }
   writeFileSync(statePath, JSON.stringify(state, null, 2));

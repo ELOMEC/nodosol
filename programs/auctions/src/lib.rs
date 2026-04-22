@@ -75,4 +75,8 @@ pub mod auctions {
     pub fn refund_bid(ctx: Context<RefundBid>) -> Result<()> {
         handle_refund_bid(ctx)
     }
+
+    pub fn update_treasury(ctx: Context<UpdateAuctionTreasury>) -> Result<()> {
+        handle_update_auction_treasury(ctx)
+    }
 }

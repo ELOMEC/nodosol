@@ -62,3 +62,10 @@ pub struct BidRefunded {
     pub amount: u64,
     pub timestamp: i64,
 }
+
+#[event]
+pub struct TreasuryUpdated {
+    pub previous: Pubkey,
+    pub next: Pubkey,
+    pub timestamp: i64,
+}
