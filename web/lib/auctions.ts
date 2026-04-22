@@ -278,7 +278,6 @@ export function generateBidNonce(): Uint8Array {
 }
 
 export function computeBidCommit(bidBase: bigint, nonce: Uint8Array): number[] {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
   const { keccak_256 } = require("js-sha3");
   const bidBuf = new Uint8Array(8);
   new DataView(bidBuf.buffer).setBigUint64(0, bidBase, true);

@@ -484,7 +484,6 @@ export function generatePriceNonce(): Uint8Array {
 export function computePriceCommit(priceBase: bigint, nonce: Uint8Array): number[] {
   // Lazy-require so bundlers don't pull the lib into shared chunks it
   // isn't needed by.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
   const { keccak_256 } = require("js-sha3");
   const priceBuf = new Uint8Array(8);
   const view = new DataView(priceBuf.buffer);

@@ -204,7 +204,6 @@ export function AdminView() {
     // rwa_registry uses update_registry_authority; others use update_config_authority.
     const method = snapshot.key === "rwa_registry" ? "updateRegistryAuthority" : "updateConfigAuthority";
     await runAdminTx(snapshot.key, async (program) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const ix = await (program.methods as any)
         [method]()
         .accounts({

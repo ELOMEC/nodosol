@@ -128,7 +128,6 @@ export function PropertiesView() {
   // Initial load only — don't re-fetch every `now` tick.
   useEffect(() => {
     void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connection, wallet]);
 
   const visible = useMemo(() => {
