@@ -4,9 +4,27 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "nodosol — creator economy on Solana",
+  metadataBase: new URL("https://nodosol.com"),
+  title: {
+    default: "nodosol — Solana super-app for compliant RWA + creator payments",
+    template: "%s — nodosol",
+  },
   description:
-    "Patreon + tip jar + event tickets on Solana. 1% fee, instant USDC settlement, confidential-ready architecture.",
+    "Tokenize real-world assets, sell event tickets, rent out property, and take creator payments on Solana. Licenced RWA issuer framework, Token-2022 rails, confidential-ready architecture.",
+  openGraph: {
+    title: "nodosol — Solana super-app for compliant RWA + creator payments",
+    description:
+      "Licenced RWA + event tickets + rentals + OTC escrow on Solana. Token-2022, multisig-governed, confidential-ready.",
+    url: "https://nodosol.com",
+    siteName: "nodosol",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "nodosol — Solana super-app for compliant RWA + creator payments",
+    description:
+      "Licenced RWA + event tickets + rentals + OTC escrow on Solana.",
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

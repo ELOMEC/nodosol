@@ -2,6 +2,11 @@ import { MarketplaceShell } from "@/components/MarketplaceShell";
 
 import { TokenizeForm } from "./TokenizeForm";
 
+export const metadata = {
+  title: "Tokenize an asset",
+  description: "Issue a Token-2022 fixed-supply RWA on Solana. Gallery, location, sale mode, licenced-issuer gating.",
+};
+
 export default function TokenizePage() {
   return (
     <MarketplaceShell active="tokenize">
