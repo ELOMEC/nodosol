@@ -7,6 +7,7 @@ import {
   useWallet,
 } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import Link from "next/link";
 import { useState } from "react";
 
 export function ClientBlinkView({ actionUrl }: { actionUrl: string }) {
@@ -32,9 +33,9 @@ export function ClientBlinkView({ actionUrl }: { actionUrl: string }) {
   return (
     <div style={styles.wrap}>
       <header style={styles.header}>
-        <a href="/" style={styles.brand}>
+        <Link href="/" style={styles.brand}>
           nodosol
-        </a>
+        </Link>
         <WalletMultiButton />
       </header>
 
