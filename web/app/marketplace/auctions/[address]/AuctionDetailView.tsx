@@ -32,6 +32,8 @@ import { isChatAllowed } from "@/lib/supabase";
 import { ContactSellerButton } from "@/components/ContactSellerButton";
 import { VideoEmbed } from "@/components/VideoEmbed";
 import { USDC_UNIT } from "@/lib/constants";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 type Loaded = {
   auction: OnChainAuction;
@@ -62,6 +64,7 @@ export function AuctionDetailView({ address }: { address: string }) {
   const [lastEnvelope, setLastEnvelope] = useState<string | null>(null);
   const [envelopeInput, setEnvelopeInput] = useState("");
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+  const toast = useToast();
 
   useEffect(() => {
     const t = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 1000);
@@ -123,11 +126,12 @@ export function AuctionDetailView({ address }: { address: string }) {
       const envelope = encodeBidEnvelope(bidBase, nonce);
       cacheBidEnvelope(auction.address, publicKey.toBase58(), envelope);
       setLastEnvelope(envelope);
-      window.alert(`Bid committed. Save the envelope — you'll need it to reveal. Tx: ${sig.slice(0, 12)}…`);
+      console.log("Commit tx:", sig);
+      toast.success("Bid committed");
       await load();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Commit failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusy(false);
     }
@@ -150,12 +154,12 @@ export function AuctionDetailView({ address }: { address: string }) {
         bidBase: decoded.bidBase,
         nonce: decoded.nonce,
       });
-      const bidUsdc = Number(decoded.bidBase) / USDC_UNIT;
-      window.alert(`Revealed $${bidUsdc.toFixed(2)}. Tx: ${sig.slice(0, 12)}…`);
+      console.log("Reveal tx:", sig);
+      toast.success("Bid revealed");
       await load();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Reveal failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusy(false);
     }
@@ -170,11 +174,12 @@ export function AuctionDetailView({ address }: { address: string }) {
         wallet,
         auction: state.loaded.auction,
       });
-      window.alert(`Settled. Tx: ${sig.slice(0, 12)}…`);
+      console.log("Settle tx:", sig);
+      toast.success("Settled");
       await load();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Settle failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusy(false);
     }
@@ -190,11 +195,12 @@ export function AuctionDetailView({ address }: { address: string }) {
         wallet,
         auction: state.loaded.auction,
       });
-      window.alert(`Cancelled. Tx: ${sig.slice(0, 12)}…`);
+      console.log("Cancel tx:", sig);
+      toast.success("Cancelled");
       await load();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Cancel failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusy(false);
     }
@@ -211,11 +217,12 @@ export function AuctionDetailView({ address }: { address: string }) {
       });
       clearCachedBidEnvelope(state.loaded.auction.address, publicKey.toBase58());
       setLastEnvelope(null);
-      window.alert(`Refunded. Tx: ${sig.slice(0, 12)}…`);
+      console.log("Refund tx:", sig);
+      toast.success("Refunded");
       await load();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Refund failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusy(false);
     }

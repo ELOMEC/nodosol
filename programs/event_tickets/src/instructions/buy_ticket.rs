@@ -101,6 +101,7 @@ pub struct BuyTicket<'info> {
 }
 
 pub fn handle_buy_ticket(ctx: Context<BuyTicket>) -> Result<()> {
+    require!(!ctx.accounts.config.paused, EventTicketsError::Paused);
     let now = Clock::get()?.unix_timestamp;
 
     {

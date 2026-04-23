@@ -46,7 +46,8 @@ pub fn handle_initialize_auction_config(
     config.treasury = ctx.accounts.treasury.key();
     config.fee_bps = fee_bps;
     config.bump = ctx.bumps.config;
-    config.reserved = [0u8; 64];
+    config.paused = false;
+    config.reserved = [0u8; 63];
 
     emit!(AuctionConfigInitialized {
         authority: config.authority,

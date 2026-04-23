@@ -89,6 +89,7 @@ pub struct SettleAuction<'info> {
 }
 
 pub fn handle_settle_auction(ctx: Context<SettleAuction>) -> Result<()> {
+    require!(!ctx.accounts.config.paused, AuctionsError::Paused);
     let now = Clock::get()?.unix_timestamp;
 
     {

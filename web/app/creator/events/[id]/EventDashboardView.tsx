@@ -29,6 +29,8 @@ import {
 } from "@/lib/eventTickets";
 import { getSupabaseClient } from "@/lib/supabase";
 import { simulateAndSend } from "@/lib/tx";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 type EventMeta = {
   address: string;
@@ -68,6 +70,7 @@ export function EventDashboardView({ address }: { address: string }) {
   const [state, setState] = useState<State>({ kind: "loading" });
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
+  const toast = useToast();
 
   const load = useCallback(async () => {
     setState({ kind: "loading" });
@@ -202,12 +205,13 @@ export function EventDashboardView({ address }: { address: string }) {
         ],
       });
 
-      window.alert(`Withdrew $${amountUsdc.toFixed(2)}. Tx: ${sig.slice(0, 12)}…`);
+      console.log("Withdraw tx:", sig);
+      toast.success("Withdrawn");
       setWithdrawOpen(false);
       await load();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Withdraw failed.");
+      toast.error(explainSolanaError(err));
     } finally {
       setWithdrawing(false);
     }
@@ -549,7 +553,7 @@ function StatGrid({
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(4, 1fr)",
+        gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
         gap: "0.85rem",
       }}
     >

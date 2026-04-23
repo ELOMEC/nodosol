@@ -20,6 +20,8 @@ import {
   registryProgram,
 } from "@/lib/rwa";
 import { simulateAndSend } from "@/lib/tx";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 type IssuerRow = {
   address: string;
@@ -49,6 +51,7 @@ export function IssuersView() {
   const [busyRow, setBusyRow] = useState<string | null>(null);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [editMetadata, setEditMetadata] = useState<IssuerRow | null>(null);
+  const toast = useToast();
 
   const reload = useCallback(async () => {
     setState({ kind: "loading" });
@@ -189,7 +192,7 @@ export function IssuersView() {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Status change failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyRow(null);
     }
@@ -232,7 +235,7 @@ export function IssuersView() {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Metadata update failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyRow(null);
     }
@@ -265,7 +268,7 @@ export function IssuersView() {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Close failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyRow(null);
     }
@@ -314,7 +317,7 @@ export function IssuersView() {
         <CenteredCard>Failed: {state.message}</CenteredCard>
       ) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
             <StatCard label="Total issuers" value={state.config?.issuerCount?.toString() ?? state.issuers.length.toString()} sub="Registered on-chain" />
             <StatCard label="Active" value={state.issuers.filter((i) => i.status === "active").length.toString()} sub="Can mint RWA" />
             <StatCard label="Suspended" value={state.issuers.filter((i) => i.status === "suspended").length.toString()} sub="Temporarily blocked" />
@@ -375,7 +378,7 @@ export function IssuersView() {
               await registerIssuer(form);
               setRegisterOpen(false);
             } catch (err) {
-              window.alert(err instanceof Error ? err.message : "Register failed");
+              toast.error(explainSolanaError(err));
             }
           }}
         />

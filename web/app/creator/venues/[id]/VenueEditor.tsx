@@ -13,6 +13,8 @@ import {
   VenueLayoutDoc,
   VenueLayoutRegion,
 } from "@/lib/venueLayouts";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 const DEFAULT_VIEW_BOX = "0 0 1000 700";
 const GRID_SIZE = 25;
@@ -57,6 +59,7 @@ export function VenueEditor({ id }: { id: string }) {
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
   const [backgroundOpacity, setBackgroundOpacity] = useState(0.5);
   const [uploadingBg, setUploadingBg] = useState(false);
+  const toast = useToast();
 
   const svgRef = useRef<SVGSVGElement | null>(null);
 
@@ -265,7 +268,7 @@ export function VenueEditor({ id }: { id: string }) {
       await load();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Save failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setSaving(false);
     }
@@ -342,7 +345,7 @@ export function VenueEditor({ id }: { id: string }) {
                 setBackgroundUrl(url);
               } catch (err) {
                 console.error(err);
-                window.alert(err instanceof Error ? err.message : "Upload failed");
+                toast.error(explainSolanaError(err));
               } finally {
                 setUploadingBg(false);
               }

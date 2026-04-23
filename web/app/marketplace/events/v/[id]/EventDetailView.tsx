@@ -46,6 +46,8 @@ import {
 import { confirmSeatMint, releaseReservation, reserveSeat } from "@/lib/seats";
 import { SeatPicker } from "./SeatPicker";
 import { ContactSellerButton } from "@/components/ContactSellerButton";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 type EventData = {
   address: string;
@@ -94,6 +96,7 @@ export function EventDetailView({ address }: { address: string }) {
   const deeplinkAppliedRef = useRef(false);
   const searchParams = useSearchParams();
   const [shareToast, setShareToast] = useState<string | null>(null);
+  const toast = useToast();
 
   function buildShareUrl(tier: TicketTierDoc, seat?: { rowLabel: string; seatNumber: number }): string {
     if (typeof window === "undefined") return "";
@@ -368,11 +371,12 @@ export function EventDetailView({ address }: { address: string }) {
     setBusyTier(tier.tierId);
     try {
       const sig = await mintTicket(ev, tier, null);
-      window.alert(`Ticket minted: ${tier.name}. Tx: ${sig}`);
+      console.log("Mint ticket tx:", sig);
+      toast.success("Ticket minted");
       await load();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Buy failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyTier(null);
     }
@@ -397,7 +401,8 @@ export function EventDetailView({ address }: { address: string }) {
       reserved = true;
       const sig = await mintTicket(ev, tier, seat);
       setSeatPicker(null);
-      window.alert(`Ticket minted — ${tier.name} · ${seat.rowLabel}${seat.seatNumber}. Tx: ${sig}`);
+      console.log("Mint seat tx:", sig);
+      toast.success("Ticket minted");
       await load();
     } catch (err) {
       console.error(err);
@@ -413,7 +418,7 @@ export function EventDetailView({ address }: { address: string }) {
           // best effort
         }
       }
-      window.alert(err instanceof Error ? err.message : "Buy failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyTier(null);
     }

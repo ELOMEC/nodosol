@@ -103,6 +103,7 @@ pub fn handle_buy_ticket_resale<'info>(
     data_hash: [u8; 32],
     creator_hash: [u8; 32],
 ) -> Result<()> {
+    require!(!ctx.accounts.config.paused, EventTicketsError::Paused);
     let now = Clock::get()?.unix_timestamp;
 
     {

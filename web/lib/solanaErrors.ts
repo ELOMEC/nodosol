@@ -75,3 +75,92 @@ export function decodeSimulationError(err: SimulationErr, logs: string[]): strin
   if (last) return last.replace(/^Program log: /, "");
   return `Transaction simulation failed: ${typeof err === "string" ? err : JSON.stringify(err)}`;
 }
+
+// ---------------------------------------------------------------------------
+// User-facing translator
+// ---------------------------------------------------------------------------
+//
+// explainSolanaError() is for the "showToast / alert" path — it takes an
+// arbitrary error thrown by Anchor, web3.js, wallet-adapter, or our own
+// helpers, and returns a one-line plain-English string. Console still gets
+// the original for debugging; this is purely for UI.
+
+const WALLET_REJECT_PATTERNS = [
+  /user rejected/i,
+  /user declined/i,
+  /user denied/i,
+  /request rejected/i,
+  /transaction was not signed/i,
+  /rejected by user/i,
+  /user abort/i,
+];
+
+// Ordered most-specific first.
+const PATTERN_MAP: Array<[RegExp, string]> = [
+  [/insufficient lamports/i, "Not enough SOL in your wallet to cover fees. Top up and try again."],
+  [/insufficient funds/i, "Insufficient balance for this transaction."],
+  [/insufficient tokens/i, "Not enough tokens in your wallet for this transaction."],
+  [/account not found/i, "On-chain state changed before we could submit. Refresh and try again."],
+  [/account does not exist/i, "On-chain state changed before we could submit. Refresh and try again."],
+  [/blockhash not found/i, "Network was busy — the transaction expired before it landed. Try again."],
+  [/block ?hash.*expired/i, "Network was busy — the transaction expired before it landed. Try again."],
+  [/simulation failed/i, "The transaction can't land as-is. State may have changed — refresh and retry."],
+  [/already in use/i, "An item with these parameters already exists."],
+  [/signature verification failed/i, "Wallet signed with the wrong key. Try reconnecting."],
+  [/timeout|timed out/i, "Network call timed out. Check your connection and try again."],
+  [/failed to fetch|network request failed/i, "Couldn't reach Solana. Check your connection and try again."],
+  [/429|rate ?limit/i, "Rate-limited by the RPC. Wait a moment and try again."],
+];
+
+/** Pulls the first meaningful string out of assorted error shapes. */
+function extractRawMessage(err: unknown): string {
+  if (!err) return "";
+  if (typeof err === "string") return err;
+  if (err instanceof Error) {
+    const withLogs = err as Error & { logs?: string[]; error?: { errorMessage?: string } };
+    if (withLogs.error?.errorMessage) return withLogs.error.errorMessage;
+    if (Array.isArray(withLogs.logs)) {
+      const hit = withLogs.logs.find((l) => /Error Message|custom program error/i.test(l));
+      if (hit) return `${err.message} — ${hit}`;
+    }
+    return err.message;
+  }
+  if (typeof err === "object") {
+    const msg = (err as { message?: string; error?: string }).message ??
+      (err as { error?: string }).error;
+    if (msg) return String(msg);
+  }
+  return "";
+}
+
+/** Strip base58 hashes and stack markers from a message. */
+function sanitize(msg: string): string {
+  return msg
+    .replace(/\b[1-9A-HJ-NP-Za-km-z]{32,}\b/g, "…")
+    .replace(/\s+at\s.*$/s, "")
+    .trim();
+}
+
+export function explainSolanaError(err: unknown): string {
+  const raw = extractRawMessage(err);
+  if (!raw) return "Something went wrong. Please try again.";
+
+  if (WALLET_REJECT_PATTERNS.some((p) => p.test(raw))) {
+    return "Transaction cancelled in wallet.";
+  }
+
+  for (const [pattern, friendly] of PATTERN_MAP) {
+    if (pattern.test(raw)) return friendly;
+  }
+
+  const cleaned = sanitize(raw);
+  if (!cleaned) return "Something went wrong. Please try again.";
+  return cleaned.length > 180 ? `${cleaned.slice(0, 177)}…` : cleaned;
+}
+
+/** True when the error is a user-rejected wallet signature. Callers may
+ *  silently swallow these (don't toast) since it's not a real failure. */
+export function isWalletRejection(err: unknown): boolean {
+  const raw = extractRawMessage(err);
+  return WALLET_REJECT_PATTERNS.some((p) => p.test(raw));
+}

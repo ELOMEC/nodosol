@@ -10,6 +10,8 @@ import { GalleryUploader } from "@/components/GalleryUploader";
 import { LocationPicker, LocationValue } from "@/components/LocationPicker";
 import { createAuctionTx } from "@/lib/auctions";
 import { uploadAuctionMetadata } from "@/lib/auctionMetadata";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 export function NewAuctionView() {
   const { connection } = useConnection();
@@ -28,6 +30,7 @@ export function NewAuctionView() {
   const [revealHours, setRevealHours] = useState("24");
   const [allowChat, setAllowChat] = useState(true);
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -101,11 +104,12 @@ export function NewAuctionView() {
         memo: memo.trim().slice(0, 140),
         metadataUri: metadataUri.slice(0, 256),
       });
-      window.alert(`Auction created. Tx: ${sig.slice(0, 12)}…`);
+      console.log("Create auction tx:", sig);
+      toast.success("Auction created");
       router.push(`/marketplace/auctions/${auctionAddress}`);
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Create failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusy(false);
     }

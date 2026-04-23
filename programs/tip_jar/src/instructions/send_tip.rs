@@ -59,6 +59,7 @@ pub struct SendTip<'info> {
 }
 
 pub fn handle_send_tip(ctx: Context<SendTip>, amount: u64) -> Result<()> {
+    require!(!ctx.accounts.config.paused, TipJarError::Paused);
     require!(amount > 0, TipJarError::InvalidTipAmount);
 
     let decimals = ctx.accounts.mint.decimals;

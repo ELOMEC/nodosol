@@ -32,4 +32,6 @@ pub enum OtcError {
     PaymentMintMismatch,
     #[msg("Arithmetic overflow")]
     ArithmeticOverflow,
+    #[msg("Program is paused — fund-moving instructions are temporarily disabled")]
+    Paused,
 }

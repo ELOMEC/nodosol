@@ -27,6 +27,8 @@ import {
   subscriptionProgram,
 } from "@/lib/subscription";
 import { simulateAndSend } from "@/lib/tx";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 type PlanData = {
   address: string;
@@ -69,6 +71,7 @@ export function RentalDetailView({ planAddress }: { planAddress: string }) {
   const [state, setState] = useState<State>({ kind: "loading" });
   const [busy, setBusy] = useState(false);
   const [cycles, setCycles] = useState("12");
+  const toast = useToast();
 
   const load = useCallback(async () => {
     setState({ kind: "loading" });
@@ -205,11 +208,12 @@ export function RentalDetailView({ planAddress }: { planAddress: string }) {
           ix,
         ],
       });
-      window.alert(`Subscribed. First month charged now. Tx: ${sig.slice(0, 12)}…`);
+      console.log("Subscribe tx:", sig);
+      toast.success("Subscribed");
       await load();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Subscribe failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusy(false);
     }

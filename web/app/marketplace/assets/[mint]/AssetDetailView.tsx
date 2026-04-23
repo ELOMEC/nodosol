@@ -39,8 +39,10 @@ import {
 import { decodeDealStatus, DealStatusKey, otcProgram } from "@/lib/otc";
 import { simulateAndSend } from "@/lib/tx";
 import { isChatAllowed } from "@/lib/supabase";
+import { explainSolanaError } from "@/lib/solanaErrors";
 import { ContactSellerButton } from "@/components/ContactSellerButton";
 import { LocationView } from "@/components/LocationView";
+import { useToast } from "@/components/ToastProvider";
 import { VideoEmbed } from "@/components/VideoEmbed";
 
 type AssetDoc = {
@@ -162,6 +164,7 @@ export function AssetDetailView({ mint }: { mint: string }) {
   const [buyQty, setBuyQty] = useState("1");
   const [buyingListing, setBuyingListing] = useState<string | null>(null);
   const [feeBps, setFeeBps] = useState(250);
+  const toast = useToast();
   const [listForm, setListForm] = useState<ListForm | null>(null);
   const [editPrice, setEditPrice] = useState<{
     listing: ListingDoc;
@@ -494,7 +497,7 @@ export function AssetDetailView({ mint }: { mint: string }) {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Buy failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBuyingListing(null);
     }
@@ -557,7 +560,7 @@ export function AssetDetailView({ mint }: { mint: string }) {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Listing failed");
+      toast.error(explainSolanaError(err));
       setListForm((prev) => (prev ? { ...prev, submitting: false } : null));
     }
   }
@@ -594,7 +597,7 @@ export function AssetDetailView({ mint }: { mint: string }) {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Price update failed");
+      toast.error(explainSolanaError(err));
       setEditPrice((prev) => (prev ? { ...prev, submitting: false } : null));
     }
   }
@@ -644,7 +647,7 @@ export function AssetDetailView({ mint }: { mint: string }) {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Cancel failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setCancelling(null);
     }

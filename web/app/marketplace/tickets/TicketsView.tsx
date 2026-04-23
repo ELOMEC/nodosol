@@ -231,7 +231,7 @@ function ReadyView({
         </div>
       ) : null}
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
         <StatCard label="Event tickets" value={tickets.length.toString()} sub="matched to an on-chain event" />
         <StatCard label="Other cNFTs" value={unknown.length.toString()} sub="compressed assets not tied to a nodosol event" />
         <StatCard label="Total compressed" value={(tickets.length + unknown.length).toString()} sub="Bubblegum leaves owned" />

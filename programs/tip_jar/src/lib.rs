@@ -14,6 +14,16 @@ pub use state::*;
 
 declare_id!("C2bM3p1Cco4bDj6gQe29k7UWcepxLCrVgiPPoidh549P");
 
+#[cfg(not(feature = "no-entrypoint"))]
+solana_security_txt::security_txt! {
+    name: "Nodosol — Tip Jar",
+    project_url: "https://nodosol.com",
+    contacts: "email:security@nodosol.com,link:https://nodosol.com/security",
+    policy: "https://nodosol.com/security",
+    preferred_languages: "en",
+    source_code: "https://github.com/ELOMEC/nodosol"
+}
+
 #[program]
 pub mod tip_jar {
     use super::*;
@@ -35,6 +45,10 @@ pub mod tip_jar {
 
     pub fn update_config_authority(ctx: Context<UpdateConfigAuthority>) -> Result<()> {
         handle_update_authority(ctx)
+    }
+
+    pub fn update_pause(ctx: Context<UpdatePause>, paused: bool) -> Result<()> {
+        handle_update_pause(ctx, paused)
     }
 
     pub fn initialize_creator(ctx: Context<InitializeCreator>) -> Result<()> {

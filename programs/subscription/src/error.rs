@@ -32,4 +32,6 @@ pub enum SubscriptionError {
     FeeBpsTooHigh,
     #[msg("Treasury token account does not match the config")]
     TreasuryMismatch,
+    #[msg("Program is paused — fund-moving instructions are temporarily disabled")]
+    Paused,
 }

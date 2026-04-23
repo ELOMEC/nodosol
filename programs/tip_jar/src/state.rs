@@ -25,5 +25,11 @@ pub struct Config {
     pub treasury: Pubkey,
     pub fee_bps: u16,
     pub bump: u8,
-    pub reserved: [u8; 64],
+    /// Emergency kill-switch. When true, all fund-moving instructions
+    /// (`send_tip`, `withdraw`) revert. Flipped by `update_pause`, which
+    /// is authority-gated. Stored where the first byte of `reserved` used
+    /// to live so existing on-chain accounts still deserialize cleanly
+    /// (old bytes were zero → paused = false).
+    pub paused: bool,
+    pub reserved: [u8; 63],
 }

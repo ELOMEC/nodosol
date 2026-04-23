@@ -32,6 +32,13 @@ pub struct AuthorityUpdated {
 }
 
 #[event]
+pub struct PauseUpdated {
+    pub authority: Pubkey,
+    pub paused: bool,
+    pub timestamp: i64,
+}
+
+#[event]
 pub struct EventCreated {
     pub creator: Pubkey,
     pub event_id: u64,

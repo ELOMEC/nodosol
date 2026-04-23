@@ -14,6 +14,16 @@ pub use state::*;
 
 declare_id!("6c95kxTWCXacsAev4xnvNbKnLYWFGPpJT5zwT4SnWh5v");
 
+#[cfg(not(feature = "no-entrypoint"))]
+solana_security_txt::security_txt! {
+    name: "Nodosol — Auctions",
+    project_url: "https://nodosol.com",
+    contacts: "email:security@nodosol.com,link:https://nodosol.com/security",
+    policy: "https://nodosol.com/security",
+    preferred_languages: "en",
+    source_code: "https://github.com/ELOMEC/nodosol"
+}
+
 #[program]
 pub mod auctions {
     use super::*;
@@ -78,5 +88,9 @@ pub mod auctions {
 
     pub fn update_treasury(ctx: Context<UpdateAuctionTreasury>) -> Result<()> {
         handle_update_auction_treasury(ctx)
+    }
+
+    pub fn update_pause(ctx: Context<UpdatePause>, paused: bool) -> Result<()> {
+        handle_update_pause(ctx, paused)
     }
 }

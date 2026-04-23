@@ -40,6 +40,8 @@ import {
   VenueLayoutRegion,
 } from "@/lib/venueLayouts";
 import { simulateAndSend } from "@/lib/tx";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 type EventMeta = {
   address: string;
@@ -104,6 +106,7 @@ export function TierEditor({ address }: { address: string }) {
   const [forms, setForms] = useState<Record<string, TierFormState>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [nextTierId, setNextTierId] = useState(1);
+  const toast = useToast();
 
   const load = useCallback(async () => {
     setState({ kind: "loading" });
@@ -209,9 +212,7 @@ export function TierEditor({ address }: { address: string }) {
           await upsertEventVenueMapping(address, layout.id, publicKey.toBase58());
         } catch (err) {
           console.error("save mapping failed", err);
-          window.alert(
-            err instanceof Error ? err.message : "Could not save venue selection."
-          );
+          toast.error(explainSolanaError(err));
         }
       }
     },
@@ -316,7 +317,7 @@ export function TierEditor({ address }: { address: string }) {
       await load();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Save failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusy(null);
     }
@@ -373,7 +374,7 @@ export function TierEditor({ address }: { address: string }) {
       await load();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Batch save failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusy(null);
     }

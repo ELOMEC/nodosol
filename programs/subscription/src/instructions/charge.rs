@@ -73,6 +73,7 @@ pub struct Charge<'info> {
 }
 
 pub fn handle_charge(ctx: Context<Charge>) -> Result<()> {
+    require!(!ctx.accounts.config.paused, SubscriptionError::Paused);
     require!(
         ctx.accounts.subscription.status == SubscriptionStatus::Active,
         SubscriptionError::SubscriptionNotActive

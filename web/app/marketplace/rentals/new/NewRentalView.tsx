@@ -23,6 +23,8 @@ import {
   subscriptionProgram,
 } from "@/lib/subscription";
 import { simulateAndSend } from "@/lib/tx";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 export function NewRentalView() {
   const { connection } = useConnection();
@@ -41,6 +43,7 @@ export function NewRentalView() {
   const [periodDays, setPeriodDays] = useState("30");
   const [allowChat, setAllowChat] = useState(true);
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -113,11 +116,12 @@ export function NewRentalView() {
         createdAt: new Date().toISOString(),
       });
 
-      window.alert(`Listed. Tx: ${sig.slice(0, 12)}…`);
+      console.log("List tx:", sig);
+      toast.success("Listed");
       router.push(`/marketplace/rentals/${plan.toBase58()}`);
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "List failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusy(false);
     }

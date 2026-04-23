@@ -34,6 +34,8 @@ import {
   treeConfigPda,
 } from "@/lib/eventTickets";
 import { simulateAndSend } from "@/lib/tx";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 type EventRow = {
   address: string;
@@ -76,6 +78,7 @@ export function EventsView() {
   const [busyEvent, setBusyEvent] = useState<string | null>(null);
   const [feeBps, setFeeBps] = useState(250);
   const [buyQty, setBuyQty] = useState("1");
+  const toast = useToast();
 
   const reload = useCallback(async () => {
     setState({ kind: "loading" });
@@ -296,7 +299,7 @@ export function EventsView() {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Tree init failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyEvent(null);
     }
@@ -350,13 +353,12 @@ export function EventsView() {
         ix,
       ],
       });
-      window.alert(
-        `Ticket minted as cNFT to your wallet. Tx: ${sig}\n\nCheck Phantom > Collectibles in a few seconds.`
-      );
+      console.log("Buy ticket tx:", sig);
+      toast.success("Ticket minted");
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Buy failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyEvent(null);
     }
@@ -404,7 +406,7 @@ export function EventsView() {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Withdraw failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyEvent(null);
     }
@@ -435,7 +437,7 @@ export function EventsView() {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Status change failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyEvent(null);
     }
@@ -475,7 +477,7 @@ export function EventsView() {
         ) : null}
       </header>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
         <StatCard label="Browse" value={pub.length.toString()} sub="Active, selling events" />
         <StatCard label="My events" value={mine.length.toString()} sub="Created by you" />
         <StatCard label="Platform fee" value={`${(feeBps / 100).toFixed(2)}%`} sub="On every ticket sale" />
@@ -567,7 +569,7 @@ export function EventsView() {
               await createEvent(form);
               setCreateOpen(false);
             } catch (err) {
-              window.alert(err instanceof Error ? err.message : "Create failed");
+              toast.error(explainSolanaError(err));
             }
           }}
         />
@@ -776,7 +778,7 @@ function MyEventCard({
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.75rem", marginBottom: "0.9rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: "0.75rem", marginBottom: "0.9rem" }}>
         <MiniStat label="Sold" value={`${event.sold} / ${event.capacity}`} />
         <MiniStat label="Gross revenue" value={`$${event.totalRevenue.toFixed(2)}`} />
         <MiniStat label="Withdrawable" value={`$${withdrawable.toFixed(2)}`} />

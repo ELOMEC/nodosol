@@ -111,6 +111,7 @@ pub fn handle_buy_tier_ticket(
     row_label: String,
     seat_number: u16,
 ) -> Result<()> {
+    require!(!ctx.accounts.config.paused, EventTicketsError::Paused);
     let now = Clock::get()?.unix_timestamp;
 
     require!(

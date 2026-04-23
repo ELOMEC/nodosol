@@ -191,7 +191,7 @@ export function PortfolioView() {
         </p>
       </header>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
         <StatCard label="RWA holdings" value={rwaHoldings.length.toString()} sub="distinct RWA mints" />
         <StatCard label="Total tokens" value={totalRwaTokens.toString()} sub="across all RWA positions" />
         <StatCard label="Categories" value={distinctCategories.toString()} sub="asset classes held" />

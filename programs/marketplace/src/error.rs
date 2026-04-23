@@ -24,4 +24,6 @@ pub enum MarketplaceError {
     AssetMintMismatch,
     #[msg("Arithmetic overflow")]
     ArithmeticOverflow,
+    #[msg("Program is paused — fund-moving instructions are temporarily disabled")]
+    Paused,
 }

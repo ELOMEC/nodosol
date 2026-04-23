@@ -27,6 +27,8 @@ import {
 } from "@/lib/marketplace";
 import { jurisdictionsToString, mintProgram, registryProgram } from "@/lib/rwa";
 import { simulateAndSend } from "@/lib/tx";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 type Listing = {
   address: string;
@@ -94,6 +96,7 @@ export function MarketplaceView() {
   const [jurisdictionFilter, setJurisdictionFilter] = useState<string>("all");
   const [sortKey, setSortKey] = useState<"newest" | "price_asc" | "price_desc" | "supply">("newest");
   const [search, setSearch] = useState<string>("");
+  const toast = useToast();
 
   const reload = useCallback(async () => {
     setState({ kind: "loading" });
@@ -319,7 +322,7 @@ export function MarketplaceView() {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Buy failed");
+      toast.error(explainSolanaError(err));
       setBuyModal((prev) => (prev ? { ...prev, submitting: false } : null));
     }
   }
@@ -396,7 +399,7 @@ export function MarketplaceView() {
         </Link>
       </header>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
         <StatCard label="Active listings" value={allListings.length.toString()} sub="Live from on-chain" />
         <StatCard
           label="Floor price"

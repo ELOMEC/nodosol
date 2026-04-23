@@ -40,6 +40,8 @@ import {
   rowLabelsFor,
   VenueLayoutRegion,
 } from "@/lib/venueLayouts";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 type EventMeta = {
   address: string;
@@ -82,6 +84,7 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
   const [listingOpen, setListingOpen] = useState(false);
   const [listingBusy, setListingBusy] = useState(false);
   const [lastEnvelope, setLastEnvelope] = useState<string | null>(null);
+  const toast = useToast();
 
   // Countdown tick so the expiry label updates live.
   const [now, setNow] = useState(() => Date.now());
@@ -320,11 +323,12 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
         setLastEnvelope(null);
       }
       setListingOpen(false);
-      window.alert(`Listed on-chain. The cNFT is now in escrow. Tx: ${sig.slice(0, 12)}…`);
+      console.log("List tx:", sig);
+      toast.success("Listed");
       await load();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "List failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setListingBusy(false);
     }
@@ -343,11 +347,12 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
         listing,
         assetId,
       });
-      window.alert(`Cancelled. cNFT returned to wallet. Tx: ${sig.slice(0, 12)}…`);
+      console.log("Cancel tx:", sig);
+      toast.success("Cancelled");
       await load();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Cancel failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setListingBusy(false);
     }

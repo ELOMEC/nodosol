@@ -219,7 +219,7 @@ export function MyRentalsView() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(3, 1fr)",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
                   gap: "0.75rem",
                   marginBottom: "1rem",
                 }}

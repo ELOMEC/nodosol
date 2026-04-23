@@ -78,4 +78,6 @@ pub enum EventTicketsError {
     ListingIsPrivate,
     #[msg("Listing is in public-pricing mode — use buy_ticket_resale")]
     ListingIsPublic,
+    #[msg("Program is paused — fund-moving instructions are temporarily disabled")]
+    Paused,
 }

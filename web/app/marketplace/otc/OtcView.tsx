@@ -28,6 +28,8 @@ import {
 } from "@/lib/otc";
 import { mintProgram } from "@/lib/rwa";
 import { simulateAndSend } from "@/lib/tx";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 type DealRow = {
   address: string;
@@ -107,6 +109,7 @@ export function OtcView() {
   const [busyDeal, setBusyDeal] = useState<string | null>(null);
   const [feeBps, setFeeBps] = useState<number>(300);
   const [chatFor, setChatFor] = useState<DealRow | null>(null);
+  const toast = useToast();
 
   const reload = useCallback(async () => {
     if (!publicKey) return;
@@ -364,7 +367,7 @@ export function OtcView() {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Accept failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyDeal(null);
     }
@@ -410,7 +413,7 @@ export function OtcView() {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Cancel failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyDeal(null);
     }
@@ -468,7 +471,7 @@ export function OtcView() {
         </button>
       </header>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
         <StatCard label="As seller" value={asSeller.length.toString()} sub={`${proposedAsSeller} pending`} />
         <StatCard label="As buyer" value={asBuyer.length.toString()} sub={`${proposedAsBuyer} awaiting your accept`} />
         <StatCard label="Platform fee" value={`${(feeBps / 100).toFixed(2)}%`} sub="On accepted deals" />
@@ -569,6 +572,7 @@ function ProposeModal({
   const [expirySeconds, setExpiry] = useState(EXPIRY_PRESETS[1].seconds);
   const [memo, setMemo] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const toast = useToast();
 
   const selectedAsset = useMemo(
     () => myAssets.find((a) => a.mint === assetMint),
@@ -735,7 +739,7 @@ function ProposeModal({
                   memo,
                 });
               } catch (err) {
-                window.alert(err instanceof Error ? err.message : "Propose failed");
+                toast.error(explainSolanaError(err));
                 setSubmitting(false);
               }
             }}

@@ -14,6 +14,16 @@ pub use state::*;
 
 declare_id!("HLCCfvp99Z1Rnix64mC6w6dYL9EkEjVmPCL7rr27evsU");
 
+#[cfg(not(feature = "no-entrypoint"))]
+solana_security_txt::security_txt! {
+    name: "Nodosol — RWA Mint",
+    project_url: "https://nodosol.com",
+    contacts: "email:security@nodosol.com,link:https://nodosol.com/security",
+    policy: "https://nodosol.com/security",
+    preferred_languages: "en",
+    source_code: "https://github.com/ELOMEC/nodosol"
+}
+
 #[program]
 pub mod rwa_mint {
     use super::*;

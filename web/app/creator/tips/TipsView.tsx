@@ -27,6 +27,8 @@ import {
   tipJarProgram,
 } from "@/lib/tipJar";
 import { simulateAndSend } from "@/lib/tx";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 type FetchState =
   | { kind: "idle" }
@@ -41,6 +43,7 @@ export function TipsView() {
 
   const [state, setState] = useState<FetchState>({ kind: "idle" });
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
 
   const reload = useCallback(async () => {
     if (!publicKey) return;
@@ -106,7 +109,7 @@ export function TipsView() {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Initialize failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusy(false);
     }
@@ -153,7 +156,7 @@ export function TipsView() {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Withdraw failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusy(false);
     }

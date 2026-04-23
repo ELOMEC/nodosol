@@ -13,6 +13,7 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 
 import { PrivyProviders } from "./PrivyProviders";
 import { PrivyWalletBridge } from "./PrivyWalletBridge";
+import { ToastProvider } from "./ToastProvider";
 import { PrivyWalletAdapter } from "@/lib/privyWalletAdapter";
 
 const DEFAULT_RPC = "https://api.devnet.solana.com";
@@ -26,16 +27,18 @@ export function SolanaProviders({ children }: { children: ReactNode }) {
   );
 
   return (
-    <PrivyProviders>
-      <ConnectionProvider endpoint={endpoint}>
-        <WalletProvider wallets={wallets} autoConnect>
-          <WalletModalProvider>
-            <PrivyWalletBridge adapter={privyAdapter}>
-              {children}
-            </PrivyWalletBridge>
-          </WalletModalProvider>
-        </WalletProvider>
-      </ConnectionProvider>
-    </PrivyProviders>
+    <ToastProvider>
+      <PrivyProviders>
+        <ConnectionProvider endpoint={endpoint}>
+          <WalletProvider wallets={wallets} autoConnect>
+            <WalletModalProvider>
+              <PrivyWalletBridge adapter={privyAdapter}>
+                {children}
+              </PrivyWalletBridge>
+            </WalletModalProvider>
+          </WalletProvider>
+        </ConnectionProvider>
+      </PrivyProviders>
+    </ToastProvider>
   );
 }

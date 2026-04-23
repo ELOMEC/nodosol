@@ -83,6 +83,7 @@ pub struct BuyListing<'info> {
 }
 
 pub fn handle_buy_listing(ctx: Context<BuyListing>, quantity: u64) -> Result<()> {
+    require!(!ctx.accounts.config.paused, MarketplaceError::Paused);
     require!(quantity > 0, MarketplaceError::InvalidQuantity);
     let listing = &mut ctx.accounts.listing;
     require!(

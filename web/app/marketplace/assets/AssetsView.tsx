@@ -31,6 +31,8 @@ import {
 import { fetchImagesForUris, toHttp } from "@/lib/metadataImages";
 import { mintProgram } from "@/lib/rwa";
 import { simulateAndSend } from "@/lib/tx";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 type AssetRow = {
   address: string;
@@ -104,6 +106,7 @@ export function AssetsView() {
     price: string;
     submitting: boolean;
   } | null>(null);
+  const toast = useToast();
 
   const reload = useCallback(async () => {
     if (!publicKey) return;
@@ -257,7 +260,7 @@ export function AssetsView() {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Burn failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyAsset(null);
     }
@@ -296,7 +299,7 @@ export function AssetsView() {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Price update failed");
+      toast.error(explainSolanaError(err));
       setEditPrice((prev) => (prev ? { ...prev, submitting: false } : null));
     }
   }
@@ -342,7 +345,7 @@ export function AssetsView() {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Cancel failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyAsset(null);
     }
@@ -405,7 +408,7 @@ export function AssetsView() {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Listing failed");
+      toast.error(explainSolanaError(err));
       setListModal((prev) => (prev ? { ...prev, submitting: false } : null));
     }
   }
@@ -432,7 +435,7 @@ export function AssetsView() {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Status change failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyAsset(null);
     }
@@ -497,7 +500,7 @@ export function AssetsView() {
         </Link>
       </header>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "1rem", marginBottom: "1.5rem" }}>
         <StatCard label="Tokenised assets" value={rows.length.toString()} sub={`${activeCount} active · ${retiredCount} retired`} />
         <StatCard label="Tokens in circulation" value={totalCirculating.toString()} sub={`${totalBurned} burned`} />
         <StatCard label="Distinct mints" value={new Set(rows.map((r) => r.mint)).size.toString()} sub="Fixed-supply Token-2022" />

@@ -20,6 +20,8 @@ import {
   loadProgram,
 } from "@/lib/admin";
 import { simulateAndSend } from "@/lib/tx";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 type FetchState =
   | { kind: "idle" }
@@ -37,6 +39,7 @@ export function AdminView() {
   const [editFee, setEditFee] = useState<{ key: string; current: number } | null>(null);
   const [editTreasury, setEditTreasury] = useState<{ key: string } | null>(null);
   const [editAuthority, setEditAuthority] = useState<{ key: string } | null>(null);
+  const toast = useToast();
 
   const reload = useCallback(async () => {
     setState({ kind: "loading" });
@@ -165,7 +168,7 @@ export function AdminView() {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Tx failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyKey(null);
     }
@@ -356,7 +359,7 @@ function ProgramRow({
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem", marginBottom: snapshot.deployed && isAuthority ? "0.9rem" : "0" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "0.75rem", marginBottom: snapshot.deployed && isAuthority ? "0.9rem" : "0" }}>
         <MiniStat label="Program" value={shorten(snapshot.programId)} mono copy={snapshot.programId} />
         <MiniStat label="Config PDA" value={shorten(snapshot.configAddress)} mono copy={snapshot.configAddress} />
         <MiniStat
@@ -368,7 +371,7 @@ function ProgramRow({
       </div>
 
       {hasFee && snapshot.deployed ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.75rem", marginBottom: isAuthority ? "0.9rem" : "0" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "0.75rem", marginBottom: isAuthority ? "0.9rem" : "0" }}>
           <MiniStat
             label="Treasury"
             value={snapshot.treasury ? shorten(snapshot.treasury) : "—"}

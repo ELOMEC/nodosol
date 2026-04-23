@@ -41,6 +41,8 @@ import {
   VenueLayoutDoc,
 } from "@/lib/venueLayouts";
 import { simulateAndSend } from "@/lib/tx";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 type Basics = {
   name: string;
@@ -93,6 +95,7 @@ export function NewEventWizard() {
       | "done";
     message?: string;
   }>({ stage: "idle" });
+  const toast = useToast();
 
   const loadLayouts = useCallback(async () => {
     if (!publicKey) return;
@@ -269,7 +272,7 @@ export function NewEventWizard() {
       router.push(`/creator/events/${event.toBase58()}/tiers`);
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Publish failed.");
+      toast.error(explainSolanaError(err));
       setPublishing({ stage: "idle" });
     }
   }

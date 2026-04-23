@@ -26,6 +26,8 @@ import {
   subscriptionProgram,
 } from "@/lib/subscription";
 import { simulateAndSend } from "@/lib/tx";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 type FetchState =
   | { kind: "idle" }
@@ -49,6 +51,7 @@ export function PlansView() {
   const [state, setState] = useState<FetchState>({ kind: "idle" });
   const [createOpen, setCreateOpen] = useState(false);
   const [busyPlan, setBusyPlan] = useState<string | null>(null);
+  const toast = useToast();
 
   const reload = useCallback(async () => {
     if (!publicKey) return;
@@ -137,7 +140,7 @@ export function PlansView() {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Status change failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyPlan(null);
     }
@@ -184,7 +187,7 @@ export function PlansView() {
       await reload();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Withdraw failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyPlan(null);
     }
@@ -262,7 +265,7 @@ export function PlansView() {
               await createPlan(form);
               setCreateOpen(false);
             } catch (err) {
-              window.alert(err instanceof Error ? err.message : "Create failed");
+              toast.error(explainSolanaError(err));
             }
           }}
         />

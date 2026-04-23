@@ -70,6 +70,7 @@ pub struct Subscribe<'info> {
 }
 
 pub fn handle_subscribe(ctx: Context<Subscribe>, approve_amount: u64) -> Result<()> {
+    require!(!ctx.accounts.config.paused, SubscriptionError::Paused);
     let price = ctx.accounts.plan.price_per_period;
     require!(
         approve_amount >= price,

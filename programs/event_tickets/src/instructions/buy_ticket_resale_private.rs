@@ -113,6 +113,7 @@ pub fn handle_buy_ticket_resale_private<'info>(
     revealed_price: u64,
     price_nonce: [u8; 32],
 ) -> Result<()> {
+    require!(!ctx.accounts.config.paused, EventTicketsError::Paused);
     let now = Clock::get()?.unix_timestamp;
 
     {

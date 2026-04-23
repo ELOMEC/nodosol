@@ -10,6 +10,8 @@ import {
   listVenueLayoutsByCreator,
   VenueLayoutDoc,
 } from "@/lib/venueLayouts";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 type State =
   | { kind: "idle" }
@@ -20,6 +22,7 @@ type State =
 export function VenueLayoutsView() {
   const { publicKey, connected } = useWallet();
   const [state, setState] = useState<State>({ kind: "idle" });
+  const toast = useToast();
 
   const reload = useCallback(async () => {
     if (!publicKey) return;
@@ -47,7 +50,7 @@ export function VenueLayoutsView() {
       await deleteVenueLayout(id);
       await reload();
     } catch (err) {
-      window.alert(err instanceof Error ? err.message : "Delete failed");
+      toast.error(explainSolanaError(err));
     }
   }
 

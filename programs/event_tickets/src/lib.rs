@@ -14,6 +14,16 @@ pub use state::*;
 
 declare_id!("FDUwvXRETURbe2JN2PJNCKt6RPAsSLeSi7A4pFMGmtrE");
 
+#[cfg(not(feature = "no-entrypoint"))]
+solana_security_txt::security_txt! {
+    name: "Nodosol — Event Tickets",
+    project_url: "https://nodosol.com",
+    contacts: "email:security@nodosol.com,link:https://nodosol.com/security",
+    policy: "https://nodosol.com/security",
+    preferred_languages: "en",
+    source_code: "https://github.com/ELOMEC/nodosol"
+}
+
 #[program]
 pub mod event_tickets {
     use super::*;
@@ -32,6 +42,10 @@ pub mod event_tickets {
 
     pub fn update_config_authority(ctx: Context<UpdateConfigAuthority>) -> Result<()> {
         handle_update_config_authority(ctx)
+    }
+
+    pub fn update_pause(ctx: Context<UpdatePause>, paused: bool) -> Result<()> {
+        handle_update_pause(ctx, paused)
     }
 
     pub fn create_event(

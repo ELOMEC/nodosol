@@ -84,6 +84,7 @@ pub struct AcceptDeal<'info> {
 }
 
 pub fn handle_accept_deal(ctx: Context<AcceptDeal>) -> Result<()> {
+    require!(!ctx.accounts.config.paused, OtcError::Paused);
     let deal = &mut ctx.accounts.deal;
     require!(
         deal.status == DealStatus::Proposed,

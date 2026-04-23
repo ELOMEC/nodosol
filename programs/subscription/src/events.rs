@@ -94,3 +94,10 @@ pub struct ConfigAuthorityUpdated {
     pub new_authority: Pubkey,
     pub timestamp: i64,
 }
+
+#[event]
+pub struct PauseUpdated {
+    pub authority: Pubkey,
+    pub paused: bool,
+    pub timestamp: i64,
+}

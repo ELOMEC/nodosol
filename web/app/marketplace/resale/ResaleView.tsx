@@ -18,6 +18,8 @@ import {
   fetchAllActiveListings,
   OnChainResaleListing,
 } from "@/lib/ticketResale";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 type EventIndex = Map<
   string,
@@ -43,6 +45,7 @@ export function ResaleView() {
   const [eventFilter, setEventFilter] = useState<string>("");
   const [busyListing, setBusyListing] = useState<string | null>(null);
   const [privateBuyModal, setPrivateBuyModal] = useState<OnChainResaleListing | null>(null);
+  const toast = useToast();
 
   const load = useCallback(async () => {
     setState({ kind: "loading" });
@@ -139,13 +142,12 @@ export function ResaleView() {
         listing,
         assetId,
       });
-      window.alert(
-        `Swap complete. cNFT is in your wallet. Tx: ${sig.slice(0, 12)}…`
-      );
+      console.log("Buy tx:", sig);
+      toast.success("Ticket bought");
       await load();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Buy failed.");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyListing(null);
     }
@@ -172,15 +174,13 @@ export function ResaleView() {
         priceBase: parsed.priceBase,
         nonce: parsed.nonce,
       });
-      const priceUsdc = Number(parsed.priceBase) / USDC_UNIT;
-      window.alert(
-        `Swap complete. Paid $${priceUsdc.toFixed(2)} USDC, cNFT is in your wallet. Tx: ${sig.slice(0, 12)}…`
-      );
+      console.log("Private buy tx:", sig);
+      toast.success("Ticket bought");
       setPrivateBuyModal(null);
       await load();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Private buy failed.");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyListing(null);
     }
@@ -207,11 +207,12 @@ export function ResaleView() {
         listing,
         assetId,
       });
-      window.alert(`Reclaimed on behalf of seller. Tx: ${sig.slice(0, 12)}…`);
+      console.log("Reclaim tx:", sig);
+      toast.success("Reclaimed");
       await load();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Reclaim failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyListing(null);
     }
@@ -232,11 +233,12 @@ export function ResaleView() {
         listing,
         assetId,
       });
-      window.alert(`Cancelled. Tx: ${sig.slice(0, 12)}…`);
+      console.log("Cancel tx:", sig);
+      toast.success("Cancelled");
       await load();
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Cancel failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusyListing(null);
     }

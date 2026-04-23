@@ -14,6 +14,13 @@ import {
   getSupabaseUrl,
   requestChatJwt,
 } from "@/lib/supabase";
+import {
+  clearCachedThreadSig,
+  getCachedChatJwt,
+  getCachedThreadSig,
+  setCachedChatJwt,
+  setCachedThreadSig,
+} from "@/lib/chatSession";
 
 type Props = {
   thread: ChatThreadRef;
@@ -104,10 +111,29 @@ export function ChatPanel({ thread, viewerPubkey, onClose, embedded = false }: P
 
   async function ensureAuthedClient(): Promise<SupabaseClient> {
     const now = Math.floor(Date.now() / 1000);
+
+    // 1. Hot in-memory client + JWT (no work to do).
     const cached = sessionJwtRef.current;
     if (cached && cached.expiresAt - now > JWT_REFRESH_SLACK_S) {
       return cached.client;
     }
+
+    // 2. localStorage: the same wallet may have signed earlier in the
+    //    session (other page, other tab). Rehydrate silently — the only
+    //    cost is reconstructing the SupabaseClient.
+    const persisted = getCachedChatJwt(viewerPubkey);
+    if (persisted) {
+      const client = createAuthedSupabaseClient(persisted.jwt);
+      client.realtime.setAuth(persisted.jwt);
+      sessionJwtRef.current = {
+        jwt: persisted.jwt,
+        client,
+        expiresAt: persisted.expiresAt,
+      };
+      return client;
+    }
+
+    // 3. Cold path: ask the wallet to sign, mint JWT, persist for reuse.
     const sig = await signAuthChallenge();
     const { jwt, expiresAt } = await requestChatJwt({
       wallet: viewerPubkey,
@@ -117,6 +143,7 @@ export function ChatPanel({ thread, viewerPubkey, onClose, embedded = false }: P
     const client = createAuthedSupabaseClient(jwt);
     client.realtime.setAuth(jwt);
     sessionJwtRef.current = { jwt, client, expiresAt };
+    setCachedChatJwt(viewerPubkey, { jwt, expiresAt });
     return client;
   }
 
@@ -218,10 +245,21 @@ export function ChatPanel({ thread, viewerPubkey, onClose, embedded = false }: P
   const canSign = Boolean(signMessage);
 
   async function ensureSessionSig(): Promise<SessionSig> {
+    // 1. In-memory — instant if we signed this thread already this mount.
     const current = sessionSigRef.current;
     if (current && Date.now() - current.signedAt < SIG_TTL_MS) {
       return current;
     }
+
+    // 2. localStorage — same thread, same wallet, still within the 14 min
+    //    window. Survives page reloads and cross-tab navigation.
+    const persisted = getCachedThreadSig(viewerPubkey, memoHash);
+    if (persisted) {
+      sessionSigRef.current = persisted;
+      return persisted;
+    }
+
+    // 3. Cold path — ask the wallet to sign a fresh challenge.
     if (!signMessage) {
       throw new Error("Your wallet does not support message signing.");
     }
@@ -236,6 +274,7 @@ export function ChatPanel({ thread, viewerPubkey, onClose, embedded = false }: P
         signedAt: timestamp,
       };
       sessionSigRef.current = fresh;
+      setCachedThreadSig(viewerPubkey, memoHash, fresh);
       return fresh;
     } finally {
       setSigning(false);
@@ -295,7 +334,12 @@ export function ChatPanel({ thread, viewerPubkey, onClose, embedded = false }: P
       });
       if (!resp.ok) {
         const payload = await resp.json().catch(() => ({}));
-        if (resp.status === 401) sessionSigRef.current = null;
+        if (resp.status === 401) {
+          // Stored sig was rejected as stale — drop both caches so the
+          // next attempt re-signs from scratch.
+          sessionSigRef.current = null;
+          clearCachedThreadSig(viewerPubkey, memoHash);
+        }
         throw new Error(payload?.error ?? `HTTP ${resp.status}`);
       }
       setBody("");

@@ -22,4 +22,6 @@ pub enum TipJarError {
     TreasuryMismatch,
     #[msg("Treasury token account mint does not match")]
     TreasuryMintMismatch,
+    #[msg("Program is paused — fund-moving instructions are temporarily disabled")]
+    Paused,
 }

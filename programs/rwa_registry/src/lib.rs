@@ -14,6 +14,16 @@ pub use state::*;
 
 declare_id!("7BCWTrD7rcedAg3zpvtvNdManv39kzr3eHBjWyomCbdT");
 
+#[cfg(not(feature = "no-entrypoint"))]
+solana_security_txt::security_txt! {
+    name: "Nodosol — RWA Registry",
+    project_url: "https://nodosol.com",
+    contacts: "email:security@nodosol.com,link:https://nodosol.com/security",
+    policy: "https://nodosol.com/security",
+    preferred_languages: "en",
+    source_code: "https://github.com/ELOMEC/nodosol"
+}
+
 #[program]
 pub mod rwa_registry {
     use super::*;

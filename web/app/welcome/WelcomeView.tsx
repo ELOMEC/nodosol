@@ -22,6 +22,8 @@ import {
   tipJarProgram,
 } from "@/lib/tipJar";
 import { simulateAndSend } from "@/lib/tx";
+import { explainSolanaError } from "@/lib/solanaErrors";
+import { useToast } from "@/components/ToastProvider";
 
 const FLAG_KEY = "nodosol-onboarded-v1";
 
@@ -38,6 +40,7 @@ export function WelcomeView() {
   const [role, setRole] = useState<Role | null>(null);
   const [hasCreatorProfile, setHasCreatorProfile] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
+  const toast = useToast();
 
   // Auto-advance to step 2 once wallet connects on step 1.
   useEffect(() => {
@@ -98,7 +101,7 @@ export function WelcomeView() {
       setHasCreatorProfile(true);
     } catch (err) {
       console.error(err);
-      window.alert(err instanceof Error ? err.message : "Initialize failed");
+      toast.error(explainSolanaError(err));
     } finally {
       setBusy(false);
     }

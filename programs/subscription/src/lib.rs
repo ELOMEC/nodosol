@@ -14,6 +14,16 @@ pub use state::*;
 
 declare_id!("8G2hbD1qJUcaVAEdfVxaHfbCgxyEzQdrpjhDMM9pSL4w");
 
+#[cfg(not(feature = "no-entrypoint"))]
+solana_security_txt::security_txt! {
+    name: "Nodosol — Subscriptions",
+    project_url: "https://nodosol.com",
+    contacts: "email:security@nodosol.com,link:https://nodosol.com/security",
+    policy: "https://nodosol.com/security",
+    preferred_languages: "en",
+    source_code: "https://github.com/ELOMEC/nodosol"
+}
+
 #[program]
 pub mod subscription {
     use super::*;
@@ -35,6 +45,10 @@ pub mod subscription {
 
     pub fn update_config_authority(ctx: Context<UpdateConfigAuthority>) -> Result<()> {
         handle_update_authority(ctx)
+    }
+
+    pub fn update_pause(ctx: Context<UpdatePause>, paused: bool) -> Result<()> {
+        handle_update_pause(ctx, paused)
     }
 
     pub fn create_plan(
