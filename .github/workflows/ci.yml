@@ -10,12 +10,20 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  SOLANA_VERSION: "2.2.21"
+  ANCHOR_TAG: "v1.0.0"
+
 jobs:
   rust:
     name: Anchor build + program tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
 
       # Pin toolchain to the channel in rust-toolchain.toml.
       # dtolnay/rust-toolchain doesn't support a toolchain-file input.
@@ -27,15 +35,38 @@ jobs:
         with:
           workspaces: ". -> target"
 
-      # Anchor + Solana CLI must match the versions declared in the
-      # workspace Cargo.toml (anchor-lang = "1.0.0") and the local dev
-      # environment. setup-anchor installs cargo-build-sbf + anchor-cli
-      # via their official release tarballs.
-      - uses: metaDAOproject/setup-anchor@v1
+      # Install Solana CLI directly from Anza (release.solana.com was
+      # decommissioned). The install script writes to
+      # ~/.local/share/solana/install/active_release/bin which we add
+      # to PATH for subsequent steps.
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${SOLANA_VERSION}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+
+      # Cache the compiled anchor-cli binary across runs — building it
+      # from source takes ~5 minutes; a cache hit drops that to ~2s.
+      - name: Cache Anchor CLI
+        id: cache-anchor
+        uses: actions/cache@v4
         with:
-          anchor-version: "1.0.0"
-          solana-cli-version: "2.2.21"
-          node-version: "22.11.0"
+          path: ~/.cargo/bin/anchor
+          key: anchor-cli-${{ env.ANCHOR_TAG }}-${{ runner.os }}
+
+      - name: Install Anchor CLI (build from source)
+        if: steps.cache-anchor.outputs.cache-hit != 'true'
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor \
+            --tag "${ANCHOR_TAG}" \
+            anchor-cli \
+            --locked \
+            --force
+
+      - name: Verify tool versions
+        run: |
+          rustc --version
+          solana --version
+          anchor --version
 
       - name: Anchor build
         run: anchor build
