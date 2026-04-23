@@ -53,6 +53,10 @@ type Payload = {
   // Thread context — used when the thread row doesn't yet exist. Shape
   // depends on threadType.
   threadContext?: OtcContext | ListingContext | GroupContext;
+  // Cloudflare Turnstile token. Required for group writes when
+  // TURNSTILE_SECRET_KEY is set on the Edge Function. OTC and listing_dm
+  // threads already gate on seller/buyer identity so we don't bother.
+  turnstileToken?: string;
 };
 
 const MAX_AGE_MS = 15 * 60 * 1000;
@@ -77,12 +81,81 @@ function isValidPubkey(s: unknown): s is string {
   }
 }
 
+// Best-effort logger for the `security_events` table. Failure to log
+// must never break the request — we swallow errors after console.warn.
+// Callers pass the admin client so the log write skips RLS.
+// Uses a `SupabaseClient`-like shape; we keep it loose to avoid
+// re-importing types.
+type LoggerClient = {
+  from: (table: string) => {
+    insert: (
+      row: Record<string, unknown>,
+    ) => Promise<{ error: { message: string } | null }>;
+  };
+};
+
+async function logSecurityEvent(
+  admin: LoggerClient,
+  req: Request,
+  event: {
+    type: string;
+    severity?: "info" | "warn" | "error";
+    wallet?: string | null;
+    details?: Record<string, unknown>;
+  },
+): Promise<void> {
+  try {
+    const clientIp =
+      req.headers.get("cf-connecting-ip") ??
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      null;
+    const { error } = await admin.from("security_events").insert({
+      event_type: event.type,
+      severity: event.severity ?? "info",
+      wallet: event.wallet ?? null,
+      client_ip: clientIp,
+      details: event.details ?? {},
+    });
+    if (error) console.warn("security_events insert failed:", error.message);
+  } catch (err) {
+    console.warn("security_events logger threw", err);
+  }
+}
+
 // sha256 helper (SubtleCrypto). Returns lowercase hex.
 async function sha256Hex(input: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
   return Array.from(new Uint8Array(buf))
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
+}
+
+/**
+ * Verify a Cloudflare Turnstile token server-side. Returns true if the
+ * token is valid, false otherwise. When TURNSTILE_SECRET_KEY is not set
+ * the function returns true so the check is a no-op in local/dev (same
+ * graceful-skip pattern as GROUP_CHAT_ANTISPAM_RPC_URL above).
+ */
+async function verifyTurnstile(token: string | undefined, remoteIp: string | null): Promise<boolean> {
+  const secret = Deno.env.get("TURNSTILE_SECRET_KEY");
+  if (!secret) return true; // not configured → skip check
+  if (!token) return false;
+  try {
+    const form = new FormData();
+    form.set("secret", secret);
+    form.set("response", token);
+    if (remoteIp) form.set("remoteip", remoteIp);
+    const resp = await fetch(
+      "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+      { method: "POST", body: form },
+    );
+    if (!resp.ok) return false;
+    const json = (await resp.json()) as { success?: boolean };
+    return json?.success === true;
+  } catch (err) {
+    console.warn("turnstile siteverify error", err);
+    return false;
+  }
 }
 
 Deno.serve(async (req) => {
@@ -118,6 +191,16 @@ Deno.serve(async (req) => {
   if (!body.trim()) return jsonResp({ error: "Empty body" }, 400);
   if (body.length > MESSAGE_MAX_CHARS) return jsonResp({ error: "Body too long" }, 400);
 
+  // Create the admin client up front so failure paths can log to
+  // security_events. A 500 only fires on missing env — startup bug, not
+  // user error.
+  const url = Deno.env.get("SUPABASE_URL") ?? "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  if (!url || !serviceKey) {
+    return jsonResp({ error: "Function not configured" }, 500);
+  }
+  const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
+
   // 1. Signature verification.
   let pubkeyBytes: Uint8Array;
   let sigBytes: Uint8Array;
@@ -132,7 +215,15 @@ Deno.serve(async (req) => {
   }
   const messageBytes = new TextEncoder().encode(message);
   const valid = nacl.sign.detached.verify(messageBytes, sigBytes, pubkeyBytes);
-  if (!valid) return jsonResp({ error: "Bad signature" }, 401);
+  if (!valid) {
+    await logSecurityEvent(admin, req, {
+      type: "sig_verify_fail",
+      severity: "warn",
+      wallet: senderPubkey,
+      details: { endpoint: "post-chat-message", threadType },
+    });
+    return jsonResp({ error: "Bad signature" }, 401);
+  }
 
   // 2. Message format + freshness.
   // Expected: nodosol-chat:v1:<threadMemoHash>:<senderPubkey>:<timestampMs>
@@ -150,18 +241,16 @@ Deno.serve(async (req) => {
   if (!Number.isFinite(ts)) return jsonResp({ error: "Bad timestamp" }, 400);
   const age = Date.now() - ts;
   if (age < -60_000 || age > MAX_AGE_MS) {
+    await logSecurityEvent(admin, req, {
+      type: "challenge_expired",
+      severity: "info",
+      wallet: senderPubkey,
+      details: { ageMs: age, endpoint: "post-chat-message" },
+    });
     return jsonResp({ error: "Challenge expired — re-sign" }, 401);
   }
 
-  // 3. Supabase admin client.
-  const url = Deno.env.get("SUPABASE_URL") ?? "";
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  if (!url || !serviceKey) {
-    return jsonResp({ error: "Function not configured" }, 500);
-  }
-  const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
-
-  // 4. Thread fetch / creation per type.
+  // 3. Thread fetch / creation per type.
   const { data: existingThread, error: threadErr } = await admin
     .from("chat_threads")
     .select("thread_type, seller_pubkey, buyer_pubkey, channel_slug")
@@ -274,7 +363,28 @@ Deno.serve(async (req) => {
       return jsonResp({ error: "Unknown group channel" }, 404);
     }
 
-    // Anti-spam: require a minimum SOL balance, if RPC is configured.
+    // Anti-spam gate #1: Cloudflare Turnstile. Skipped if
+    // TURNSTILE_SECRET_KEY isn't set (dev/local). Group threads only —
+    // OTC and listing_dm are already gated on seller/buyer identity.
+    const remoteIp =
+      req.headers.get("cf-connecting-ip") ??
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      null;
+    const turnstileOk = await verifyTurnstile(payload.turnstileToken, remoteIp);
+    if (!turnstileOk) {
+      await logSecurityEvent(admin, req, {
+        type: "turnstile_fail",
+        severity: "warn",
+        wallet: senderPubkey,
+        details: { channel: existingThread.channel_slug },
+      });
+      return jsonResp(
+        { error: "Anti-bot check failed. Refresh and try again." },
+        403,
+      );
+    }
+
+    // Anti-spam gate #2: require a minimum SOL balance, if RPC is configured.
     const rpcUrl = Deno.env.get("GROUP_CHAT_ANTISPAM_RPC_URL");
     if (rpcUrl) {
       try {
@@ -312,6 +422,12 @@ Deno.serve(async (req) => {
     .gte("created_at", windowStart);
   if (countErr) return jsonResp({ error: countErr.message }, 500);
   if ((recentCount ?? 0) >= RATE_LIMIT_MAX) {
+    await logSecurityEvent(admin, req, {
+      type: "rate_limit_hit",
+      severity: "warn",
+      wallet: senderPubkey,
+      details: { windowMin: RATE_LIMIT_WINDOW_MS / 60_000, cap: RATE_LIMIT_MAX },
+    });
     return jsonResp(
       { error: `Rate limit: ${RATE_LIMIT_MAX} messages per ${RATE_LIMIT_WINDOW_MS / 60_000} min` },
       429,

@@ -13,6 +13,7 @@
 import nacl from "https://esm.sh/tweetnacl@1.0.3";
 import bs58 from "https://esm.sh/bs58@5.0.0";
 import { create as createJwt } from "https://deno.land/x/djwt@v3.0.2/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CORS_HEADERS: HeadersInit = {
   "Access-Control-Allow-Origin": "*",
@@ -33,6 +34,40 @@ const MAX_AGE_MS = 2 * 60 * 1000;
 // JWT TTL. 15 minutes matches post-chat-message's session-sig TTL in
 // ChatPanel so one wallet signature bootstraps both read and write auth.
 const JWT_TTL_SECONDS = 15 * 60;
+
+// Best-effort security event logger — mirrors the helper in
+// post-chat-message. Failures must never break the request.
+async function logSecurityEvent(
+  url: string,
+  serviceKey: string,
+  req: Request,
+  event: {
+    type: string;
+    severity?: "info" | "warn" | "error";
+    wallet?: string | null;
+    details?: Record<string, unknown>;
+  },
+): Promise<void> {
+  try {
+    const admin = createClient(url, serviceKey, {
+      auth: { persistSession: false },
+    });
+    const clientIp =
+      req.headers.get("cf-connecting-ip") ??
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+      null;
+    const { error } = await admin.from("security_events").insert({
+      event_type: event.type,
+      severity: event.severity ?? "info",
+      wallet: event.wallet ?? null,
+      client_ip: clientIp,
+      details: event.details ?? {},
+    });
+    if (error) console.warn("security_events insert failed:", error.message);
+  } catch (err) {
+    console.warn("security_events logger threw", err);
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -68,7 +103,19 @@ Deno.serve(async (req) => {
   }
   const messageBytes = new TextEncoder().encode(message);
   const valid = nacl.sign.detached.verify(messageBytes, sigBytes, pubkeyBytes);
-  if (!valid) return jsonResp({ error: "Bad signature" }, 401);
+  if (!valid) {
+    const sbUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const sbKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (sbUrl && sbKey) {
+      await logSecurityEvent(sbUrl, sbKey, req, {
+        type: "sig_verify_fail",
+        severity: "warn",
+        wallet,
+        details: { endpoint: "issue-chat-jwt" },
+      });
+    }
+    return jsonResp({ error: "Bad signature" }, 401);
+  }
 
   // 2. Challenge format: nodosol-chat-auth:v1:<wallet>:<timestampMs>
   const parts = message.split(":");
@@ -114,6 +161,20 @@ Deno.serve(async (req) => {
       },
       secretKey,
     );
+
+    // Best-effort log of successful issuance — lets us spot anomalies
+    // like one wallet minting 50 JWTs a minute, or a surge of brand-new
+    // wallets during what should be quiet hours.
+    const sbUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const sbKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    if (sbUrl && sbKey) {
+      await logSecurityEvent(sbUrl, sbKey, req, {
+        type: "jwt_issued",
+        severity: "info",
+        wallet,
+        details: { ttlSeconds: JWT_TTL_SECONDS },
+      });
+    }
 
     return jsonResp({ jwt, expiresAt: now + JWT_TTL_SECONDS }, 200);
   } catch (err) {

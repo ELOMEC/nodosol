@@ -21,6 +21,8 @@ import {
   setCachedChatJwt,
   setCachedThreadSig,
 } from "@/lib/chatSession";
+import { turnstileConfigured, TurnstileWidget } from "./TurnstileWidget";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 
 type Props = {
   thread: ChatThreadRef;
@@ -59,6 +61,13 @@ export function ChatPanel({ thread, viewerPubkey, onClose, embedded = false }: P
   const channelRef = useRef<RealtimeChannel | null>(null);
   const sessionSigRef = useRef<SessionSig | null>(null);
   const sessionJwtRef = useRef<SessionJwt | null>(null);
+  // Cloudflare Turnstile state, only used for group threads. Stored in a
+  // ref (not state) so callback-driven token updates don't re-render the
+  // widget and cause a re-mount. `turnstileConfigured()` is the gate —
+  // when NEXT_PUBLIC_TURNSTILE_SITE_KEY is unset, widget renders nothing
+  // and the server mirrors with skip-verify.
+  const turnstileTokenRef = useRef<string | null>(null);
+  const turnstileRef = useRef<TurnstileInstance | undefined>(undefined);
 
   const memoHash = thread.memoHash;
 
@@ -311,6 +320,14 @@ export function ChatPanel({ thread, viewerPubkey, onClose, embedded = false }: P
       setError("Your wallet does not support message signing.");
       return;
     }
+    // Group threads require a Turnstile token when CF is configured.
+    // We check the ref before we go ask the wallet to sign — no point
+    // burning a signature if the bot gate will reject.
+    const needsTurnstile = thread.kind === "group" && turnstileConfigured();
+    if (needsTurnstile && !turnstileTokenRef.current) {
+      setError("Please wait for the bot-check to complete and try again.");
+      return;
+    }
     setSending(true);
     setError(null);
     try {
@@ -330,6 +347,7 @@ export function ChatPanel({ thread, viewerPubkey, onClose, embedded = false }: P
           message: sig.message,
           signature: sig.signatureBase58,
           threadContext: buildThreadContext(),
+          turnstileToken: needsTurnstile ? turnstileTokenRef.current : undefined,
         }),
       });
       if (!resp.ok) {
@@ -340,9 +358,21 @@ export function ChatPanel({ thread, viewerPubkey, onClose, embedded = false }: P
           sessionSigRef.current = null;
           clearCachedThreadSig(viewerPubkey, memoHash);
         }
+        if (resp.status === 403) {
+          // Likely Turnstile rejection — force a widget refresh so the
+          // user gets a new token on retry.
+          turnstileTokenRef.current = null;
+          turnstileRef.current?.reset();
+        }
         throw new Error(payload?.error ?? `HTTP ${resp.status}`);
       }
       setBody("");
+      // Successful send: burn the Turnstile token (one-shot) and arm
+      // a fresh widget for the next message.
+      if (needsTurnstile) {
+        turnstileTokenRef.current = null;
+        turnstileRef.current?.reset();
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Send failed");
     } finally {
@@ -462,6 +492,17 @@ export function ChatPanel({ thread, viewerPubkey, onClose, embedded = false }: P
         {error ? (
           <div style={{ padding: "0.6rem 1.2rem", fontSize: "0.78rem", color: "#b91c1c", background: "#fee2e2" }}>
             {error}
+          </div>
+        ) : null}
+
+        {thread.kind === "group" && turnstileConfigured() ? (
+          <div style={{ padding: "0.4rem 1.2rem 0" }}>
+            <TurnstileWidget
+              ref={turnstileRef}
+              onToken={(token) => {
+                turnstileTokenRef.current = token;
+              }}
+            />
           </div>
         ) : null}
 
