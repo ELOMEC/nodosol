@@ -91,7 +91,16 @@ Deno.serve(async (req) => {
   // for platform-provided env vars and refuses user-set ones with that prefix.
   const jwtSecret = Deno.env.get("CHAT_JWT_SECRET") ?? "";
   if (!jwtSecret) return jsonResp({ error: "Function not configured" }, 500);
-  const secretKey = new TextEncoder().encode(jwtSecret);
+
+  // Import as a CryptoKey — jose on Deno Deploy rejects raw Uint8Array
+  // with "No suitable key or wrong key type" when signing HS256.
+  const secretKey = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(jwtSecret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign", "verify"],
+  );
 
   const now = Math.floor(Date.now() / 1000);
   const jwt = await new SignJWT({ role: "authenticated" })
