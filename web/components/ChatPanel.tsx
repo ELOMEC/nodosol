@@ -3,10 +3,11 @@
 import bs58 from "bs58";
 import { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   ChatMessage,
+  ChatThreadRef,
   createAuthedSupabaseClient,
   getSupabaseAnonKey,
   getSupabaseClient,
@@ -15,12 +16,13 @@ import {
 } from "@/lib/supabase";
 
 type Props = {
-  memoHash: string;
-  sellerPubkey: string;
-  buyerPubkey: string;
-  dealAddress: string;
+  thread: ChatThreadRef;
   viewerPubkey: string;
   onClose: () => void;
+  /** When true the panel fills its parent rather than being an overlay
+   *  dialog. Used by the /chat page to embed channels in a sidebar
+   *  layout; onClose is ignored in this mode. */
+  embedded?: boolean;
 };
 
 type SessionSig = {
@@ -37,18 +39,9 @@ type SessionJwt = {
 
 // Re-use a signed challenge for up to 14 minutes (function enforces 15 min TTL).
 const SIG_TTL_MS = 14 * 60 * 1000;
-
-// Refresh JWT when it has less than 60 seconds of life left.
 const JWT_REFRESH_SLACK_S = 60;
 
-export function ChatPanel({
-  memoHash,
-  sellerPubkey,
-  buyerPubkey,
-  dealAddress,
-  viewerPubkey,
-  onClose,
-}: Props) {
+export function ChatPanel({ thread, viewerPubkey, onClose, embedded = false }: Props) {
   const { signMessage } = useWallet();
   const [messages, setMessages] = useState<ChatMessage[] | null>(null);
   const [body, setBody] = useState("");
@@ -59,6 +52,36 @@ export function ChatPanel({
   const channelRef = useRef<RealtimeChannel | null>(null);
   const sessionSigRef = useRef<SessionSig | null>(null);
   const sessionJwtRef = useRef<SessionJwt | null>(null);
+
+  const memoHash = thread.memoHash;
+
+  // Who is allowed to post in this thread? OTC + listing_dm are 2-party;
+  // group channels are open to any authenticated wallet.
+  const isAllowedToWrite = useMemo(() => {
+    if (thread.kind === "group") return true;
+    return (
+      viewerPubkey === thread.sellerPubkey ||
+      viewerPubkey === thread.buyerPubkey
+    );
+  }, [thread, viewerPubkey]);
+
+  const header = useMemo(() => {
+    if (thread.kind === "group") {
+      return { label: "Channel", value: `#${thread.channelSlug}` };
+    }
+    if (thread.kind === "listing_dm") {
+      return {
+        label: thread.listingKind.charAt(0).toUpperCase() + thread.listingKind.slice(1),
+        value: `${memoHash.slice(0, 12)}…`,
+      };
+    }
+    return { label: "Deal thread", value: `${memoHash.slice(0, 12)}…` };
+  }, [thread, memoHash]);
+
+  const placeholderForClosed =
+    thread.kind === "group"
+      ? "Connect your wallet to post"
+      : "Only the listing's seller or buyer can post";
 
   async function signAuthChallenge(): Promise<SessionSig> {
     if (!signMessage) {
@@ -101,32 +124,33 @@ export function ChatPanel({
     let cancelled = false;
 
     async function init() {
-      // Best-effort client-side thread upsert over the anon client: if
-      // migration 012 is applied, RLS blocks this and post-chat-message
-      // creates the thread server-side on first authenticated write.
-      try {
-        const anon = getSupabaseClient();
-        const { error: upsertErr } = await anon
-          .from("chat_threads")
-          .upsert(
+      // Best-effort client-side thread upsert for OTC (back-compat with
+      // old flow). For listing_dm the Edge Function handles creation;
+      // groups are seeded by migration 014.
+      if (thread.kind === "otc_deal") {
+        try {
+          const anon = getSupabaseClient();
+          const { error: upsertErr } = await anon.from("chat_threads").upsert(
             {
               memo_hash: memoHash,
-              seller_pubkey: sellerPubkey,
-              buyer_pubkey: buyerPubkey,
-              deal_address: dealAddress,
+              thread_type: "otc_deal",
+              seller_pubkey: thread.sellerPubkey,
+              buyer_pubkey: thread.buyerPubkey,
+              deal_address: thread.dealAddress,
             },
-            { onConflict: "memo_hash", ignoreDuplicates: true }
+            { onConflict: "memo_hash", ignoreDuplicates: true },
           );
-        if (upsertErr) {
-          console.debug("client-side thread upsert skipped:", upsertErr.message);
+          if (upsertErr) {
+            console.debug("client-side thread upsert skipped:", upsertErr.message);
+          }
+        } catch (err) {
+          console.debug("thread upsert attempt failed", err);
         }
-      } catch (err) {
-        console.debug("thread upsert attempt failed", err);
       }
 
-      // Thread reads + messages + realtime must use the authed JWT after
-      // migration 013. Falls back to anon client if JWT issuance fails
-      // (e.g. Edge Function not yet deployed) so the panel still renders.
+      // Reads always go through the authed JWT after migration 013.
+      // Fall back to anon client if JWT issuance fails so the panel
+      // still renders a meaningful error.
       let supabase: SupabaseClient;
       try {
         supabase = await ensureAuthedClient();
@@ -165,7 +189,7 @@ export function ChatPanel({
               if (prev?.some((m) => m.id === incoming.id)) return prev;
               return [...(prev ?? []), incoming];
             });
-          }
+          },
         )
         .subscribe();
       channelRef.current = channel;
@@ -181,7 +205,9 @@ export function ChatPanel({
         channelRef.current = null;
       }
     };
-  }, [memoHash, sellerPubkey, buyerPubkey, dealAddress, viewerPubkey]);
+    // Stringify thread so the effect keys off its structural identity.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [memoHash, viewerPubkey, thread.kind]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -189,8 +215,6 @@ export function ChatPanel({
     }
   }, [messages]);
 
-  const isAllowedToWrite =
-    viewerPubkey === sellerPubkey || viewerPubkey === buyerPubkey;
   const canSign = Boolean(signMessage);
 
   async function ensureSessionSig(): Promise<SessionSig> {
@@ -218,11 +242,30 @@ export function ChatPanel({
     }
   }
 
+  function buildThreadContext() {
+    if (thread.kind === "otc_deal") {
+      return {
+        sellerPubkey: thread.sellerPubkey,
+        buyerPubkey: thread.buyerPubkey,
+        dealAddress: thread.dealAddress,
+      };
+    }
+    if (thread.kind === "listing_dm") {
+      return {
+        kind: thread.listingKind,
+        listingPda: thread.listingPda,
+        sellerPubkey: thread.sellerPubkey,
+        buyerPubkey: thread.buyerPubkey,
+      };
+    }
+    return { channelSlug: thread.channelSlug };
+  }
+
   async function send() {
     const trimmed = body.trim();
     if (!trimmed) return;
     if (!isAllowedToWrite) {
-      setError("Only the deal's seller or buyer can post.");
+      setError("You are not allowed to post in this thread.");
       return;
     }
     if (!canSign) {
@@ -241,22 +284,17 @@ export function ChatPanel({
           authorization: `Bearer ${getSupabaseAnonKey()}`,
         },
         body: JSON.stringify({
+          threadType: thread.kind,
           threadMemoHash: memoHash,
           body: trimmed,
           senderPubkey: viewerPubkey,
           message: sig.message,
           signature: sig.signatureBase58,
-          threadContext: {
-            sellerPubkey,
-            buyerPubkey,
-            dealAddress,
-          },
+          threadContext: buildThreadContext(),
         }),
       });
       if (!resp.ok) {
         const payload = await resp.json().catch(() => ({}));
-        // If the cached signature was rejected (expired), clear it so the next
-        // attempt re-signs.
         if (resp.status === 401) sessionSigRef.current = null;
         throw new Error(payload?.error ?? `HTTP ${resp.status}`);
       }
@@ -268,52 +306,42 @@ export function ChatPanel({
     }
   }
 
-  return (
+  const inner = (
     <div
-      role="dialog"
+      onClick={(e) => e.stopPropagation()}
       style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(17,24,39,0.55)",
+        width: embedded ? "100%" : 420,
+        maxWidth: embedded ? undefined : "94vw",
+        background: "#ffffff",
+        height: "100%",
         display: "flex",
-        justifyContent: "flex-end",
-        zIndex: 200,
+        flexDirection: "column",
+        boxShadow: embedded ? "none" : "-8px 0 30px rgba(0,0,0,0.2)",
       }}
-      onClick={onClose}
     >
-      <div
-        onClick={(e) => e.stopPropagation()}
+      <header
         style={{
-          width: 420,
-          maxWidth: "94vw",
-          background: "#ffffff",
-          height: "100%",
+          padding: "1rem 1.2rem",
+          borderBottom: "1px solid #eef0f3",
           display: "flex",
-          flexDirection: "column",
-          boxShadow: "-8px 0 30px rgba(0,0,0,0.2)",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "0.75rem",
         }}
       >
-        <header
-          style={{
-            padding: "1rem 1.2rem",
-            borderBottom: "1px solid #eef0f3",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "0.75rem",
-          }}
-        >
           <div>
-            <div style={{ fontSize: "0.78rem", color: "#6b7280", fontWeight: 500 }}>Deal thread</div>
+            <div style={{ fontSize: "0.78rem", color: "#6b7280", fontWeight: 500 }}>
+              {header.label}
+            </div>
             <div
               style={{
                 fontSize: "0.82rem",
                 color: "#111827",
-                fontFamily: "'SF Mono', Menlo, monospace",
+                fontFamily: thread.kind === "group" ? "inherit" : "'SF Mono', Menlo, monospace",
                 marginTop: "0.15rem",
               }}
             >
-              {memoHash.slice(0, 12)}…
+              {header.value}
             </div>
           </div>
           <button
@@ -350,7 +378,9 @@ export function ChatPanel({
             </div>
           ) : messages.length === 0 ? (
             <div style={{ color: "#9ca3af", fontSize: "0.85rem", textAlign: "center", marginTop: "2rem" }}>
-              No messages yet. Start the conversation with your counterparty.
+              {thread.kind === "group"
+                ? "No messages yet. Be the first to say hi."
+                : "No messages yet. Start the conversation."}
             </div>
           ) : (
             messages.map((m) => {
@@ -405,7 +435,7 @@ export function ChatPanel({
             onChange={(e) => setBody(e.target.value)}
             placeholder={
               !isAllowedToWrite
-                ? "Only the deal's seller or buyer can post"
+                ? placeholderForClosed
                 : !canSign
                   ? "Wallet does not support signMessage"
                   : signing
@@ -451,7 +481,25 @@ export function ChatPanel({
             {sending || signing ? "…" : "Send"}
           </button>
         </footer>
-      </div>
+    </div>
+  );
+
+  if (embedded) return inner;
+
+  return (
+    <div
+      role="dialog"
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(17,24,39,0.55)",
+        display: "flex",
+        justifyContent: "flex-end",
+        zIndex: 200,
+      }}
+      onClick={onClose}
+    >
+      {inner}
     </div>
   );
 }

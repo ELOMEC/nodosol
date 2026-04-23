@@ -18,6 +18,8 @@ import { useCallback, useEffect, useState } from "react";
 import { LocationView } from "@/components/LocationView";
 import { USDC_UNIT, getUsdcMint } from "@/lib/constants";
 import { fetchRentalMetadata, RentalMetadata } from "@/lib/rentalMetadata";
+import { isChatAllowed } from "@/lib/supabase";
+import { ContactSellerButton } from "@/components/ContactSellerButton";
 import {
   planVaultPda,
   subscriptionConfigPda,
@@ -249,9 +251,26 @@ export function RentalDetailView({ planAddress }: { planAddress: string }) {
         <h1 style={{ fontSize: "1.55rem", fontWeight: 600, letterSpacing: "-0.02em", marginTop: "0.35rem", marginBottom: "0.3rem" }}>
           {metadata?.title ?? "Untitled rental"}
         </h1>
-        <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>
-          Landlord {plan.creator.slice(0, 6)}…{plan.creator.slice(-4)}
-          {!plan.active && <> · <span style={{ color: "#b91c1c", fontWeight: 600 }}>Paused</span></>}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "0.75rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>
+            Landlord {plan.creator.slice(0, 6)}…{plan.creator.slice(-4)}
+            {!plan.active && <> · <span style={{ color: "#b91c1c", fontWeight: 600 }}>Paused</span></>}
+          </div>
+          <ContactSellerButton
+            listingKind="rental"
+            listingPda={plan.address}
+            sellerPubkey={plan.creator}
+            allowChat={isChatAllowed(metadata)}
+            label="Contact landlord"
+          />
         </div>
       </header>
 

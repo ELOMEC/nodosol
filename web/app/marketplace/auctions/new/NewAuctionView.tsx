@@ -26,6 +26,7 @@ export function NewAuctionView() {
   const [minDeposit, setMinDeposit] = useState("1");
   const [commitHours, setCommitHours] = useState("24");
   const [revealHours, setRevealHours] = useState("24");
+  const [allowChat, setAllowChat] = useState(true);
   const [busy, setBusy] = useState(false);
 
   async function submit(e: React.FormEvent) {
@@ -73,7 +74,8 @@ export function NewAuctionView() {
         description.trim() ||
         videoUrl.trim() ||
         location !== null ||
-        gallery.length > 0;
+        gallery.length > 0 ||
+        !allowChat; // always persist if seller opted chat off
       if (hasEnriched && publicKey) {
         metadataUri = await uploadAuctionMetadata(publicKey.toBase58(), auctionId, {
           memo: memo.trim(),
@@ -81,6 +83,7 @@ export function NewAuctionView() {
           gallery: gallery.length > 0 ? gallery : undefined,
           videoUrl: videoUrl.trim() || undefined,
           location: location ?? undefined,
+          allowChat,
           createdAt: new Date().toISOString(),
         });
       }
@@ -179,6 +182,34 @@ export function NewAuctionView() {
         <Field label="Location (optional — address, map pin, plot boundary)">
           <LocationPicker value={location} onChange={setLocation} />
         </Field>
+
+        <label
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: "0.55rem",
+            padding: "0.65rem 0.85rem",
+            border: "1px solid var(--shell-border, #eef0f3)",
+            borderRadius: 8,
+            cursor: "pointer",
+            background: "var(--shell-card, #fff)",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={allowChat}
+            onChange={(e) => setAllowChat(e.target.checked)}
+            style={{ marginTop: "0.15rem" }}
+          />
+          <span>
+            <span style={{ fontSize: "0.86rem", fontWeight: 600 }}>
+              Allow messages from prospective bidders
+            </span>
+            <span style={{ display: "block", fontSize: "0.78rem", color: "#6b7280", marginTop: "0.15rem" }}>
+              Bidders can open a private DM before committing. Recommended.
+            </span>
+          </span>
+        </label>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
           <Field label="Start price (USDC)">

@@ -14,6 +14,9 @@ export type AuctionMetadata = {
   gallery?: string[]; // public URLs
   videoUrl?: string;
   location?: LocationValue;
+  /** Whether prospective bidders may message the seller from the auction
+   *  page. Defaults to true when absent. */
+  allowChat?: boolean;
   /** ISO 8601 — when the seller published. */
   createdAt?: string;
 };

@@ -57,6 +57,7 @@ type FormState = {
   videoUrl: string;
   location: LocationValue | null;
   saleMode: SaleMode;
+  allowChat: boolean;
 };
 
 const INITIAL: FormState = {
@@ -73,6 +74,7 @@ const INITIAL: FormState = {
   videoUrl: "",
   location: null,
   saleMode: "fixed",
+  allowChat: true,
 };
 
 type MediaState =
@@ -188,6 +190,7 @@ export function TokenizeForm() {
           category: form.category,
           delivery_required: form.deliveryRequired,
           sale_mode: form.saleMode,
+          allow_chat: form.allowChat,
         },
       };
       const jsonKey = `${slug}/${ts}-metadata.json`;
@@ -460,6 +463,34 @@ export function TokenizeForm() {
               maxLength={256}
             />
           </Field>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: "0.55rem",
+              padding: "0.65rem 0.85rem",
+              border: "1px solid var(--shell-border, #eef0f3)",
+              borderRadius: 8,
+              cursor: "pointer",
+              background: "var(--shell-card, #fff)",
+              marginTop: "0.75rem",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={form.allowChat}
+              onChange={(e) => setForm({ ...form, allowChat: e.target.checked })}
+              style={{ marginTop: "0.15rem" }}
+            />
+            <span>
+              <span style={{ fontSize: "0.86rem", fontWeight: 600 }}>
+                Allow messages from prospective buyers
+              </span>
+              <span style={{ display: "block", fontSize: "0.78rem", color: "#6b7280", marginTop: "0.15rem" }}>
+                Buyers can open a private DM from the asset page. Recommended.
+              </span>
+            </span>
+          </label>
         </Section>
 
         {submit.kind === "error" ? (

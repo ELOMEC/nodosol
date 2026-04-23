@@ -20,6 +20,9 @@ export type RentalMetadata = {
   amenities?: string[];
   /** House rules, cancellation policy, anything landlord wants surfaced. */
   terms?: string;
+  /** Whether prospective tenants may message the landlord from the listing
+   *  page. Defaults to true when absent. */
+  allowChat?: boolean;
   createdAt?: string;
 };
 

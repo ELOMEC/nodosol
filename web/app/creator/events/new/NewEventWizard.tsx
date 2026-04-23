@@ -51,6 +51,7 @@ type Basics = {
   capacity: string;
   posterFile: File | null;
   posterPreviewUrl: string | null;
+  allowChat: boolean;
 };
 
 type VenueChoice =
@@ -76,6 +77,7 @@ export function NewEventWizard() {
     capacity: "100",
     posterFile: null,
     posterPreviewUrl: null,
+    allowChat: true,
   });
   const [venue, setVenue] = useState<VenueChoice>({ kind: "none" });
   const [customLayouts, setCustomLayouts] = useState<VenueLayoutDoc[]>([]);
@@ -158,6 +160,7 @@ export function NewEventWizard() {
         symbol: basics.symbol.trim().toUpperCase(),
         description: basics.description.trim(),
         image: imageUrl,
+        allowChat: basics.allowChat,
       };
       if (venue.kind === "builtin") metadata.venueTemplate = venue.id;
       const metadataUri = await uploadEventMetadata(
@@ -464,6 +467,36 @@ function BasicsStep({
           onFile={onPoster}
         />
       </div>
+
+      <label
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          gap: "0.55rem",
+          padding: "0.65rem 0.85rem",
+          border: "1px solid var(--shell-border, #eef0f3)",
+          borderRadius: 8,
+          cursor: "pointer",
+          background: "var(--shell-card, #fff)",
+          marginTop: "1rem",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={basics.allowChat}
+          onChange={(e) => onChange({ ...basics, allowChat: e.target.checked })}
+          style={{ marginTop: "0.15rem" }}
+        />
+        <span>
+          <span style={{ fontSize: "0.86rem", fontWeight: 600 }}>
+            Allow messages from attendees
+          </span>
+          <span style={{ display: "block", fontSize: "0.78rem", color: "#6b7280", marginTop: "0.15rem" }}>
+            Attendees can open a private DM from the event page — for venue
+            questions, refunds, special requests. Recommended.
+          </span>
+        </span>
+      </label>
 
       <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "1rem" }}>
         <button

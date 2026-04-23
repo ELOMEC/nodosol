@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { ChatBell } from "./ChatBell";
 import { NotificationsBell } from "./NotificationsBell";
 import { PrivyLoginButton } from "./PrivyLoginButton";
 import { ThemeToggle } from "./ThemeToggle";
@@ -30,7 +31,8 @@ export function MarketplaceShell({
     | "creator-events"
     | "creator-venues"
     | "admin"
-    | "admin-issuers";
+    | "admin-issuers"
+    | "chat";
   children: ReactNode;
 }) {
   const nav: NavItem[] = [
@@ -252,6 +254,7 @@ function Topbar({
       </form>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
         <ThemeToggle />
+        <ChatBell />
         <NotificationsBell />
         <PrivyLoginButton />
         <WalletPill />

@@ -45,6 +45,7 @@ import {
 } from "@/lib/venueLayouts";
 import { confirmSeatMint, releaseReservation, reserveSeat } from "@/lib/seats";
 import { SeatPicker } from "./SeatPicker";
+import { ContactSellerButton } from "@/components/ContactSellerButton";
 
 type EventData = {
   address: string;
@@ -68,6 +69,7 @@ type EventData = {
   imageUrl: string | null;
   description: string | null;
   venueTemplate: string | null;
+  allowChat: boolean;
 };
 
 type State =
@@ -160,6 +162,7 @@ export function EventDetailView({ address }: { address: string }) {
       let imageUrl: string | null = null;
       let description: string | null = null;
       let venueTemplate: string | null = null;
+      let allowChat = true;
       if (raw.metadataUri) {
         try {
           const httpUri = raw.metadataUri.startsWith("ipfs://")
@@ -171,10 +174,12 @@ export function EventDetailView({ address }: { address: string }) {
               image?: string;
               description?: string;
               venueTemplate?: string;
+              allowChat?: boolean;
             };
             if (json.image) imageUrl = json.image;
             if (json.description) description = json.description;
             if (json.venueTemplate) venueTemplate = json.venueTemplate;
+            if (typeof json.allowChat === "boolean") allowChat = json.allowChat;
           }
         } catch {
           // ignore
@@ -218,6 +223,7 @@ export function EventDetailView({ address }: { address: string }) {
           imageUrl,
           description,
           venueTemplate,
+          allowChat,
         },
         tiers,
         customTemplate,
@@ -484,6 +490,15 @@ export function EventDetailView({ address }: { address: string }) {
           <span>Sale ends {endsDate.toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
           <span>{ev.capacity - ev.sold} / {ev.capacity} available</span>
           <span>Creator {shorten(ev.creator)}</span>
+        </div>
+        <div style={{ marginTop: "1rem" }}>
+          <ContactSellerButton
+            listingKind="event"
+            listingPda={ev.address}
+            sellerPubkey={ev.creator}
+            allowChat={ev.allowChat}
+            label="Contact organiser"
+          />
         </div>
       </div>
 

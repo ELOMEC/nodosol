@@ -529,10 +529,13 @@ export function OtcView() {
 
       {chatFor && publicKey ? (
         <ChatPanel
-          memoHash={chatFor.memoHash}
-          sellerPubkey={chatFor.seller}
-          buyerPubkey={chatFor.buyer}
-          dealAddress={chatFor.address}
+          thread={{
+            kind: "otc_deal",
+            memoHash: chatFor.memoHash,
+            sellerPubkey: chatFor.seller,
+            buyerPubkey: chatFor.buyer,
+            dealAddress: chatFor.address,
+          }}
           viewerPubkey={publicKey.toBase58()}
           onClose={() => setChatFor(null)}
         />

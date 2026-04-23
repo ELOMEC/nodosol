@@ -116,8 +116,33 @@ export type AssetMetadataJson = {
     delivery_required: boolean;
     /** Sale mode the tokenizer intends — display only; listings live in their own program. */
     sale_mode?: "fixed" | "first_come" | "auction" | "private_commit" | "rental";
+    /** Whether prospective buyers may message the owner from the asset
+     *  page. Defaults to true when absent. */
+    allow_chat?: boolean;
   };
 };
+
+/** Shared helper: interprets a listing's chat preference. Default ON. */
+export function isChatAllowed(
+  meta:
+    | { allowChat?: boolean }
+    | { properties?: { allow_chat?: boolean } }
+    | null
+    | undefined,
+): boolean {
+  if (!meta) return true;
+  if ("allowChat" in meta && typeof meta.allowChat === "boolean") {
+    return meta.allowChat;
+  }
+  if (
+    "properties" in meta &&
+    meta.properties &&
+    typeof meta.properties.allow_chat === "boolean"
+  ) {
+    return meta.properties.allow_chat;
+  }
+  return true;
+}
 
 export type ChatMessage = {
   id: number;
@@ -129,8 +154,73 @@ export type ChatMessage = {
 
 export type ChatThread = {
   memo_hash: string;
-  seller_pubkey: string;
-  buyer_pubkey: string;
-  deal_address: string;
+  thread_type: "otc_deal" | "listing_dm" | "group";
+  seller_pubkey: string | null;
+  buyer_pubkey: string | null;
+  deal_address: string | null;
+  channel_slug: string | null;
+  listing_context: { kind: string; listing_pda: string } | null;
   created_at: string;
 };
+
+/**
+ * Discriminated reference to a chat thread. Fed into ChatPanel so one
+ * component can render OTC deals, per-listing DMs, and public group
+ * channels.
+ *
+ * memoHash is the row's primary key. For OTC it's the on-chain memo_hash;
+ * for listing_dm and group it's derived deterministically (see helpers
+ * below) so both client and Edge Function can compute the same value.
+ */
+export type ChatThreadRef =
+  | {
+      kind: "otc_deal";
+      memoHash: string;
+      sellerPubkey: string;
+      buyerPubkey: string;
+      dealAddress: string;
+    }
+  | {
+      kind: "listing_dm";
+      memoHash: string;
+      sellerPubkey: string;
+      buyerPubkey: string;
+      listingKind: "event" | "rental" | "auction" | "asset";
+      listingPda: string;
+    }
+  | {
+      kind: "group";
+      memoHash: string;
+      channelSlug: string;
+    };
+
+async function sha256Hex(input: string): Promise<string> {
+  const buf = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(input),
+  );
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/**
+ * Derives the listing_dm memo_hash. The Edge Function recomputes this
+ * from the threadContext — if they disagree, the write is rejected.
+ * Party order is min/max-lexicographic so buyer and seller land on the
+ * same thread regardless of who initiates.
+ */
+export async function deriveListingMemoHash(
+  listingKind: "event" | "rental" | "auction" | "asset",
+  listingPda: string,
+  partyA: string,
+  partyB: string,
+): Promise<string> {
+  const [lo, hi] = partyA < partyB ? [partyA, partyB] : [partyB, partyA];
+  return sha256Hex(`listing:${listingKind}:${listingPda}:${lo}:${hi}`);
+}
+
+/** Mirrors migration 014's seed hash. */
+export async function deriveGroupMemoHash(channelSlug: string): Promise<string> {
+  return sha256Hex(`group:${channelSlug}`);
+}

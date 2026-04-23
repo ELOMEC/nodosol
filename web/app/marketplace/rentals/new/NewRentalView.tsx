@@ -39,6 +39,7 @@ export function NewRentalView() {
   const [terms, setTerms] = useState("");
   const [monthlyRent, setMonthlyRent] = useState("500");
   const [periodDays, setPeriodDays] = useState("30");
+  const [allowChat, setAllowChat] = useState(true);
   const [busy, setBusy] = useState(false);
 
   async function submit(e: React.FormEvent) {
@@ -108,6 +109,7 @@ export function NewRentalView() {
           .map((a) => a.trim())
           .filter(Boolean),
         terms: terms.trim() || undefined,
+        allowChat,
         createdAt: new Date().toISOString(),
       });
 
@@ -234,6 +236,35 @@ export function NewRentalView() {
         <Field label="Location">
           <LocationPicker value={location} onChange={setLocation} />
         </Field>
+
+        <label
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            gap: "0.55rem",
+            padding: "0.65rem 0.85rem",
+            border: "1px solid var(--shell-border, #eef0f3)",
+            borderRadius: 8,
+            cursor: "pointer",
+            background: "var(--shell-card, #fff)",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={allowChat}
+            onChange={(e) => setAllowChat(e.target.checked)}
+            style={{ marginTop: "0.15rem" }}
+          />
+          <span>
+            <span style={{ fontSize: "0.86rem", fontWeight: 600 }}>
+              Allow messages from prospective tenants
+            </span>
+            <span style={{ display: "block", fontSize: "0.78rem", color: "#6b7280", marginTop: "0.15rem" }}>
+              Tenants can open a private DM from the listing page.
+              Recommended — listings with chat disabled convert worse.
+            </span>
+          </span>
+        </label>
 
         <div
           style={{

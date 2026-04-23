@@ -29,6 +29,9 @@ export type EventMetadata = {
   /** Matches venue-templates.ts keys, or omit for custom Supabase layouts. */
   venueTemplate?: string;
   attributes?: Array<{ trait_type: string; value: string | number }>;
+  /** Whether prospective ticket buyers may message the organiser from the
+   *  event page. Defaults to true when absent. */
+  allowChat?: boolean;
 };
 
 /**

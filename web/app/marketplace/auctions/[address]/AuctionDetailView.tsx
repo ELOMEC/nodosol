@@ -28,6 +28,8 @@ import {
   settleAuctionTx,
 } from "@/lib/auctions";
 import { AuctionMetadata, fetchAuctionMetadata } from "@/lib/auctionMetadata";
+import { isChatAllowed } from "@/lib/supabase";
+import { ContactSellerButton } from "@/components/ContactSellerButton";
 import { USDC_UNIT } from "@/lib/constants";
 
 type Loaded = {
@@ -258,8 +260,24 @@ export function AuctionDetailView({ address }: { address: string }) {
         <h1 style={{ fontSize: "1.45rem", fontWeight: 600, letterSpacing: "-0.02em", marginTop: "0.35rem", marginBottom: "0.3rem" }}>
           {auction.memo || "(no memo)"}
         </h1>
-        <div style={{ fontSize: "0.78rem", color: "#6b7280" }}>
-          Seller {auction.seller.slice(0, 6)}…{auction.seller.slice(-4)} · id {auction.auctionId}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "0.75rem",
+            flexWrap: "wrap",
+          }}
+        >
+          <div style={{ fontSize: "0.78rem", color: "#6b7280" }}>
+            Seller {auction.seller.slice(0, 6)}…{auction.seller.slice(-4)} · id {auction.auctionId}
+          </div>
+          <ContactSellerButton
+            listingKind="auction"
+            listingPda={address}
+            sellerPubkey={auction.seller}
+            allowChat={isChatAllowed(state.loaded.metadata)}
+          />
         </div>
       </header>
 
