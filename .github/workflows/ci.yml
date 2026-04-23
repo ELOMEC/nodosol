@@ -27,9 +27,13 @@ jobs:
         with:
           workspaces: ". -> target"
 
+      # Anchor + Solana CLI must match the versions declared in the
+      # workspace Cargo.toml (anchor-lang = "1.0.0") and the local dev
+      # environment. setup-anchor installs cargo-build-sbf + anchor-cli
+      # via their official release tarballs.
       - uses: metaDAOproject/setup-anchor@v1
         with:
-          anchor-version: "0.31.1"
+          anchor-version: "1.0.0"
           solana-cli-version: "2.2.21"
           node-version: "22.11.0"
 
