@@ -25,7 +25,7 @@ import {
   listingVaultPda,
   marketplaceProgram,
 } from "@/lib/marketplace";
-import { mintProgram } from "@/lib/rwa";
+import { jurisdictionsToString, mintProgram, registryProgram } from "@/lib/rwa";
 import { simulateAndSend } from "@/lib/tx";
 
 type Listing = {
@@ -46,6 +46,9 @@ type Listing = {
   assetDelivery: boolean | null;
   assetMetadataUri: string | null;
   assetImage: string | null; // resolved from metadata JSON
+  // Jurisdictions authorised on the asset's issuer (e.g. ["SRB", "MNE"]).
+  // Empty if the issuer PDA wasn't found (shouldn't happen for live assets).
+  assetJurisdictions: string[];
 };
 
 type FetchState =
@@ -88,6 +91,7 @@ export function MarketplaceView() {
   const [feeBps, setFeeBps] = useState<number>(250);
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [deliveryFilter, setDeliveryFilter] = useState<"all" | "physical" | "digital">("all");
+  const [jurisdictionFilter, setJurisdictionFilter] = useState<string>("all");
   const [sortKey, setSortKey] = useState<"newest" | "price_asc" | "price_desc" | "supply">("newest");
   const [search, setSearch] = useState<string>("");
 
@@ -102,6 +106,7 @@ export function MarketplaceView() {
       );
       const market = marketplaceProgram(provider);
       const rwa = mintProgram(provider);
+      const registry = registryProgram(provider);
 
       // Fetch fee once for fee preview + buy calc.
       try {
@@ -134,6 +139,7 @@ export function MarketplaceView() {
         all: () => Promise<Array<{
           publicKey: PublicKey;
           account: {
+            issuerOwner: PublicKey;
             mint: PublicKey;
             category: Record<string, unknown>;
             name: string;
@@ -148,6 +154,29 @@ export function MarketplaceView() {
         if (mintSet.has(a.account.mint.toBase58())) {
           assetByMint.set(a.account.mint.toBase58(), a.account);
         }
+      }
+
+      // Fetch all Issuers once and index by owner so we can cheaply look
+      // up jurisdictions for every listing's asset.issuerOwner.
+      const issuerByOwner = new Map<string, string[]>();
+      try {
+        const allIssuers = await (registry.account as Record<string, {
+          all: () => Promise<Array<{
+            publicKey: PublicKey;
+            account: {
+              owner: PublicKey;
+              jurisdictions: number[][];
+            };
+          }>>;
+        }>).issuer.all();
+        for (const i of allIssuers) {
+          issuerByOwner.set(
+            i.account.owner.toBase58(),
+            jurisdictionsToString(i.account.jurisdictions),
+          );
+        }
+      } catch (err) {
+        console.warn("issuer lookup failed; jurisdictions will be empty", err);
       }
 
       // Fetch Metaplex-style JSON for each unique metadata URI in parallel and
@@ -201,6 +230,9 @@ export function MarketplaceView() {
             assetDelivery: meta?.deliveryRequired ?? null,
             assetMetadataUri: metadataUri,
             assetImage: metadataUri ? imageByUri.get(metadataUri) ?? null : null,
+            assetJurisdictions: meta
+              ? issuerByOwner.get(meta.issuerOwner.toBase58()) ?? []
+              : [],
           };
         });
       listings.sort((a, b) => b.createdAt - a.createdAt);
@@ -297,6 +329,9 @@ export function MarketplaceView() {
   const availableCategories = Array.from(
     new Set(allListings.map((l) => l.assetCategory ?? "other"))
   );
+  const availableJurisdictions = Array.from(
+    new Set(allListings.flatMap((l) => l.assetJurisdictions))
+  ).sort();
 
   const searchLower = search.trim().toLowerCase();
   const listings = allListings
@@ -304,6 +339,12 @@ export function MarketplaceView() {
       if (categoryFilter !== "all" && (l.assetCategory ?? "other") !== categoryFilter) return false;
       if (deliveryFilter === "physical" && !l.assetDelivery) return false;
       if (deliveryFilter === "digital" && l.assetDelivery) return false;
+      if (
+        jurisdictionFilter !== "all" &&
+        !l.assetJurisdictions.includes(jurisdictionFilter)
+      ) {
+        return false;
+      }
       if (searchLower) {
         const hay = [l.assetName, l.assetSymbol, l.seller, l.assetMint]
           .filter(Boolean)
@@ -377,9 +418,12 @@ export function MarketplaceView() {
         onCategory={setCategoryFilter}
         delivery={deliveryFilter}
         onDelivery={setDeliveryFilter}
+        jurisdiction={jurisdictionFilter}
+        onJurisdiction={setJurisdictionFilter}
         sortKey={sortKey}
         onSort={setSortKey}
         availableCategories={availableCategories}
+        availableJurisdictions={availableJurisdictions}
         filteredCount={listings.length}
         totalCount={allListings.length}
       />
@@ -501,9 +545,12 @@ function FilterBar({
   onCategory,
   delivery,
   onDelivery,
+  jurisdiction,
+  onJurisdiction,
   sortKey,
   onSort,
   availableCategories,
+  availableJurisdictions,
   filteredCount,
   totalCount,
 }: {
@@ -513,9 +560,12 @@ function FilterBar({
   onCategory: (v: string) => void;
   delivery: "all" | "physical" | "digital";
   onDelivery: (v: "all" | "physical" | "digital") => void;
+  jurisdiction: string;
+  onJurisdiction: (v: string) => void;
   sortKey: "newest" | "price_asc" | "price_desc" | "supply";
   onSort: (v: "newest" | "price_asc" | "price_desc" | "supply") => void;
   availableCategories: string[];
+  availableJurisdictions: string[];
   filteredCount: number;
   totalCount: number;
 }) {
@@ -590,6 +640,23 @@ function FilterBar({
           <option value="all">All delivery types</option>
           <option value="physical">Physical delivery</option>
           <option value="digital">Digital only</option>
+        </select>
+        <select
+          style={filterSelect}
+          value={jurisdiction}
+          onChange={(e) => onJurisdiction(e.target.value)}
+          disabled={availableJurisdictions.length === 0}
+        >
+          <option value="all">
+            {availableJurisdictions.length === 0
+              ? "No jurisdictions on-chain"
+              : "All jurisdictions"}
+          </option>
+          {availableJurisdictions.map((j) => (
+            <option key={j} value={j}>
+              {j}
+            </option>
+          ))}
         </select>
         <select style={filterSelect} value={sortKey} onChange={(e) => onSort(e.target.value as typeof sortKey)}>
           <option value="newest">Sort: Newest</option>
@@ -709,9 +776,31 @@ function ListingCard({
         >
           {listing.assetName ?? "(unnamed asset)"}
         </Link>
-        <div style={{ fontSize: "0.76rem", color: "#6b7280", marginBottom: "0.85rem" }}>
+        <div style={{ fontSize: "0.76rem", color: "#6b7280", marginBottom: "0.5rem" }}>
           {listing.assetSymbol ?? "—"} · seller {shorten(listing.seller)}
         </div>
+        {listing.assetJurisdictions.length > 0 ? (
+          <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap", marginBottom: "0.85rem" }}>
+            {listing.assetJurisdictions.map((j) => (
+              <span
+                key={j}
+                title={`Issuer authorised in ${j}`}
+                style={{
+                  fontSize: "0.66rem",
+                  fontWeight: 600,
+                  letterSpacing: 0.5,
+                  color: "#059669",
+                  background: "rgba(16,185,129,0.08)",
+                  border: "1px solid rgba(16,185,129,0.25)",
+                  padding: "0.1rem 0.4rem",
+                  borderRadius: 4,
+                }}
+              >
+                {j}
+              </span>
+            ))}
+          </div>
+        ) : null}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.8rem" }}>
           <div>
             <div style={{ fontSize: "1.15rem", fontWeight: 600 }}>${listing.priceUsdc.toFixed(2)}</div>

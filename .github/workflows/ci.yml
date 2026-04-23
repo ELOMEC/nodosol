@@ -17,9 +17,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@master
+      # Pin toolchain to the channel in rust-toolchain.toml.
+      # dtolnay/rust-toolchain doesn't support a toolchain-file input.
+      - uses: dtolnay/rust-toolchain@1.89.0
         with:
-          toolchain-file: rust-toolchain.toml
+          components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@v2
         with:
