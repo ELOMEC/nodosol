@@ -12,7 +12,7 @@
 
 import nacl from "https://esm.sh/tweetnacl@1.0.3";
 import bs58 from "https://esm.sh/bs58@5.0.0";
-import { SignJWT } from "https://esm.sh/jose@5.9.3";
+import { create as createJwt } from "https://deno.land/x/djwt@v3.0.2/mod.ts";
 
 const CORS_HEADERS: HeadersInit = {
   "Access-Control-Allow-Origin": "*",
@@ -92,27 +92,35 @@ Deno.serve(async (req) => {
   const jwtSecret = Deno.env.get("CHAT_JWT_SECRET") ?? "";
   if (!jwtSecret) return jsonResp({ error: "Function not configured" }, 500);
 
-  // Import as a CryptoKey — jose on Deno Deploy rejects raw Uint8Array
-  // with "No suitable key or wrong key type" when signing HS256.
-  const secretKey = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(jwtSecret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign", "verify"],
-  );
+  try {
+    const secretKey = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(jwtSecret),
+      { name: "HMAC", hash: "SHA-256" },
+      true,
+      ["sign", "verify"],
+    );
 
-  const now = Math.floor(Date.now() / 1000);
-  const jwt = await new SignJWT({ role: "authenticated" })
-    .setProtectedHeader({ alg: "HS256", typ: "JWT" })
-    .setSubject(wallet)
-    .setAudience("authenticated")
-    .setIssuer("nodosol-chat")
-    .setIssuedAt(now)
-    .setExpirationTime(now + JWT_TTL_SECONDS)
-    .sign(secretKey);
+    const now = Math.floor(Date.now() / 1000);
+    const jwt = await createJwt(
+      { alg: "HS256", typ: "JWT" },
+      {
+        sub: wallet,
+        role: "authenticated",
+        aud: "authenticated",
+        iss: "nodosol-chat",
+        iat: now,
+        exp: now + JWT_TTL_SECONDS,
+      },
+      secretKey,
+    );
 
-  return jsonResp({ jwt, expiresAt: now + JWT_TTL_SECONDS }, 200);
+    return jsonResp({ jwt, expiresAt: now + JWT_TTL_SECONDS }, 200);
+  } catch (err) {
+    console.error("JWT sign failed", err);
+    const msg = err instanceof Error ? err.message : String(err);
+    return jsonResp({ error: `JWT sign failed: ${msg}` }, 500);
+  }
 });
 
 function jsonResp(body: unknown, status: number): Response {
