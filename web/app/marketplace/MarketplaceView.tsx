@@ -378,7 +378,7 @@ export function MarketplaceView() {
           <h1 style={{ fontSize: "1.65rem", letterSpacing: "-0.02em", marginBottom: "0.3rem", fontWeight: 600 }}>
             Marketplace
           </h1>
-          <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>
+          <p style={{ color: "var(--shell-muted)", fontSize: "0.9rem" }}>
             Live tokenised real-world assets from licenced issuers. Buys settle atomically on Solana.
           </p>
         </div>
@@ -437,10 +437,10 @@ export function MarketplaceView() {
         <CenteredCard>Failed to load: {state.message}</CenteredCard>
       ) : listings.length === 0 ? (
         <CenteredCard>
-          <div style={{ fontSize: "1rem", color: "#111827", fontWeight: 600, marginBottom: "0.35rem" }}>
+          <div style={{ fontSize: "1rem", color: "var(--shell-fg)", fontWeight: 600, marginBottom: "0.35rem" }}>
             No active listings yet
           </div>
-          <div style={{ fontSize: "0.88rem", color: "#6b7280", marginBottom: "1.2rem" }}>
+          <div style={{ fontSize: "0.88rem", color: "var(--shell-muted)", marginBottom: "1.2rem" }}>
             Tokenise an asset and list it to get the marketplace started.
           </div>
           <Link
@@ -518,12 +518,12 @@ function CenteredCard({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         padding: "3rem 1.5rem",
         textAlign: "center",
-        color: "#6b7280",
+        color: "var(--shell-muted)",
       }}
     >
       {children}
@@ -533,10 +533,10 @@ function CenteredCard({ children }: { children: React.ReactNode }) {
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div style={{ background: "#ffffff", border: "1px solid #eef0f3", borderRadius: 12, padding: "1.1rem 1.2rem" }}>
-      <div style={{ fontSize: "0.78rem", color: "#6b7280", marginBottom: "0.5rem", fontWeight: 500 }}>{label}</div>
-      <div style={{ fontSize: "1.55rem", fontWeight: 600, letterSpacing: "-0.02em", color: "#111827" }}>{value}</div>
-      <div style={{ fontSize: "0.76rem", color: "#9ca3af", marginTop: "0.25rem" }}>{sub}</div>
+    <div style={{ background: "var(--shell-card)", border: "1px solid var(--shell-border)", borderRadius: 12, padding: "1.1rem 1.2rem" }}>
+      <div style={{ fontSize: "0.78rem", color: "var(--shell-muted)", marginBottom: "0.5rem", fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: "1.55rem", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--shell-fg)" }}>{value}</div>
+      <div style={{ fontSize: "0.76rem", color: "var(--shell-faint)", marginTop: "0.25rem" }}>{sub}</div>
     </div>
   );
 }
@@ -587,8 +587,8 @@ function FilterBar({
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         padding: "1rem 1.1rem",
         marginBottom: "1rem",
@@ -610,8 +610,8 @@ function FilterBar({
                 padding: "0.45rem 0.85rem",
                 borderRadius: 6,
                 border: "none",
-                background: active ? "#eef2ff" : "transparent",
-                color: active ? "#4338ca" : available ? "#6b7280" : "#d1d5db",
+                background: active ? "var(--shell-active-bg)" : "transparent",
+                color: active ? "var(--shell-link)" : available ? "var(--shell-muted)" : "#d1d5db",
                 fontSize: "0.82rem",
                 fontWeight: active ? 600 : 500,
                 cursor: available || active ? "pointer" : "not-allowed",
@@ -630,10 +630,10 @@ function FilterBar({
           style={{
             flex: 1,
             minWidth: 220,
-            background: "#ffffff",
-            border: "1px solid #e5e7eb",
+            background: "var(--shell-card)",
+            border: "1px solid var(--shell-border-strong)",
             borderRadius: 7,
-            color: "#111827",
+            color: "var(--shell-fg)",
             padding: "0.5rem 0.75rem",
             fontSize: "0.86rem",
             outline: "none",
@@ -669,7 +669,7 @@ function FilterBar({
         </select>
       </div>
       {filteredCount !== totalCount ? (
-        <div style={{ fontSize: "0.78rem", color: "#6b7280" }}>
+        <div style={{ fontSize: "0.78rem", color: "var(--shell-muted)" }}>
           Showing {filteredCount} of {totalCount} listings
         </div>
       ) : null}
@@ -678,10 +678,10 @@ function FilterBar({
 }
 
 const filterSelect: React.CSSProperties = {
-  background: "#ffffff",
-  border: "1px solid #e5e7eb",
+  background: "var(--shell-card)",
+  border: "1px solid var(--shell-border-strong)",
   borderRadius: 7,
-  color: "#374151",
+  color: "var(--shell-fg)",
   padding: "0.5rem 0.7rem",
   fontSize: "0.84rem",
   fontWeight: 500,
@@ -706,8 +706,8 @@ function ListingCard({
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         overflow: "hidden",
         display: "flex",
@@ -749,7 +749,7 @@ function ListingCard({
             borderRadius: 4,
             fontSize: "0.7rem",
             fontWeight: 600,
-            color: "#374151",
+            color: "var(--shell-fg)",
           }}
         >
           {categoryLabel}
@@ -761,7 +761,7 @@ function ListingCard({
               bottom: 10,
               left: 10,
               background: "rgba(255,255,255,0.92)",
-              color: "#4338ca",
+              color: "var(--shell-link)",
               padding: "0.18rem 0.55rem",
               borderRadius: 4,
               fontSize: "0.68rem",
@@ -775,11 +775,11 @@ function ListingCard({
       <div style={{ padding: "0.95rem 1.05rem 1.05rem", display: "flex", flexDirection: "column", flex: 1 }}>
         <Link
           href={`/marketplace/assets/${listing.assetMint}`}
-          style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: "0.15rem", lineHeight: 1.3, color: "#111827", textDecoration: "none" }}
+          style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: "0.15rem", lineHeight: 1.3, color: "var(--shell-fg)", textDecoration: "none" }}
         >
           {listing.assetName ?? "(unnamed asset)"}
         </Link>
-        <div style={{ fontSize: "0.76rem", color: "#6b7280", marginBottom: "0.5rem" }}>
+        <div style={{ fontSize: "0.76rem", color: "var(--shell-muted)", marginBottom: "0.5rem" }}>
           {listing.assetSymbol ?? "—"} · seller {shorten(listing.seller)}
         </div>
         {listing.assetJurisdictions.length > 0 ? (
@@ -807,13 +807,13 @@ function ListingCard({
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.8rem" }}>
           <div>
             <div style={{ fontSize: "1.15rem", fontWeight: 600 }}>${listing.priceUsdc.toFixed(2)}</div>
-            <div style={{ fontSize: "0.7rem", color: "#9ca3af" }}>per token · USDC</div>
+            <div style={{ fontSize: "0.7rem", color: "var(--shell-faint)" }}>per token · USDC</div>
           </div>
           <div
             style={{
               fontSize: "0.72rem",
-              color: "#4338ca",
-              background: "#eef2ff",
+              color: "var(--shell-link)",
+              background: "var(--shell-active-bg)",
               padding: "0.22rem 0.5rem",
               borderRadius: 4,
               fontWeight: 600,
@@ -827,8 +827,8 @@ function ListingCard({
           disabled={disabled || isOwn}
           style={{
             marginTop: "auto",
-            background: disabled || isOwn ? "#e5e7eb" : "#4f46e5",
-            color: disabled || isOwn ? "#9ca3af" : "#fff",
+            background: disabled || isOwn ? "var(--shell-border-strong)" : "#4f46e5",
+            color: disabled || isOwn ? "var(--shell-faint)" : "#fff",
             border: "none",
             padding: "0.55rem 1rem",
             borderRadius: 8,
@@ -886,7 +886,7 @@ function BuyModal({
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "#ffffff",
+          background: "var(--shell-card)",
           borderRadius: 14,
           padding: "1.5rem 1.75rem",
           width: 460,
@@ -897,14 +897,14 @@ function BuyModal({
         <h3 style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: "0.35rem" }}>
           Buy {listing.assetName ?? listing.assetSymbol ?? "asset"}
         </h3>
-        <p style={{ fontSize: "0.85rem", color: "#6b7280", marginBottom: "1.25rem" }}>
+        <p style={{ fontSize: "0.85rem", color: "var(--shell-muted)", marginBottom: "1.25rem" }}>
           You pay in USDC. Tokens are released from the listing vault atomically.
         </p>
 
         <div
           style={{
-            background: "#f7f8fa",
-            border: "1px solid #eef0f3",
+            background: "var(--shell-pill-bg)",
+            border: "1px solid var(--shell-border)",
             borderRadius: 10,
             padding: "0.9rem 1rem",
             marginBottom: "1rem",
@@ -916,14 +916,14 @@ function BuyModal({
           <div style={{ width: 40, height: 40, borderRadius: 8, background: gradient }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 600, fontSize: "0.92rem" }}>{listing.assetName ?? "(unnamed)"}</div>
-            <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+            <div style={{ fontSize: "0.75rem", color: "var(--shell-muted)" }}>
               {listing.assetSymbol ?? "—"} · ${listing.priceUsdc.toFixed(2)} per token · {listing.remainingQuantity} available
             </div>
           </div>
         </div>
 
         <div style={{ marginBottom: "1rem" }}>
-          <label style={{ display: "block", fontSize: "0.78rem", color: "#374151", fontWeight: 500, marginBottom: "0.3rem" }}>
+          <label style={{ display: "block", fontSize: "0.78rem", color: "var(--shell-fg)", fontWeight: 500, marginBottom: "0.3rem" }}>
             Quantity
           </label>
           <input
@@ -932,10 +932,10 @@ function BuyModal({
             max={listing.remainingQuantity}
             style={{
               width: "100%",
-              background: "#ffffff",
-              border: "1px solid #e5e7eb",
+              background: "var(--shell-card)",
+              border: "1px solid var(--shell-border-strong)",
               borderRadius: 8,
-              color: "#111827",
+              color: "var(--shell-fg)",
               padding: "0.55rem 0.75rem",
               fontSize: "0.88rem",
               outline: "none",
@@ -948,8 +948,8 @@ function BuyModal({
 
         <div
           style={{
-            background: "#f7f8fa",
-            border: "1px solid #eef0f3",
+            background: "var(--shell-pill-bg)",
+            border: "1px solid var(--shell-border)",
             borderRadius: 10,
             padding: "0.8rem 1rem",
             fontSize: "0.84rem",
@@ -965,9 +965,9 @@ function BuyModal({
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.6rem" }}>
           <button
             style={{
-              background: "#ffffff",
-              border: "1px solid #e5e7eb",
-              color: "#374151",
+              background: "var(--shell-card)",
+              border: "1px solid var(--shell-border-strong)",
+              color: "var(--shell-fg)",
               padding: "0.6rem 1.15rem",
               borderRadius: 8,
               fontSize: "0.88rem",
@@ -1011,7 +1011,7 @@ function Row({ k, v, bold }: { k: string; v: string; bold?: boolean }) {
         justifyContent: "space-between",
         padding: "0.25rem 0",
         fontWeight: bold ? 600 : 400,
-        color: bold ? "#111827" : "#4b5563",
+        color: bold ? "var(--shell-fg)" : "var(--shell-muted)",
       }}
     >
       <span>{k}</span>

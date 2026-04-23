@@ -446,7 +446,7 @@ export function AssetsView() {
       <EmptyShell>
         <div>
           <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.3rem" }}>Connect wallet</h3>
-          <p style={{ color: "#6b7280", fontSize: "0.88rem", marginBottom: "1rem" }}>
+          <p style={{ color: "var(--shell-muted)", fontSize: "0.88rem", marginBottom: "1rem" }}>
             Connect a Solana wallet to view your tokenised assets.
           </p>
           <WalletMultiButton />
@@ -478,9 +478,9 @@ export function AssetsView() {
           <h1 style={{ fontSize: "1.65rem", letterSpacing: "-0.02em", marginBottom: "0.3rem", fontWeight: 600 }}>
             My assets
           </h1>
-          <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>
+          <p style={{ color: "var(--shell-muted)", fontSize: "0.9rem" }}>
             Assets you have tokenised as an issuer. Issuer wallet:{" "}
-            <span style={{ color: "#111827", fontWeight: 500 }}>{publicKey && shorten(publicKey.toBase58())}</span>
+            <span style={{ color: "var(--shell-fg)", fontWeight: 500 }}>{publicKey && shorten(publicKey.toBase58())}</span>
           </p>
         </div>
         <Link
@@ -509,25 +509,25 @@ export function AssetsView() {
 
       <div
         style={{
-          background: "#ffffff",
-          border: "1px solid #eef0f3",
+          background: "var(--shell-card)",
+          border: "1px solid var(--shell-border)",
           borderRadius: 12,
           overflow: "hidden",
         }}
       >
-        <div style={{ padding: "1rem 1.2rem", borderBottom: "1px solid #eef0f3", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ padding: "1rem 1.2rem", borderBottom: "1px solid var(--shell-border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <h3 style={{ fontSize: "0.95rem", fontWeight: 600 }}>Tokenised assets</h3>
-            <p style={{ fontSize: "0.8rem", color: "#6b7280", marginTop: "0.15rem" }}>
+            <p style={{ fontSize: "0.8rem", color: "var(--shell-muted)", marginTop: "0.15rem" }}>
               Live from on-chain. {rows.length} total.
             </p>
           </div>
           <button
             onClick={() => void reload()}
             style={{
-              background: "#ffffff",
-              border: "1px solid #e5e7eb",
-              color: "#374151",
+              background: "var(--shell-card)",
+              border: "1px solid var(--shell-border-strong)",
+              color: "var(--shell-fg)",
               padding: "0.4rem 0.9rem",
               borderRadius: 6,
               fontSize: "0.82rem",
@@ -540,8 +540,8 @@ export function AssetsView() {
         </div>
 
         {rows.length === 0 ? (
-          <div style={{ padding: "3rem 1.5rem", textAlign: "center", color: "#6b7280" }}>
-            <div style={{ fontSize: "1rem", color: "#111827", fontWeight: 600, marginBottom: "0.35rem" }}>
+          <div style={{ padding: "3rem 1.5rem", textAlign: "center", color: "var(--shell-muted)" }}>
+            <div style={{ fontSize: "1rem", color: "var(--shell-fg)", fontWeight: 600, marginBottom: "0.35rem" }}>
               No tokenised assets yet
             </div>
             <div style={{ fontSize: "0.88rem", marginBottom: "1.2rem" }}>
@@ -566,7 +566,7 @@ export function AssetsView() {
         ) : (
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
             <thead>
-              <tr style={{ background: "#fafbfc", color: "#6b7280", fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: 0.8 }}>
+              <tr style={{ background: "var(--shell-card-alt)", color: "var(--shell-muted)", fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: 0.8 }}>
                 <Th>Asset</Th>
                 <Th>Category</Th>
                 <Th>Supply</Th>
@@ -591,32 +591,32 @@ export function AssetsView() {
                         <div style={{ width: 38, height: 38, borderRadius: 8, background: CATEGORY_GRADIENT[r.category] ?? "#ccc" }} />
                       )}
                       <div>
-                        <div style={{ fontWeight: 600, color: "#111827" }}>{r.name || "(unnamed)"}</div>
-                        <div style={{ fontSize: "0.74rem", color: "#9ca3af", fontFamily: "'SF Mono', Menlo, monospace" }}>
+                        <div style={{ fontWeight: 600, color: "var(--shell-fg)" }}>{r.name || "(unnamed)"}</div>
+                        <div style={{ fontSize: "0.74rem", color: "var(--shell-faint)", fontFamily: "'SF Mono', Menlo, monospace" }}>
                           {r.symbol} · {shorten(r.mint)}
                         </div>
                       </div>
                     </div>
                   </Td>
                   <Td>
-                    <span style={{ fontSize: "0.78rem", color: "#6b7280", background: "#f3f4f6", padding: "0.2rem 0.55rem", borderRadius: 4, fontWeight: 500 }}>
+                    <span style={{ fontSize: "0.78rem", color: "var(--shell-muted)", background: "var(--shell-divider)", padding: "0.2rem 0.55rem", borderRadius: 4, fontWeight: 500 }}>
                       {CATEGORY_LABEL[r.category] ?? r.category}
                     </span>
                   </Td>
                   <Td>
                     <div style={{ fontWeight: 600 }}>{r.quantity - r.burned}</div>
                     {r.burned > 0 ? (
-                      <div style={{ fontSize: "0.72rem", color: "#9ca3af" }}>
+                      <div style={{ fontSize: "0.72rem", color: "var(--shell-faint)" }}>
                         {r.burned} burned of {r.quantity}
                       </div>
                     ) : (
-                      <div style={{ fontSize: "0.72rem", color: "#9ca3af" }}>of {r.quantity} total</div>
+                      <div style={{ fontSize: "0.72rem", color: "var(--shell-faint)" }}>of {r.quantity} total</div>
                     )}
                   </Td>
                   <Td>
                     <StatusPill status={r.status} />
                   </Td>
-                  <Td style={{ color: "#6b7280" }}>
+                  <Td style={{ color: "var(--shell-muted)" }}>
                     {new Date(r.createdAt * 1000).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
@@ -627,7 +627,7 @@ export function AssetsView() {
                     <div style={{ display: "flex", gap: "0.4rem", justifyContent: "flex-end" }}>
                       {r.status === "Active" && r.quantity - r.burned > 0 ? (
                         <button
-                          style={{ ...actBtn, background: "#eef2ff", color: "#4338ca", borderColor: "#c7d2fe" }}
+                          style={{ ...actBtn, background: "var(--shell-active-bg)", color: "var(--shell-link)", borderColor: "#c7d2fe" }}
                           onClick={() => setListModal({ row: r, price: "", qty: "", submitting: false })}
                           disabled={busyAsset === r.address}
                         >
@@ -664,11 +664,11 @@ export function AssetsView() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "0.75rem" }}>
           <div>
             <h3 style={{ fontSize: "1.05rem", fontWeight: 600 }}>My listings</h3>
-            <p style={{ fontSize: "0.85rem", color: "#6b7280", marginTop: "0.15rem" }}>
+            <p style={{ fontSize: "0.85rem", color: "var(--shell-muted)", marginTop: "0.15rem" }}>
               Active marketplace listings where your asset is in escrow.
             </p>
           </div>
-          <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>
+          <div style={{ fontSize: "0.8rem", color: "var(--shell-muted)" }}>
             {activeListings.length} active · {listings.length - activeListings.length} closed
           </div>
         </div>
@@ -676,12 +676,12 @@ export function AssetsView() {
         {listings.length === 0 ? (
           <div
             style={{
-              background: "#ffffff",
-              border: "1px solid #eef0f3",
+              background: "var(--shell-card)",
+              border: "1px solid var(--shell-border)",
               borderRadius: 12,
               padding: "2rem 1.5rem",
               textAlign: "center",
-              color: "#6b7280",
+              color: "var(--shell-muted)",
               fontSize: "0.88rem",
             }}
           >
@@ -690,15 +690,15 @@ export function AssetsView() {
         ) : (
           <div
             style={{
-              background: "#ffffff",
-              border: "1px solid #eef0f3",
+              background: "var(--shell-card)",
+              border: "1px solid var(--shell-border)",
               borderRadius: 12,
               overflow: "hidden",
             }}
           >
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
               <thead>
-                <tr style={{ background: "#fafbfc", color: "#6b7280", fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: 0.8 }}>
+                <tr style={{ background: "var(--shell-card-alt)", color: "var(--shell-muted)", fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: 0.8 }}>
                   <Th>Asset</Th>
                   <Th>Price</Th>
                   <Th>Progress</Th>
@@ -710,20 +710,20 @@ export function AssetsView() {
                 {listings.map((l) => (
                   <tr key={l.address} style={{ borderTop: "1px solid #f1f2f4", opacity: busyAsset === l.address ? 0.5 : 1 }}>
                     <Td>
-                      <div style={{ fontWeight: 600, color: "#111827" }}>{l.assetName ?? "(unnamed)"}</div>
-                      <div style={{ fontSize: "0.74rem", color: "#9ca3af", fontFamily: "'SF Mono', Menlo, monospace" }}>
+                      <div style={{ fontWeight: 600, color: "var(--shell-fg)" }}>{l.assetName ?? "(unnamed)"}</div>
+                      <div style={{ fontSize: "0.74rem", color: "var(--shell-faint)", fontFamily: "'SF Mono', Menlo, monospace" }}>
                         {l.assetSymbol ?? "—"} · {shorten(l.assetMint)}
                       </div>
                     </Td>
                     <Td>
                       <div style={{ fontWeight: 600 }}>${l.priceUsdc.toFixed(2)}</div>
-                      <div style={{ fontSize: "0.72rem", color: "#9ca3af" }}>per token</div>
+                      <div style={{ fontSize: "0.72rem", color: "var(--shell-faint)" }}>per token</div>
                     </Td>
                     <Td>
                       <div style={{ fontWeight: 600 }}>
                         {l.initialQuantity - l.remainingQuantity}/{l.initialQuantity}
                       </div>
-                      <div style={{ fontSize: "0.72rem", color: "#9ca3af" }}>sold</div>
+                      <div style={{ fontSize: "0.72rem", color: "var(--shell-faint)" }}>sold</div>
                     </Td>
                     <Td>
                       <ListingStatusPill status={l.status} />
@@ -743,7 +743,7 @@ export function AssetsView() {
                           </button>
                         </div>
                       ) : (
-                        <span style={{ fontSize: "0.78rem", color: "#9ca3af" }}>—</span>
+                        <span style={{ fontSize: "0.78rem", color: "var(--shell-faint)" }}>—</span>
                       )}
                     </Td>
                   </tr>
@@ -783,8 +783,8 @@ export function AssetsView() {
 function ListingStatusPill({ status }: { status: ListingStatusKey }) {
   const map = {
     active: { bg: "rgba(16,185,129,0.12)", fg: "#059669", dot: "#10b981", label: "Active" },
-    soldOut: { bg: "rgba(79,70,229,0.12)", fg: "#4338ca", dot: "#6366f1", label: "Sold out" },
-    cancelled: { bg: "rgba(107,114,128,0.12)", fg: "#4b5563", dot: "#6b7280", label: "Cancelled" },
+    soldOut: { bg: "rgba(79,70,229,0.12)", fg: "var(--shell-link)", dot: "#6366f1", label: "Sold out" },
+    cancelled: { bg: "rgba(107,114,128,0.12)", fg: "var(--shell-muted)", dot: "var(--shell-muted)", label: "Cancelled" },
   };
   const c = map[status];
   return (
@@ -840,7 +840,7 @@ function EditPriceModal({
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "#ffffff",
+          background: "var(--shell-card)",
           borderRadius: 14,
           padding: "1.5rem 1.75rem",
           width: 420,
@@ -849,12 +849,12 @@ function EditPriceModal({
         }}
       >
         <h3 style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: "0.35rem" }}>Edit listing price</h3>
-        <p style={{ fontSize: "0.85rem", color: "#6b7280", marginBottom: "1.25rem" }}>
+        <p style={{ fontSize: "0.85rem", color: "var(--shell-muted)", marginBottom: "1.25rem" }}>
           Update the price per token for <strong>{listing.assetName ?? listing.assetSymbol ?? "this listing"}</strong>.
           Remaining {listing.remainingQuantity} of {listing.initialQuantity} tokens are still in escrow.
         </p>
 
-        <label style={{ display: "block", fontSize: "0.78rem", color: "#374151", fontWeight: 500, marginBottom: "0.3rem" }}>
+        <label style={{ display: "block", fontSize: "0.78rem", color: "var(--shell-fg)", fontWeight: 500, marginBottom: "0.3rem" }}>
           New price per token (USDC)
         </label>
         <input
@@ -865,10 +865,10 @@ function EditPriceModal({
           onChange={(e) => onChange(e.target.value)}
           style={{
             width: "100%",
-            background: "#ffffff",
-            border: "1px solid #e5e7eb",
+            background: "var(--shell-card)",
+            border: "1px solid var(--shell-border-strong)",
             borderRadius: 8,
-            color: "#111827",
+            color: "var(--shell-fg)",
             padding: "0.6rem 0.8rem",
             fontSize: "0.9rem",
             outline: "none",
@@ -876,16 +876,16 @@ function EditPriceModal({
           }}
         />
 
-        <div style={{ fontSize: "0.78rem", color: "#6b7280", marginTop: "0.55rem" }}>
+        <div style={{ fontSize: "0.78rem", color: "var(--shell-muted)", marginTop: "0.55rem" }}>
           Current price: ${listing.priceUsdc.toFixed(2)} · Remaining revenue at new price: ${(priceNum * listing.remainingQuantity).toFixed(2)} USDC
         </div>
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.6rem", marginTop: "1.25rem" }}>
           <button
             style={{
-              background: "#ffffff",
-              border: "1px solid #e5e7eb",
-              color: "#374151",
+              background: "var(--shell-card)",
+              border: "1px solid var(--shell-border-strong)",
+              color: "var(--shell-fg)",
               padding: "0.6rem 1.15rem",
               borderRadius: 8,
               fontSize: "0.88rem",
@@ -961,7 +961,7 @@ function ListModal({
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "#ffffff",
+          background: "var(--shell-card)",
           borderRadius: 14,
           padding: "1.5rem 1.75rem",
           width: 460,
@@ -970,14 +970,14 @@ function ListModal({
         }}
       >
         <h3 style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: "0.35rem" }}>List asset on marketplace</h3>
-        <p style={{ fontSize: "0.85rem", color: "#6b7280", marginBottom: "1.25rem" }}>
+        <p style={{ fontSize: "0.85rem", color: "var(--shell-muted)", marginBottom: "1.25rem" }}>
           Tokens will be escrowed in the listing vault until they sell or you cancel.
         </p>
 
         <div
           style={{
-            background: "#f7f8fa",
-            border: "1px solid #eef0f3",
+            background: "var(--shell-pill-bg)",
+            border: "1px solid var(--shell-border)",
             borderRadius: 10,
             padding: "0.9rem 1rem",
             marginBottom: "1rem",
@@ -989,7 +989,7 @@ function ListModal({
           <div style={{ width: 40, height: 40, borderRadius: 8, background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)" }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontWeight: 600, fontSize: "0.92rem" }}>{row.name}</div>
-            <div style={{ fontSize: "0.75rem", color: "#6b7280" }}>
+            <div style={{ fontSize: "0.75rem", color: "var(--shell-muted)" }}>
               {row.symbol} · {circulating} available
             </div>
           </div>
@@ -1024,8 +1024,8 @@ function ListModal({
 
         <div
           style={{
-            background: "#f7f8fa",
-            border: "1px solid #eef0f3",
+            background: "var(--shell-pill-bg)",
+            border: "1px solid var(--shell-border)",
             borderRadius: 10,
             padding: "0.8rem 1rem",
             fontSize: "0.84rem",
@@ -1040,9 +1040,9 @@ function ListModal({
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.6rem" }}>
           <button
             style={{
-              background: "#ffffff",
-              border: "1px solid #e5e7eb",
-              color: "#374151",
+              background: "var(--shell-card)",
+              border: "1px solid var(--shell-border-strong)",
+              color: "var(--shell-fg)",
               padding: "0.6rem 1.15rem",
               borderRadius: 8,
               fontSize: "0.88rem",
@@ -1086,7 +1086,7 @@ function SummaryRow({ k, v, bold }: { k: string; v: string; bold?: boolean }) {
         justifyContent: "space-between",
         padding: "0.25rem 0",
         fontWeight: bold ? 600 : 400,
-        color: bold ? "#111827" : "#4b5563",
+        color: bold ? "var(--shell-fg)" : "var(--shell-muted)",
       }}
     >
       <span>{k}</span>
@@ -1098,17 +1098,17 @@ function SummaryRow({ k, v, bold }: { k: string; v: string; bold?: boolean }) {
 const modalLabel: React.CSSProperties = {
   display: "block",
   fontSize: "0.78rem",
-  color: "#374151",
+  color: "var(--shell-fg)",
   fontWeight: 500,
   marginBottom: "0.3rem",
 };
 
 const modalInput: React.CSSProperties = {
   width: "100%",
-  background: "#ffffff",
-  border: "1px solid #e5e7eb",
+  background: "var(--shell-card)",
+  border: "1px solid var(--shell-border-strong)",
   borderRadius: 8,
-  color: "#111827",
+  color: "var(--shell-fg)",
   padding: "0.55rem 0.75rem",
   fontSize: "0.88rem",
   outline: "none",
@@ -1138,16 +1138,16 @@ function EmptyShell({ children }: { children: React.ReactNode }) {
         <h1 style={{ fontSize: "1.65rem", letterSpacing: "-0.02em", marginBottom: "0.3rem", fontWeight: 600 }}>
           My assets
         </h1>
-        <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>Assets you have tokenised as an issuer.</p>
+        <p style={{ color: "var(--shell-muted)", fontSize: "0.9rem" }}>Assets you have tokenised as an issuer.</p>
       </header>
       <div
         style={{
-          background: "#ffffff",
-          border: "1px solid #eef0f3",
+          background: "var(--shell-card)",
+          border: "1px solid var(--shell-border)",
           borderRadius: 12,
           padding: "3rem 1.5rem",
           textAlign: "center",
-          color: "#6b7280",
+          color: "var(--shell-muted)",
         }}
       >
         {children}
@@ -1158,10 +1158,10 @@ function EmptyShell({ children }: { children: React.ReactNode }) {
 
 function StatCard({ label, value, sub, valueColor }: { label: string; value: string; sub: string; valueColor?: string }) {
   return (
-    <div style={{ background: "#ffffff", border: "1px solid #eef0f3", borderRadius: 12, padding: "1.1rem 1.2rem" }}>
-      <div style={{ fontSize: "0.78rem", color: "#6b7280", marginBottom: "0.5rem", fontWeight: 500 }}>{label}</div>
-      <div style={{ fontSize: "1.55rem", fontWeight: 600, letterSpacing: "-0.02em", color: valueColor ?? "#111827" }}>{value}</div>
-      <div style={{ fontSize: "0.76rem", color: "#9ca3af", marginTop: "0.25rem" }}>{sub}</div>
+    <div style={{ background: "var(--shell-card)", border: "1px solid var(--shell-border)", borderRadius: 12, padding: "1.1rem 1.2rem" }}>
+      <div style={{ fontSize: "0.78rem", color: "var(--shell-muted)", marginBottom: "0.5rem", fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: "1.55rem", fontWeight: 600, letterSpacing: "-0.02em", color: valueColor ?? "var(--shell-fg)" }}>{value}</div>
+      <div style={{ fontSize: "0.76rem", color: "var(--shell-faint)", marginTop: "0.25rem" }}>{sub}</div>
     </div>
   );
 }
@@ -1178,7 +1178,7 @@ function StatusPill({ status }: { status: "Active" | "Paused" | "Retired" }) {
   const map = {
     Active: { bg: "rgba(16,185,129,0.12)", fg: "#059669", dot: "#10b981" },
     Paused: { bg: "rgba(245,158,11,0.12)", fg: "#b45309", dot: "#f59e0b" },
-    Retired: { bg: "rgba(107,114,128,0.12)", fg: "#4b5563", dot: "#6b7280" },
+    Retired: { bg: "rgba(107,114,128,0.12)", fg: "var(--shell-muted)", dot: "var(--shell-muted)" },
   };
   const c = map[status];
   return (
@@ -1202,9 +1202,9 @@ function StatusPill({ status }: { status: "Active" | "Paused" | "Retired" }) {
 }
 
 const actBtn: React.CSSProperties = {
-  background: "#ffffff",
-  border: "1px solid #e5e7eb",
-  color: "#374151",
+  background: "var(--shell-card)",
+  border: "1px solid var(--shell-border-strong)",
+  color: "var(--shell-fg)",
   padding: "0.35rem 0.75rem",
   borderRadius: 6,
   fontSize: "0.78rem",

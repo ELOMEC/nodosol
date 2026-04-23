@@ -453,7 +453,7 @@ export function EventsView() {
           <h1 style={{ fontSize: "1.65rem", letterSpacing: "-0.02em", marginBottom: "0.3rem", fontWeight: 600 }}>
             Events
           </h1>
-          <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>
+          <p style={{ color: "var(--shell-muted)", fontSize: "0.9rem" }}>
             Sell tickets as compressed NFTs. Buyers receive a cNFT ticket in their wallet — transferable, viewable in Phantom Collectibles, compatible with Tensor / Magic Eden for secondary markets.
           </p>
         </div>
@@ -500,10 +500,10 @@ export function EventsView() {
       ) : tab === "browse" ? (
         pub.length === 0 ? (
           <CenteredCard>
-            <div style={{ fontSize: "1rem", color: "#111827", fontWeight: 600, marginBottom: "0.35rem" }}>
+            <div style={{ fontSize: "1rem", color: "var(--shell-fg)", fontWeight: 600, marginBottom: "0.35rem" }}>
               No events on sale yet
             </div>
-            <div style={{ fontSize: "0.88rem", color: "#6b7280" }}>
+            <div style={{ fontSize: "0.88rem", color: "var(--shell-muted)" }}>
               Be the first — click <strong>Create event</strong> above.
             </div>
           </CenteredCard>
@@ -529,20 +529,20 @@ export function EventsView() {
         )
       ) : !connected ? (
         <CenteredCard>
-          <div style={{ fontSize: "1rem", color: "#111827", fontWeight: 600, marginBottom: "0.35rem" }}>
+          <div style={{ fontSize: "1rem", color: "var(--shell-fg)", fontWeight: 600, marginBottom: "0.35rem" }}>
             Connect wallet
           </div>
-          <div style={{ fontSize: "0.88rem", color: "#6b7280", marginBottom: "1rem" }}>
+          <div style={{ fontSize: "0.88rem", color: "var(--shell-muted)", marginBottom: "1rem" }}>
             Connect your wallet to create and manage events.
           </div>
           <WalletMultiButton />
         </CenteredCard>
       ) : mine.length === 0 ? (
         <CenteredCard>
-          <div style={{ fontSize: "1rem", color: "#111827", fontWeight: 600, marginBottom: "0.35rem" }}>
+          <div style={{ fontSize: "1rem", color: "var(--shell-fg)", fontWeight: 600, marginBottom: "0.35rem" }}>
             No events yet
           </div>
-          <div style={{ fontSize: "0.88rem", color: "#6b7280" }}>
+          <div style={{ fontSize: "0.88rem", color: "var(--shell-muted)" }}>
             Click <strong>Create event</strong> above to start selling cNFT tickets.
           </div>
         </CenteredCard>
@@ -606,8 +606,8 @@ function PublicEventCard({
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         overflow: "hidden",
         display: "flex",
@@ -637,7 +637,7 @@ function PublicEventCard({
               borderRadius: 4,
               fontSize: "0.7rem",
               fontWeight: 600,
-              color: "#374151",
+              color: "var(--shell-fg)",
             }}
           >
             cNFT ticket
@@ -652,22 +652,22 @@ function PublicEventCard({
           <div style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.15rem", lineHeight: 1.3 }}>
             {event.name || "(unnamed event)"}
           </div>
-          <div style={{ fontSize: "0.75rem", color: "#6b7280", marginBottom: "0.8rem" }}>
+          <div style={{ fontSize: "0.75rem", color: "var(--shell-muted)", marginBottom: "0.8rem" }}>
             {event.symbol} · by {shorten(event.creator)}
           </div>
 
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.85rem" }}>
             <div>
               <div style={{ fontSize: "1.2rem", fontWeight: 600 }}>${event.price.toFixed(2)}</div>
-              <div style={{ fontSize: "0.72rem", color: "#9ca3af" }}>per ticket · USDC</div>
+              <div style={{ fontSize: "0.72rem", color: "var(--shell-faint)" }}>per ticket · USDC</div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: "0.82rem", fontWeight: 600, color: "#4338ca" }}>{left} left</div>
-              <div style={{ fontSize: "0.7rem", color: "#9ca3af" }}>of {event.capacity}</div>
+              <div style={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--shell-link)" }}>{left} left</div>
+              <div style={{ fontSize: "0.7rem", color: "var(--shell-faint)" }}>of {event.capacity}</div>
             </div>
           </div>
 
-          <div style={{ fontSize: "0.72rem", color: "#9ca3af", marginBottom: "0.85rem" }}>
+          <div style={{ fontSize: "0.72rem", color: "var(--shell-faint)", marginBottom: "0.85rem" }}>
             Sale ends {endsDate.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
           </div>
         </Link>
@@ -675,7 +675,7 @@ function PublicEventCard({
         {!connected ? (
           <WalletMultiButton />
         ) : isOwn ? (
-          <div style={{ padding: "0.55rem 1rem", background: "#f3f4f6", color: "#6b7280", textAlign: "center", borderRadius: 8, fontSize: "0.82rem" }}>
+          <div style={{ padding: "0.55rem 1rem", background: "var(--shell-divider)", color: "var(--shell-muted)", textAlign: "center", borderRadius: 8, fontSize: "0.82rem" }}>
             Your event
           </div>
         ) : (
@@ -688,10 +688,10 @@ function PublicEventCard({
               onChange={(e) => onQtyChange(e.target.value)}
               style={{
                 width: 60,
-                background: "#ffffff",
-                border: "1px solid #e5e7eb",
+                background: "var(--shell-card)",
+                border: "1px solid var(--shell-border-strong)",
                 borderRadius: 8,
-                color: "#111827",
+                color: "var(--shell-fg)",
                 padding: "0.5rem 0.55rem",
                 fontSize: "0.86rem",
                 outline: "none",
@@ -741,8 +741,8 @@ function MyEventCard({
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         padding: "1.2rem 1.4rem",
         opacity: busy ? 0.55 : 1,
@@ -768,13 +768,13 @@ function MyEventCard({
               </span>
             )}
           </div>
-          <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>
+          <div style={{ fontSize: "0.8rem", color: "var(--shell-muted)" }}>
             {event.symbol} · event id {event.eventId} · sale ends {endsDate.toLocaleString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
           <div style={{ fontSize: "1.2rem", fontWeight: 600 }}>${event.price.toFixed(2)}</div>
-          <div style={{ fontSize: "0.72rem", color: "#9ca3af" }}>per ticket</div>
+          <div style={{ fontSize: "0.72rem", color: "var(--shell-faint)" }}>per ticket</div>
         </div>
       </div>
 
@@ -870,7 +870,7 @@ function CreateEventModal({
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "#ffffff",
+          background: "var(--shell-card)",
           borderRadius: 14,
           padding: "1.5rem 1.75rem",
           width: 520,
@@ -881,7 +881,7 @@ function CreateEventModal({
         }}
       >
         <h3 style={{ fontSize: "1.15rem", fontWeight: 600, marginBottom: "0.35rem" }}>Create event</h3>
-        <p style={{ fontSize: "0.85rem", color: "#6b7280", marginBottom: "1.25rem" }}>
+        <p style={{ fontSize: "0.85rem", color: "var(--shell-muted)", marginBottom: "1.25rem" }}>
           Creates the Event PDA + USDC vault. You&apos;ll then initialise the Merkle tree before the first sale.
         </p>
 
@@ -948,18 +948,18 @@ function CreateEventModal({
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div style={{ background: "#ffffff", border: "1px solid #eef0f3", borderRadius: 12, padding: "1.1rem 1.2rem" }}>
-      <div style={{ fontSize: "0.78rem", color: "#6b7280", marginBottom: "0.5rem", fontWeight: 500 }}>{label}</div>
-      <div style={{ fontSize: "1.55rem", fontWeight: 600, letterSpacing: "-0.02em", color: "#111827" }}>{value}</div>
-      <div style={{ fontSize: "0.76rem", color: "#9ca3af", marginTop: "0.25rem" }}>{sub}</div>
+    <div style={{ background: "var(--shell-card)", border: "1px solid var(--shell-border)", borderRadius: 12, padding: "1.1rem 1.2rem" }}>
+      <div style={{ fontSize: "0.78rem", color: "var(--shell-muted)", marginBottom: "0.5rem", fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: "1.55rem", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--shell-fg)" }}>{value}</div>
+      <div style={{ fontSize: "0.76rem", color: "var(--shell-faint)", marginTop: "0.25rem" }}>{sub}</div>
     </div>
   );
 }
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ background: "#f7f8fa", border: "1px solid #eef0f3", borderRadius: 8, padding: "0.55rem 0.75rem" }}>
-      <div style={{ fontSize: "0.7rem", color: "#6b7280", marginBottom: "0.15rem" }}>{label}</div>
+    <div style={{ background: "var(--shell-pill-bg)", border: "1px solid var(--shell-border)", borderRadius: 8, padding: "0.55rem 0.75rem" }}>
+      <div style={{ fontSize: "0.7rem", color: "var(--shell-muted)", marginBottom: "0.15rem" }}>{label}</div>
       <div style={{ fontSize: "0.92rem", fontWeight: 600 }}>{value}</div>
     </div>
   );
@@ -969,12 +969,12 @@ function CenteredCard({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         padding: "3rem 1.5rem",
         textAlign: "center",
-        color: "#6b7280",
+        color: "var(--shell-muted)",
       }}
     >
       {children}
@@ -990,8 +990,8 @@ function TabButton({ active, children, onClick }: { active: boolean; children: R
         padding: "0.5rem 1rem",
         borderRadius: 8,
         border: "none",
-        background: active ? "#eef2ff" : "#ffffff",
-        color: active ? "#4338ca" : "#6b7280",
+        background: active ? "var(--shell-active-bg)" : "var(--shell-card)",
+        color: active ? "var(--shell-link)" : "var(--shell-muted)",
         fontSize: "0.86rem",
         fontWeight: 600,
         cursor: "pointer",
@@ -1007,7 +1007,7 @@ function EventStatusPill({ status }: { status: EventStatusKey }) {
   const map = {
     active: { bg: "rgba(16,185,129,0.12)", fg: "#059669", dot: "#10b981", label: "Active" },
     paused: { bg: "rgba(245,158,11,0.12)", fg: "#b45309", dot: "#f59e0b", label: "Paused" },
-    closed: { bg: "rgba(107,114,128,0.12)", fg: "#4b5563", dot: "#6b7280", label: "Closed" },
+    closed: { bg: "rgba(107,114,128,0.12)", fg: "var(--shell-muted)", dot: "var(--shell-muted)", label: "Closed" },
   };
   const c = map[status];
   return (
@@ -1036,7 +1036,7 @@ function shorten(s: string): string {
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <label style={{ display: "block", fontSize: "0.78rem", color: "#374151", fontWeight: 500, marginBottom: "0.3rem" }}>
+    <label style={{ display: "block", fontSize: "0.78rem", color: "var(--shell-fg)", fontWeight: 500, marginBottom: "0.3rem" }}>
       {children}
     </label>
   );
@@ -1044,10 +1044,10 @@ function Label({ children }: { children: React.ReactNode }) {
 
 const input: React.CSSProperties = {
   width: "100%",
-  background: "#ffffff",
-  border: "1px solid #e5e7eb",
+  background: "var(--shell-card)",
+  border: "1px solid var(--shell-border-strong)",
   borderRadius: 8,
-  color: "#111827",
+  color: "var(--shell-fg)",
   padding: "0.6rem 0.8rem",
   fontSize: "0.88rem",
   outline: "none",
@@ -1067,9 +1067,9 @@ const btnPrimary: React.CSSProperties = {
 };
 
 const btnSecondary: React.CSSProperties = {
-  background: "#ffffff",
-  color: "#374151",
-  border: "1px solid #e5e7eb",
+  background: "var(--shell-card)",
+  color: "var(--shell-fg)",
+  border: "1px solid var(--shell-border-strong)",
   padding: "0.55rem 1rem",
   borderRadius: 8,
   fontSize: "0.84rem",

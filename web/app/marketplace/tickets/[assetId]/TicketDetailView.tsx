@@ -363,7 +363,7 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
       <Shell>
         <Centered>
           <div style={{ fontWeight: 600, marginBottom: "0.4rem" }}>Connect wallet</div>
-          <div style={{ fontSize: "0.88rem", color: "#6b7280", marginBottom: "1rem" }}>
+          <div style={{ fontSize: "0.88rem", color: "var(--shell-muted)", marginBottom: "1rem" }}>
             Only the wallet that holds this ticket can see the full detail.
           </div>
           <WalletMultiButton />
@@ -394,7 +394,7 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
     <Shell>
       <Link
         href="/marketplace/tickets"
-        style={{ fontSize: "0.85rem", color: "#6b7280", display: "inline-block", marginBottom: "0.85rem" }}
+        style={{ fontSize: "0.85rem", color: "var(--shell-muted)", display: "inline-block", marginBottom: "0.85rem" }}
       >
         ← My tickets
       </Link>
@@ -451,7 +451,7 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
               {name}
             </h1>
             {event && (
-              <div style={{ fontSize: "0.9rem", color: "#6b7280" }}>
+              <div style={{ fontSize: "0.9rem", color: "var(--shell-muted)" }}>
                 Event {event.symbol} · paid ${event.priceUsdc.toFixed(2)} · by {event.creator.slice(0, 6)}…
               </div>
             )}
@@ -460,19 +460,19 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
           {seat ? (
             <div
               style={{
-                background: "#eef2ff",
+                background: "var(--shell-active-bg)",
                 border: "1px solid #c7d2fe",
                 borderRadius: 10,
                 padding: "0.85rem 1rem",
               }}
             >
-              <div style={{ fontSize: "0.72rem", color: "#4338ca", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "0.25rem" }}>
+              <div style={{ fontSize: "0.72rem", color: "var(--shell-link)", fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", marginBottom: "0.25rem" }}>
                 Your seat
               </div>
-              <div style={{ fontSize: "1.05rem", fontWeight: 600, color: "#111827" }}>
+              <div style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--shell-fg)" }}>
                 Row <strong>{seat.rowLabel}</strong> · Seat <strong>{seat.seatNumber}</strong>
                 {matchedTier && (
-                  <span style={{ fontSize: "0.85rem", color: "#6b7280", fontWeight: 500, marginLeft: "0.5rem" }}>
+                  <span style={{ fontSize: "0.85rem", color: "var(--shell-muted)", fontWeight: 500, marginLeft: "0.5rem" }}>
                     · {matchedTier.name} ({matchedTier.sectionCode})
                   </span>
                 )}
@@ -482,11 +482,11 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
             <div
               style={{
                 background: "var(--shell-pill-bg, #f7f8fa)",
-                border: "1px solid var(--shell-border, #eef0f3)",
+                border: "1px solid var(--shell-border, var(--shell-border))",
                 borderRadius: 10,
                 padding: "0.75rem 1rem",
                 fontSize: "0.85rem",
-                color: "#6b7280",
+                color: "var(--shell-muted)",
               }}
             >
               General admission — no assigned seat.
@@ -521,7 +521,7 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
             <div
               style={{
                 border: "1px solid #c7d2fe",
-                background: "#eef2ff",
+                background: "var(--shell-active-bg)",
                 borderRadius: 10,
                 padding: "0.85rem 1rem",
                 display: "flex",
@@ -529,7 +529,7 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
                 gap: "0.55rem",
               }}
             >
-              <div style={{ fontSize: "0.72rem", color: "#4338ca", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+              <div style={{ fontSize: "0.72rem", color: "var(--shell-link)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }}>
                 Check-in code
               </div>
               <div style={{ fontSize: "0.78rem", color: "#3730a3" }}>
@@ -575,7 +575,7 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
 
           <div
             style={{
-              border: "1px solid var(--shell-border, #eef0f3)",
+              border: "1px solid var(--shell-border, var(--shell-border))",
               borderRadius: 10,
               padding: "0.85rem 1rem",
               display: "flex",
@@ -583,7 +583,7 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
               gap: "0.5rem",
             }}
           >
-            <div style={{ fontSize: "0.72rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <div style={{ fontSize: "0.72rem", color: "var(--shell-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
               Asset ID (unverified fallback)
             </div>
             <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
@@ -607,7 +607,7 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
                 style={{
                   padding: "0.4rem 0.75rem",
                   borderRadius: 6,
-                  border: "1px solid var(--shell-border, #eef0f3)",
+                  border: "1px solid var(--shell-border, var(--shell-border))",
                   background: "var(--shell-card, #fff)",
                   color: "var(--shell-fg, #111827)",
                   fontSize: "0.78rem",
@@ -623,7 +623,7 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
               href={explorerUrl}
               target="_blank"
               rel="noreferrer"
-              style={{ fontSize: "0.78rem", color: "#4338ca", fontWeight: 600, textDecoration: "none" }}
+              style={{ fontSize: "0.78rem", color: "var(--shell-link)", fontWeight: 600, textDecoration: "none" }}
             >
               View on Solana Explorer ↗
             </a>
@@ -648,7 +648,7 @@ export function TicketDetailView({ assetId }: { assetId: string }) {
               style={{
                 padding: "0.55rem 1.1rem",
                 borderRadius: 8,
-                border: "1px solid var(--shell-border, #eef0f3)",
+                border: "1px solid var(--shell-border, var(--shell-border))",
                 background: "var(--shell-pill-bg, #f7f8fa)",
                 color: "var(--shell-fg, #111827)",
                 fontSize: "0.85rem",
@@ -854,7 +854,7 @@ function ResalePanel({
     return (
       <div
         style={{
-          border: "1px solid var(--shell-border, #eef0f3)",
+          border: "1px solid var(--shell-border, var(--shell-border))",
           borderRadius: 10,
           padding: "0.85rem 1rem",
           display: "flex",
@@ -865,7 +865,7 @@ function ResalePanel({
       >
         <div>
           <div style={{ fontSize: "0.85rem", fontWeight: 600 }}>Resell this ticket</div>
-          <div style={{ fontSize: "0.76rem", color: "#6b7280" }}>
+          <div style={{ fontSize: "0.76rem", color: "var(--shell-muted)" }}>
             cNFT goes into on-chain escrow; buyer pays in atomic swap.
           </div>
         </div>
@@ -875,7 +875,7 @@ function ResalePanel({
           style={{
             padding: "0.45rem 0.9rem",
             borderRadius: 7,
-            border: "1px solid var(--shell-border, #eef0f3)",
+            border: "1px solid var(--shell-border, var(--shell-border))",
             background: "var(--shell-pill-bg, #f7f8fa)",
             color: "var(--shell-fg, #111827)",
             fontSize: "0.82rem",
@@ -892,7 +892,7 @@ function ResalePanel({
   return (
     <div
       style={{
-        border: "1px solid var(--shell-border, #eef0f3)",
+        border: "1px solid var(--shell-border, var(--shell-border))",
         borderRadius: 10,
         padding: "0.85rem 1rem",
         display: "flex",
@@ -906,7 +906,7 @@ function ResalePanel({
       <div
         style={{
           fontSize: "0.72rem",
-          background: "#eef2ff",
+          background: "var(--shell-active-bg)",
           color: "#3730a3",
           padding: "0.45rem 0.6rem",
           borderRadius: 7,
@@ -993,7 +993,7 @@ function ResalePanel({
           style={{
             padding: "0.45rem 0.95rem",
             borderRadius: 7,
-            border: "1px solid var(--shell-border, #eef0f3)",
+            border: "1px solid var(--shell-border, var(--shell-border))",
             background: "transparent",
             color: "var(--shell-fg, #111827)",
             fontSize: "0.82rem",
@@ -1010,7 +1010,7 @@ function ResalePanel({
 
 const smallLabel: React.CSSProperties = {
   fontSize: "0.7rem",
-  color: "#6b7280",
+  color: "var(--shell-muted)",
   fontWeight: 600,
   letterSpacing: "0.04em",
   textTransform: "uppercase",
@@ -1019,7 +1019,7 @@ const smallLabel: React.CSSProperties = {
 const smallInput: React.CSSProperties = {
   padding: "0.45rem 0.6rem",
   borderRadius: 6,
-  border: "1px solid var(--shell-border, #eef0f3)",
+  border: "1px solid var(--shell-border, var(--shell-border))",
   background: "var(--shell-card, #fff)",
   color: "var(--shell-fg, #111827)",
   fontSize: "0.85rem",
@@ -1075,7 +1075,7 @@ function CheckInCodeDisplay({
         <summary
           style={{
             fontSize: "0.72rem",
-            color: "#4338ca",
+            color: "var(--shell-link)",
             cursor: "pointer",
             fontWeight: 600,
           }}
@@ -1125,7 +1125,7 @@ function CheckInCodeDisplay({
             borderRadius: 7,
             border: "1px solid #c7d2fe",
             background: "transparent",
-            color: "#4338ca",
+            color: "var(--shell-link)",
             fontSize: "0.78rem",
             fontWeight: 600,
             cursor: regenerating ? "not-allowed" : "pointer",
@@ -1136,7 +1136,7 @@ function CheckInCodeDisplay({
         <span
           style={{
             fontSize: "0.72rem",
-            color: expired ? "#b91c1c" : "#4338ca",
+            color: expired ? "#b91c1c" : "var(--shell-link)",
             fontWeight: 600,
           }}
         >
@@ -1199,12 +1199,12 @@ function VenuePreview({
     <div
       style={{
         background: "var(--shell-card, #fff)",
-        border: "1px solid var(--shell-border, #eef0f3)",
+        border: "1px solid var(--shell-border, var(--shell-border))",
         borderRadius: 10,
         padding: "0.75rem 0.85rem",
       }}
     >
-      <div style={{ fontSize: "0.72rem", color: "#6b7280", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.4rem" }}>
+      <div style={{ fontSize: "0.72rem", color: "var(--shell-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.4rem" }}>
         Venue map
       </div>
       <svg viewBox={template.viewBox} preserveAspectRatio="xMidYMid meet" style={{ width: "100%", height: "auto" }}>
@@ -1225,14 +1225,14 @@ function VenuePreview({
         )}
         {template.regions.map((r) => {
           const isMine = matchedTier && r.tierRef === matchedTier.sectionCode;
-          const fill = (r as VenueLayoutRegion).defaultColor ?? "#9ca3af";
+          const fill = (r as VenueLayoutRegion).defaultColor ?? "var(--shell-faint)";
           return (
             <path
               key={r.tierRef}
               d={r.d}
               fill={fill}
               fillOpacity={isMine ? 0.55 : 0.12}
-              stroke={isMine ? "#111827" : fill}
+              stroke={isMine ? "var(--shell-fg)" : fill}
               strokeWidth={isMine ? 3 : 1.5}
             />
           );
@@ -1245,7 +1245,7 @@ function VenuePreview({
           </g>
         )}
       </svg>
-      <div style={{ fontSize: "0.72rem", color: "#6b7280", marginTop: "0.4rem" }}>
+      <div style={{ fontSize: "0.72rem", color: "var(--shell-muted)", marginTop: "0.4rem" }}>
         {region ? (
           <>
             Seat marker is an approximate location within zone{" "}
@@ -1268,11 +1268,11 @@ function Centered({ children }: { children: React.ReactNode }) {
     <div
       style={{
         background: "var(--shell-card, #fff)",
-        border: "1px solid var(--shell-border, #eef0f3)",
+        border: "1px solid var(--shell-border, var(--shell-border))",
         borderRadius: 12,
         padding: "3rem 1.5rem",
         textAlign: "center",
-        color: "#6b7280",
+        color: "var(--shell-muted)",
       }}
     >
       {children}

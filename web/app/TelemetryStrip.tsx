@@ -8,19 +8,23 @@ import { useEffect, useState } from "react";
 import tipJarIdl from "@/idl/tip_jar.json";
 import subscriptionIdl from "@/idl/subscription.json";
 import eventsIdl from "@/idl/events.json";
+import eventTicketsIdl from "@/idl/event_tickets.json";
 import registryIdl from "@/idl/rwa_registry.json";
 import mintIdl from "@/idl/rwa_mint.json";
 import marketplaceIdl from "@/idl/marketplace.json";
 import otcIdl from "@/idl/otc_deals.json";
+import auctionsIdl from "@/idl/auctions.json";
 
 type Counts = {
   creators: number;
   subscriptionPlans: number;
   events: number;
+  cnftEvents: number;
   issuers: number;
   rwaAssets: number;
   listings: number;
   otcDeals: number;
+  auctions: number;
 };
 
 class ReadOnlyWallet {
@@ -57,18 +61,39 @@ async function countAll(connection: Connection): Promise<Counts> {
     }
   }
 
-  const [creators, subscriptionPlans, events, issuers, rwaAssets, listings, otcDeals] =
-    await Promise.all([
-      safeCount(programInstance(tipJarIdl, provider), "creatorProfile"),
-      safeCount(programInstance(subscriptionIdl, provider), "plan"),
-      safeCount(programInstance(eventsIdl, provider), "event"),
-      safeCount(programInstance(registryIdl, provider), "issuer"),
-      safeCount(programInstance(mintIdl, provider), "asset"),
-      safeCount(programInstance(marketplaceIdl, provider), "listing"),
-      safeCount(programInstance(otcIdl, provider), "deal"),
-    ]);
+  const [
+    creators,
+    subscriptionPlans,
+    events,
+    cnftEvents,
+    issuers,
+    rwaAssets,
+    listings,
+    otcDeals,
+    auctions,
+  ] = await Promise.all([
+    safeCount(programInstance(tipJarIdl, provider), "creatorProfile"),
+    safeCount(programInstance(subscriptionIdl, provider), "plan"),
+    safeCount(programInstance(eventsIdl, provider), "event"),
+    safeCount(programInstance(eventTicketsIdl, provider), "event"),
+    safeCount(programInstance(registryIdl, provider), "issuer"),
+    safeCount(programInstance(mintIdl, provider), "asset"),
+    safeCount(programInstance(marketplaceIdl, provider), "listing"),
+    safeCount(programInstance(otcIdl, provider), "deal"),
+    safeCount(programInstance(auctionsIdl, provider), "auction"),
+  ]);
 
-  return { creators, subscriptionPlans, events, issuers, rwaAssets, listings, otcDeals };
+  return {
+    creators,
+    subscriptionPlans,
+    events,
+    cnftEvents,
+    issuers,
+    rwaAssets,
+    listings,
+    otcDeals,
+    auctions,
+  };
 }
 
 export function TelemetryStrip() {
@@ -87,12 +112,14 @@ export function TelemetryStrip() {
 
   const items = [
     { label: "Creators", value: counts?.creators },
-    { label: "Subscription plans", value: counts?.subscriptionPlans },
-    { label: "Events", value: counts?.events },
+    { label: "Plans", value: counts?.subscriptionPlans },
+    { label: "Events (legacy)", value: counts?.events },
+    { label: "Events (cNFT)", value: counts?.cnftEvents },
     { label: "Licenced issuers", value: counts?.issuers },
     { label: "RWA assets", value: counts?.rwaAssets },
     { label: "Listings", value: counts?.listings },
     { label: "OTC deals", value: counts?.otcDeals },
+    { label: "Auctions", value: counts?.auctions },
   ];
 
   return (

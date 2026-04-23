@@ -337,7 +337,7 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
         <h1 style={{ fontSize: "1.65rem", letterSpacing: "-0.02em", marginBottom: "0.3rem", fontWeight: 600 }}>
           Global search
         </h1>
-        <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>
+        <p style={{ color: "var(--shell-muted)", fontSize: "0.9rem" }}>
           Search across RWA assets, cNFT events, marketplace listings, OTC deals, and issuer registry. Pubkeys match exactly; names / symbols / KYC refs match case-insensitively.
         </p>
       </header>
@@ -363,10 +363,10 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
           placeholder="Asset name, symbol, wallet address, or KYC ref"
           style={{
             flex: 1,
-            background: "#ffffff",
-            border: "1px solid #e5e7eb",
+            background: "var(--shell-card)",
+            border: "1px solid var(--shell-border-strong)",
             borderRadius: 10,
-            color: "#111827",
+            color: "var(--shell-fg)",
             padding: "0.7rem 1rem",
             fontSize: "0.95rem",
             outline: "none",
@@ -400,7 +400,7 @@ export function SearchView({ initialQuery }: { initialQuery: string }) {
         <CenteredCard>Failed: {state.message}</CenteredCard>
       ) : state.total === 0 ? (
         <CenteredCard>
-          <strong style={{ color: "#111827", display: "block", marginBottom: "0.35rem" }}>
+          <strong style={{ color: "var(--shell-fg)", display: "block", marginBottom: "0.35rem" }}>
             Nothing matched
           </strong>
           Try a different name, symbol, or wallet address.
@@ -453,7 +453,7 @@ function ResultGroup({
       <h2
         style={{
           fontSize: "0.82rem",
-          color: "#6b7280",
+          color: "var(--shell-muted)",
           letterSpacing: 1,
           textTransform: "uppercase",
           fontWeight: 600,
@@ -474,17 +474,17 @@ function AssetResultCard({ hit }: { hit: AssetHit }) {
         // eslint-disable-next-line @next/next/no-img-element
         <img src={toHttp(hit.imageUrl)} alt={hit.name} style={thumbStyle} />
       ) : (
-        <div style={{ ...thumbStyle, background: "#eef2ff" }} />
+        <div style={{ ...thumbStyle, background: "var(--shell-active-bg)" }} />
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 600, color: "#111827" }}>
-          {hit.name || "(unnamed)"} <span style={{ color: "#9ca3af", fontWeight: 500, fontSize: "0.85rem" }}>· {hit.symbol}</span>
+        <div style={{ fontWeight: 600, color: "var(--shell-fg)" }}>
+          {hit.name || "(unnamed)"} <span style={{ color: "var(--shell-faint)", fontWeight: 500, fontSize: "0.85rem" }}>· {hit.symbol}</span>
         </div>
-        <div style={{ fontSize: "0.76rem", color: "#6b7280", fontFamily: "'SF Mono', Menlo, monospace" }}>
+        <div style={{ fontSize: "0.76rem", color: "var(--shell-muted)", fontFamily: "'SF Mono', Menlo, monospace" }}>
           {hit.category} · mint {shorten(hit.mint)} · issuer {shorten(hit.issuerOwner)}
         </div>
       </div>
-      <span style={pillStyle("#eef2ff", "#4338ca")}>Asset</span>
+      <span style={pillStyle("var(--shell-active-bg)", "var(--shell-link)")}>Asset</span>
     </Link>
   );
 }
@@ -496,7 +496,7 @@ function EventResultCard({ hit }: { hit: EventHit }) {
       <div style={{ ...thumbStyle, background: "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)" }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 600 }}>{hit.name || "(unnamed)"}</div>
-        <div style={{ fontSize: "0.76rem", color: "#6b7280" }}>
+        <div style={{ fontSize: "0.76rem", color: "var(--shell-muted)" }}>
           {hit.symbol} · ${hit.priceUsdc.toFixed(2)} · {left} of {hit.capacity} left · by {shorten(hit.creator)}
         </div>
       </div>
@@ -511,9 +511,9 @@ function ListingResultCard({ hit }: { hit: ListingHit }) {
       <div style={{ ...thumbStyle, background: "linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)" }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 600 }}>
-          ${hit.priceUsdc.toFixed(2)} <span style={{ color: "#9ca3af", fontWeight: 500 }}>per token</span>
+          ${hit.priceUsdc.toFixed(2)} <span style={{ color: "var(--shell-faint)", fontWeight: 500 }}>per token</span>
         </div>
-        <div style={{ fontSize: "0.76rem", color: "#6b7280" }}>
+        <div style={{ fontSize: "0.76rem", color: "var(--shell-muted)" }}>
           {hit.remainingQuantity} remaining · by {shorten(hit.seller)} · mint {shorten(hit.assetMint)}
         </div>
       </div>
@@ -530,7 +530,7 @@ function DealResultCard({ hit }: { hit: DealHit }) {
         <div style={{ fontWeight: 600 }}>
           OTC #{hit.dealId} · ${hit.totalPriceUsdc.toFixed(2)} for {hit.quantity}
         </div>
-        <div style={{ fontSize: "0.76rem", color: "#6b7280" }}>
+        <div style={{ fontSize: "0.76rem", color: "var(--shell-muted)" }}>
           seller {shorten(hit.seller)} → buyer {shorten(hit.buyer)} · {hit.status}
         </div>
       </div>
@@ -545,11 +545,11 @@ function IssuerResultCard({ hit }: { hit: IssuerHit }) {
       <div style={{ ...thumbStyle, background: "linear-gradient(135deg, #6366f1 0%, #4338ca 100%)" }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontWeight: 600, fontFamily: "'SF Mono', Menlo, monospace" }}>{shorten(hit.owner)}</div>
-        <div style={{ fontSize: "0.76rem", color: "#6b7280" }}>
+        <div style={{ fontSize: "0.76rem", color: "var(--shell-muted)" }}>
           {hit.status} · {hit.jurisdictions.join(", ") || "—"} · {hit.assetClasses.join(" · ") || "no classes"} · KYC {hit.kycRef}
         </div>
       </div>
-      <span style={pillStyle("rgba(79,70,229,0.12)", "#4338ca")}>Issuer</span>
+      <span style={pillStyle("rgba(79,70,229,0.12)", "var(--shell-link)")}>Issuer</span>
     </Link>
   );
 }
@@ -558,12 +558,12 @@ function CenteredCard({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         padding: "2.5rem 1.5rem",
         textAlign: "center",
-        color: "#6b7280",
+        color: "var(--shell-muted)",
       }}
     >
       {children}
@@ -590,12 +590,12 @@ const linkRowStyle: React.CSSProperties = {
   display: "flex",
   alignItems: "center",
   gap: "0.85rem",
-  background: "#ffffff",
-  border: "1px solid #eef0f3",
+  background: "var(--shell-card)",
+  border: "1px solid var(--shell-border)",
   borderRadius: 10,
   padding: "0.75rem 1rem",
   textDecoration: "none",
-  color: "#111827",
+  color: "var(--shell-fg)",
 };
 
 const thumbStyle: React.CSSProperties = {

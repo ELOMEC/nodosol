@@ -18,6 +18,7 @@ export default function PitchPage() {
           <span style={{ fontSize: "1.05rem", fontWeight: 600 }}>nodosol</span>
         </Link>
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <Link href="/tech" style={navLinkStyle}>Tech</Link>
           <Link href="/stats" style={navLinkStyle}>Live stats</Link>
           <Link href="/marketplace" style={navLinkStyle}>Open app</Link>
           <a href="mailto:office@nodosol.com?subject=nodosol%20—%20investor%20intro" style={ctaStyle}>
@@ -40,8 +41,10 @@ export default function PitchPage() {
           atomic USDC settlement.
           <br />
           <br />
-          Seven Anchor programs are live on devnet today — full end-to-end flows,
-          110+ LiteSVM tests passing. Incorporated as a UAE free-zone company.
+          Nine Anchor programs are live on devnet today — full end-to-end flows,
+          110+ LiteSVM tests passing. Upgrade authority behind a 2-of-3 Squads
+          multisig; every fund-moving instruction sits behind a kill-switch.
+          Incorporated as a UAE free-zone company.
         </p>
         <div style={{ display: "flex", gap: "0.8rem", marginTop: "2rem", flexWrap: "wrap" }}>
           <a href="mailto:office@nodosol.com?subject=nodosol%20—%20investor%20intro" style={ctaPrimaryStyle}>
@@ -117,7 +120,7 @@ export default function PitchPage() {
 
       <section style={sectionStyle}>
         <Eyebrow>What&apos;s live today — on devnet</Eyebrow>
-        <h2 style={h2Style}>Seven Anchor programs, 110+ LiteSVM tests passing, full client flows.</h2>
+        <h2 style={h2Style}>Nine Anchor programs, 110+ LiteSVM tests passing, full client flows.</h2>
         <div style={{ marginTop: "1.25rem" }}>
           <LandingProviders>
             <TelemetryStrip />
@@ -140,14 +143,31 @@ export default function PitchPage() {
           <ProgramCard label="rwa_mint" role="Asset tokenisation" high="Token-2022 fixed supply. Cross-program issuer check via seeds::program" />
           <ProgramCard label="marketplace" role="Public listings" high="Escrow vault pattern; atomic buy with fee split; live price updates" />
           <ProgramCard label="otc_deals" role="Bilateral escrow" high="Counter-party-specific proposal; 1-min to 30-day expiry; permissionless expire crank" />
-          <ProgramCard label="event_tickets" role="Compressed NFT tickets" high="Bubblegum CPI — mint_v1 + create_tree. Event PDA is tree delegate" />
+          <ProgramCard label="event_tickets" role="Compressed NFT tickets" high="Bubblegum CPI — mint_v1 + create_tree. Event PDA is tree delegate. Atomic resale with royalty split. Private-price commit/reveal for high-demand drops." />
+          <ProgramCard label="auctions" role="Sealed-bid auctions" high="Commit → reveal → permissionless settle. USDC escrow + fee split. Keccak256 bid hiding. MEV-resistant by design." />
         </div>
         <p style={{ fontSize: "0.85rem", color: "#8a8a8a", marginTop: "1.25rem" }}>
           Shared Config-PDA pattern across programs: one authority-gated admin surface per program ({" "}
           <code style={inlineCode}>initialize_config</code>, <code style={inlineCode}>update_fee_bps</code>,{" "}
-          <code style={inlineCode}>update_treasury</code>, <code style={inlineCode}>update_authority</code>). Admin dashboard at{" "}
-          <Link href="/admin" style={{ color: "#7b9cff" }}>/admin</Link> is a thin client over these instructions.
+          <code style={inlineCode}>update_treasury</code>, <code style={inlineCode}>update_authority</code>,{" "}
+          <code style={inlineCode}>update_pause</code>). Admin dashboard at{" "}
+          <Link href="/admin" style={{ color: "#7b9cff" }}>/admin</Link> is a thin client over these
+          instructions. Full program + stack breakdown at{" "}
+          <Link href="/tech" style={{ color: "#7b9cff" }}>/tech</Link>.
         </p>
+      </section>
+
+      <section style={sectionStyle}>
+        <Eyebrow>Security posture</Eyebrow>
+        <h2 style={h2Style}>Upgrade authority on a 2-of-3 Squads multisig. Every value-moving instruction behind a pause kill-switch.</h2>
+        <ul style={listStyle}>
+          <li><strong style={{ color: "#fff" }}>Multisig-governed upgrades.</strong> All nine programs moved from a single dev keypair to a 2-of-3 Squads vault. No one person can push code; every upgrade is a signed proposal.</li>
+          <li><strong style={{ color: "#fff" }}>Emergency pause.</strong> Authority-gated <code style={inlineCode}>update_pause</code> instruction on seven programs freezes fund-moving entry points in a single Squads proposal, without needing a program upgrade.</li>
+          <li><strong style={{ color: "#fff" }}>Signed chat auth.</strong> Every chat write is an ed25519 wallet signature over a thread-bound, time-bound challenge. Reads gated by short-lived JWT (15 min TTL) minted only after a separate signature.</li>
+          <li><strong style={{ color: "#fff" }}>Anti-spam.</strong> Cloudflare Turnstile on group channels + per-wallet 30-messages-per-5-minutes rate limit. Sybil costs funded wallets.</li>
+          <li><strong style={{ color: "#fff" }}>security.txt in every program</strong> + a security events log table for burst detection and post-incident forensics.</li>
+          <li><strong style={{ color: "#fff" }}>Audit in the funding plan.</strong> Engineering budget earmarks a seed-funded audit (Ottersec / Neodyme / Zellic) before mainnet launch.</li>
+        </ul>
       </section>
 
       <section style={sectionStyle}>
@@ -292,7 +312,7 @@ export default function PitchPage() {
           <UseOfFunds
             percent="30%"
             title="Engineering"
-            body="Rust co-founder + two senior engineers (Solana mobile, data infra). External security audit across seven programs before mainnet."
+            body="Rust co-founder + two senior engineers (Solana mobile, data infra). External security audit across nine programs before mainnet."
           />
           <UseOfFunds
             percent="20%"
@@ -325,7 +345,7 @@ export default function PitchPage() {
 
       <footer style={{ borderTop: "1px solid #222", paddingTop: "2rem", marginTop: "2.5rem", fontSize: "0.8rem", color: "#6a6a6a", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
         <div>© 2026 Nodosol · Incorporated in the UAE · Built on Solana</div>
-        <div>Last updated 2026-04-21</div>
+        <div>Last updated 2026-04-24</div>
       </footer>
     </main>
   );

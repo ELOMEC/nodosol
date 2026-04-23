@@ -469,7 +469,7 @@ export function TokenizeForm() {
               alignItems: "flex-start",
               gap: "0.55rem",
               padding: "0.65rem 0.85rem",
-              border: "1px solid var(--shell-border, #eef0f3)",
+              border: "1px solid var(--shell-border, var(--shell-border))",
               borderRadius: 8,
               cursor: "pointer",
               background: "var(--shell-card, #fff)",
@@ -486,7 +486,7 @@ export function TokenizeForm() {
               <span style={{ fontSize: "0.86rem", fontWeight: 600 }}>
                 Allow messages from prospective buyers
               </span>
-              <span style={{ display: "block", fontSize: "0.78rem", color: "#6b7280", marginTop: "0.15rem" }}>
+              <span style={{ display: "block", fontSize: "0.78rem", color: "var(--shell-muted)", marginTop: "0.15rem" }}>
                 Buyers can open a private DM from the asset page. Recommended.
               </span>
             </span>
@@ -541,8 +541,8 @@ export function TokenizeForm() {
             <InfoRow k="Network" v="Solana devnet" />
           </div>
         </div>
-        <div style={{ ...panel, marginTop: "1rem", background: "#eef2ff", borderColor: "#c7d2fe" }}>
-          <div style={{ ...panelHeader, color: "#4338ca", background: "#eef2ff" }}>Compliance</div>
+        <div style={{ ...panel, marginTop: "1rem", background: "var(--shell-active-bg)", borderColor: "#c7d2fe" }}>
+          <div style={{ ...panelHeader, color: "var(--shell-link)", background: "var(--shell-active-bg)" }}>Compliance</div>
           <div style={{ ...panelBody, color: "#3730a3", fontSize: "0.82rem" }}>
             Tokenising on Nodosol requires an Active issuer record in <code style={codeInline}>rwa_registry</code> with the requested asset class authorised.
           </div>
@@ -557,7 +557,7 @@ function Connect() {
     <div style={callToAction}>
       <div style={{ flex: 1 }}>
         <strong style={{ display: "block", marginBottom: "0.2rem" }}>Connect a wallet to continue</strong>
-        <span style={{ color: "#6b7280", fontSize: "0.85rem" }}>
+        <span style={{ color: "var(--shell-muted)", fontSize: "0.85rem" }}>
           You need a wallet that is registered as an Active issuer in rwa_registry.
         </span>
       </div>
@@ -568,7 +568,7 @@ function Connect() {
 
 function LoadingBanner() {
   return (
-    <div style={{ ...callToAction, color: "#6b7280" }}>Loading issuer status…</div>
+    <div style={{ ...callToAction, color: "var(--shell-muted)" }}>Loading issuer status…</div>
   );
 }
 
@@ -636,13 +636,13 @@ function IssuerPanel({ issuer, connected }: { issuer: IssuerAccount | null | und
       <div style={panelHeader}>Issuer context</div>
       <div style={panelBody}>
         {!connected ? (
-          <div style={{ color: "#6b7280", fontSize: "0.85rem", padding: "0.5rem 0" }}>
+          <div style={{ color: "var(--shell-muted)", fontSize: "0.85rem", padding: "0.5rem 0" }}>
             Connect wallet to load your issuer record.
           </div>
         ) : issuer === undefined ? (
-          <div style={{ color: "#6b7280", fontSize: "0.85rem", padding: "0.5rem 0" }}>Loading…</div>
+          <div style={{ color: "var(--shell-muted)", fontSize: "0.85rem", padding: "0.5rem 0" }}>Loading…</div>
         ) : !issuer ? (
-          <div style={{ color: "#6b7280", fontSize: "0.85rem", padding: "0.5rem 0" }}>
+          <div style={{ color: "var(--shell-muted)", fontSize: "0.85rem", padding: "0.5rem 0" }}>
             Not registered.
           </div>
         ) : (
@@ -668,8 +668,8 @@ function Stepper({ current }: { current: number }) {
         alignItems: "center",
         gap: "0.5rem",
         marginBottom: "1.25rem",
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 10,
         padding: "0.7rem 0.9rem",
       }}
@@ -690,18 +690,18 @@ function Stepper({ current }: { current: number }) {
                   justifyContent: "center",
                   fontSize: "0.75rem",
                   fontWeight: 600,
-                  background: done ? "#10b981" : active ? "#4f46e5" : "#e5e7eb",
-                  color: done || active ? "#fff" : "#6b7280",
+                  background: done ? "#10b981" : active ? "#4f46e5" : "var(--shell-border-strong)",
+                  color: done || active ? "#fff" : "var(--shell-muted)",
                 }}
               >
                 {done ? "✓" : i + 1}
               </span>
-              <span style={{ fontSize: "0.84rem", color: active ? "#111827" : "#6b7280", fontWeight: active ? 600 : 500 }}>
+              <span style={{ fontSize: "0.84rem", color: active ? "var(--shell-fg)" : "var(--shell-muted)", fontWeight: active ? 600 : 500 }}>
                 {label}
               </span>
             </div>
             {i < steps.length - 1 ? (
-              <div style={{ flex: 1, height: 1, background: done ? "#10b981" : "#e5e7eb" }} />
+              <div style={{ flex: 1, height: 1, background: done ? "#10b981" : "var(--shell-border-strong)" }} />
             ) : null}
           </div>
         );
@@ -714,8 +714,8 @@ function Section({ title, subtitle, children }: { title: string; subtitle: strin
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         padding: "1.3rem 1.4rem",
         marginBottom: "1rem",
@@ -723,7 +723,7 @@ function Section({ title, subtitle, children }: { title: string; subtitle: strin
     >
       <div style={{ marginBottom: "1.1rem" }}>
         <h3 style={{ fontSize: "0.98rem", fontWeight: 600, marginBottom: "0.2rem" }}>{title}</h3>
-        <p style={{ fontSize: "0.82rem", color: "#6b7280" }}>{subtitle}</p>
+        <p style={{ fontSize: "0.82rem", color: "var(--shell-muted)" }}>{subtitle}</p>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: "0.95rem" }}>{children}</div>
     </div>
@@ -733,7 +733,7 @@ function Section({ title, subtitle, children }: { title: string; subtitle: strin
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label style={{ display: "block", fontSize: "0.78rem", color: "#374151", fontWeight: 500, marginBottom: "0.35rem" }}>
+      <label style={{ display: "block", fontSize: "0.78rem", color: "var(--shell-fg)", fontWeight: 500, marginBottom: "0.35rem" }}>
         {label}
       </label>
       {children}
@@ -747,9 +747,9 @@ function Row({ children }: { children: React.ReactNode }) {
 
 function InfoRow({ k, v }: { k: string; v: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem 0", borderBottom: "1px solid #f3f4f6" }}>
-      <span style={{ fontSize: "0.8rem", color: "#6b7280" }}>{k}</span>
-      <span style={{ fontSize: "0.82rem", color: "#111827", fontWeight: 500 }}>{v}</span>
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem 0", borderBottom: "1px solid var(--shell-divider)" }}>
+      <span style={{ fontSize: "0.8rem", color: "var(--shell-muted)" }}>{k}</span>
+      <span style={{ fontSize: "0.82rem", color: "var(--shell-fg)", fontWeight: 500 }}>{v}</span>
     </div>
   );
 }
@@ -759,7 +759,7 @@ function StatusPill({ status }: { status: IssuerStatusKey }) {
     active: { bg: "rgba(16,185,129,0.12)", fg: "#059669", dot: "#10b981", label: "Active" },
     pending: { bg: "rgba(234,179,8,0.12)", fg: "#854d0e", dot: "#eab308", label: "Pending" },
     suspended: { bg: "rgba(245,158,11,0.12)", fg: "#b45309", dot: "#f59e0b", label: "Suspended" },
-    revoked: { bg: "rgba(107,114,128,0.12)", fg: "#4b5563", dot: "#6b7280", label: "Revoked" },
+    revoked: { bg: "rgba(107,114,128,0.12)", fg: "var(--shell-muted)", dot: "var(--shell-muted)", label: "Revoked" },
   };
   const c = map[status];
   return (
@@ -817,8 +817,8 @@ function MediaUploader({
           alignItems: "center",
           gap: "0.85rem",
           padding: "0.8rem",
-          background: "#f7f8fa",
-          border: "1px solid #eef0f3",
+          background: "var(--shell-pill-bg)",
+          border: "1px solid var(--shell-border)",
           borderRadius: 10,
         }}
       >
@@ -829,13 +829,13 @@ function MediaUploader({
           style={{ width: 64, height: 64, borderRadius: 8, objectFit: "cover" }}
         />
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: "0.85rem", color: "#111827", fontWeight: 600, marginBottom: "0.15rem" }}>
+          <div style={{ fontSize: "0.85rem", color: "var(--shell-fg)", fontWeight: 600, marginBottom: "0.15rem" }}>
             Image uploaded
           </div>
           <div
             style={{
               fontSize: "0.74rem",
-              color: "#6b7280",
+              color: "var(--shell-muted)",
               fontFamily: "'SF Mono', Menlo, monospace",
               overflow: "hidden",
               textOverflow: "ellipsis",
@@ -848,9 +848,9 @@ function MediaUploader({
         <button
           onClick={onClear}
           style={{
-            background: "#ffffff",
-            border: "1px solid #e5e7eb",
-            color: "#374151",
+            background: "var(--shell-card)",
+            border: "1px solid var(--shell-border-strong)",
+            color: "var(--shell-fg)",
             padding: "0.4rem 0.8rem",
             borderRadius: 6,
             fontSize: "0.8rem",
@@ -882,11 +882,11 @@ function MediaUploader({
         alignItems: "center",
         justifyContent: "center",
         padding: "1.6rem 1rem",
-        background: "#f7f8fa",
+        background: "var(--shell-pill-bg)",
         border: "1px dashed #c7d2fe",
         borderRadius: 10,
         cursor: busy ? "not-allowed" : "pointer",
-        color: "#4b5563",
+        color: "var(--shell-muted)",
         opacity: busy ? 0.7 : 1,
         transition: "background 0.15s",
       }}
@@ -898,8 +898,8 @@ function MediaUploader({
           <path d="M21 15l-5-5L5 21" />
         </svg>
       </div>
-      <div style={{ fontSize: "0.88rem", fontWeight: 500, color: "#111827" }}>{label}</div>
-      <div style={{ fontSize: "0.75rem", color: "#9ca3af", marginTop: "0.35rem" }}>
+      <div style={{ fontSize: "0.88rem", fontWeight: 500, color: "var(--shell-fg)" }}>{label}</div>
+      <div style={{ fontSize: "0.75rem", color: "var(--shell-faint)", marginTop: "0.35rem" }}>
         PNG / JPG / WebP up to 5 MB. Auto-generates Metaplex metadata JSON.
       </div>
       <input
@@ -929,10 +929,10 @@ function shortenAddr(s: string): string {
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
-  background: "#ffffff",
-  border: "1px solid #e5e7eb",
+  background: "var(--shell-card)",
+  border: "1px solid var(--shell-border-strong)",
   borderRadius: 8,
-  color: "#111827",
+  color: "var(--shell-fg)",
   padding: "0.62rem 0.8rem",
   fontSize: "0.88rem",
   outline: "none",
@@ -951,9 +951,9 @@ const btnPrimary: React.CSSProperties = {
 };
 
 const btnSecondary: React.CSSProperties = {
-  background: "#ffffff",
-  color: "#374151",
-  border: "1px solid #e5e7eb",
+  background: "var(--shell-card)",
+  color: "var(--shell-fg)",
+  border: "1px solid var(--shell-border-strong)",
   padding: "0.65rem 1.25rem",
   borderRadius: 8,
   fontSize: "0.88rem",
@@ -962,8 +962,8 @@ const btnSecondary: React.CSSProperties = {
 };
 
 const callToAction: React.CSSProperties = {
-  background: "#ffffff",
-  border: "1px solid #eef0f3",
+  background: "var(--shell-card)",
+  border: "1px solid var(--shell-border)",
   borderRadius: 10,
   padding: "0.95rem 1.15rem",
   marginBottom: "1rem",
@@ -989,8 +989,8 @@ const hintError: React.CSSProperties = {
 };
 
 const codeInline: React.CSSProperties = {
-  background: "#f3f4f6",
-  color: "#4338ca",
+  background: "var(--shell-divider)",
+  color: "var(--shell-link)",
   padding: "0.1rem 0.4rem",
   borderRadius: 4,
   fontSize: "0.78rem",
@@ -998,8 +998,8 @@ const codeInline: React.CSSProperties = {
 };
 
 const panel: React.CSSProperties = {
-  background: "#ffffff",
-  border: "1px solid #eef0f3",
+  background: "var(--shell-card)",
+  border: "1px solid var(--shell-border)",
   borderRadius: 12,
   overflow: "hidden",
 };
@@ -1008,9 +1008,9 @@ const panelHeader: React.CSSProperties = {
   padding: "0.85rem 1rem",
   fontSize: "0.82rem",
   fontWeight: 600,
-  color: "#111827",
-  borderBottom: "1px solid #eef0f3",
-  background: "#fafbfc",
+  color: "var(--shell-fg)",
+  borderBottom: "1px solid var(--shell-border)",
+  background: "var(--shell-card-alt)",
 };
 
 const panelBody: React.CSSProperties = {

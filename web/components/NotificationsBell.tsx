@@ -140,10 +140,10 @@ export function NotificationsBell() {
           width: 36,
           height: 36,
           borderRadius: 8,
-          background: open ? "#eef2ff" : "#f7f8fa",
+          background: open ? "var(--shell-active-bg)" : "var(--shell-pill-bg)",
           border: "1px solid",
-          borderColor: open ? "#c7d2fe" : "#eef0f3",
-          color: "#4b5563",
+          borderColor: open ? "#c7d2fe" : "var(--shell-border)",
+          color: "var(--shell-muted)",
           cursor: "pointer",
           display: "inline-flex",
           alignItems: "center",
@@ -188,8 +188,8 @@ export function NotificationsBell() {
             right: 0,
             width: 360,
             maxHeight: 480,
-            background: "#ffffff",
-            border: "1px solid #eef0f3",
+            background: "var(--shell-card)",
+            border: "1px solid var(--shell-border)",
             borderRadius: 12,
             boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
             zIndex: 50,
@@ -200,7 +200,7 @@ export function NotificationsBell() {
           <header
             style={{
               padding: "0.85rem 1rem",
-              borderBottom: "1px solid #eef0f3",
+              borderBottom: "1px solid var(--shell-border)",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -208,7 +208,7 @@ export function NotificationsBell() {
           >
             <div>
               <div style={{ fontWeight: 600, fontSize: "0.92rem" }}>Recent activity</div>
-              <div style={{ fontSize: "0.74rem", color: "#6b7280" }}>
+              <div style={{ fontSize: "0.74rem", color: "var(--shell-muted)" }}>
                 Last 3 txs from each of {PROGRAMS.length} programs
               </div>
             </div>
@@ -217,8 +217,8 @@ export function NotificationsBell() {
               disabled={loading}
               style={{
                 background: "transparent",
-                border: "1px solid #e5e7eb",
-                color: "#4b5563",
+                border: "1px solid var(--shell-border-strong)",
+                color: "var(--shell-muted)",
                 padding: "0.25rem 0.6rem",
                 borderRadius: 6,
                 fontSize: "0.74rem",
@@ -234,7 +234,7 @@ export function NotificationsBell() {
             {error ? (
               <div style={{ padding: "1rem", fontSize: "0.85rem", color: "#b91c1c" }}>{error}</div>
             ) : items.length === 0 ? (
-              <div style={{ padding: "1.5rem 1rem", fontSize: "0.85rem", color: "#6b7280", textAlign: "center" }}>
+              <div style={{ padding: "1.5rem 1rem", fontSize: "0.85rem", color: "var(--shell-muted)", textAlign: "center" }}>
                 {loading ? "Loading…" : "No on-chain activity yet."}
               </div>
             ) : (
@@ -248,18 +248,18 @@ export function NotificationsBell() {
                     rel="noreferrer"
                     style={{
                       padding: "0.7rem 1rem",
-                      borderBottom: "1px solid #f3f4f6",
+                      borderBottom: "1px solid var(--shell-divider)",
                       display: "grid",
                       gridTemplateColumns: "1fr auto",
                       gap: "0.4rem",
                       textDecoration: "none",
-                      color: "#111827",
+                      color: "var(--shell-fg)",
                     }}
                   >
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.18rem" }}>
                         {unseen ? <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4f46e5" }} /> : null}
-                        <code style={{ fontFamily: "'SF Mono', Menlo, monospace", color: "#4338ca", fontSize: "0.8rem", fontWeight: 600 }}>
+                        <code style={{ fontFamily: "'SF Mono', Menlo, monospace", color: "var(--shell-link)", fontSize: "0.8rem", fontWeight: 600 }}>
                           {it.program}
                         </code>
                         <span
@@ -275,11 +275,11 @@ export function NotificationsBell() {
                           {it.err ? "FAILED" : "OK"}
                         </span>
                       </div>
-                      <code style={{ fontFamily: "'SF Mono', Menlo, monospace", color: "#9ca3af", fontSize: "0.72rem" }}>
+                      <code style={{ fontFamily: "'SF Mono', Menlo, monospace", color: "var(--shell-faint)", fontSize: "0.72rem" }}>
                         {it.signature.slice(0, 10)}…{it.signature.slice(-6)}
                       </code>
                     </div>
-                    <div style={{ fontSize: "0.72rem", color: "#9ca3af", alignSelf: "center" }}>
+                    <div style={{ fontSize: "0.72rem", color: "var(--shell-faint)", alignSelf: "center" }}>
                       {it.blockTime ? timeAgo(it.blockTime) : `slot ${it.slot}`}
                     </div>
                   </a>
@@ -288,12 +288,12 @@ export function NotificationsBell() {
             )}
           </div>
 
-          <footer style={{ padding: "0.65rem 1rem", borderTop: "1px solid #eef0f3" }}>
+          <footer style={{ padding: "0.65rem 1rem", borderTop: "1px solid var(--shell-border)" }}>
             <a
               href="/stats"
               style={{
                 fontSize: "0.8rem",
-                color: "#4338ca",
+                color: "var(--shell-link)",
                 fontWeight: 600,
                 textDecoration: "none",
               }}

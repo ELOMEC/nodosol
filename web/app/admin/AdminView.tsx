@@ -227,7 +227,7 @@ export function AdminView() {
           <h1 style={{ fontSize: "1.65rem", letterSpacing: "-0.02em", marginBottom: "0.3rem", fontWeight: 600 }}>
             Program configs
           </h1>
-          <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>
+          <p style={{ color: "var(--shell-muted)", fontSize: "0.9rem" }}>
             Authority, treasury, and fee bps for each Anchor program. Only the listed authority wallet can mutate; everyone can read.
           </p>
         </div>
@@ -319,8 +319,8 @@ function ProgramRow({
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         padding: "1.1rem 1.3rem",
         opacity: busy ? 0.55 : 1,
@@ -340,21 +340,21 @@ function ProgramRow({
               </span>
             ) : null}
           </div>
-          <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>{snapshot.blurb}</div>
+          <div style={{ fontSize: "0.8rem", color: "var(--shell-muted)" }}>{snapshot.blurb}</div>
         </div>
         <div style={{ textAlign: "right" }}>
           {hasFee ? (
             <>
               <div style={{ fontSize: "1.2rem", fontWeight: 600 }}>{(snapshot.feeBps! / 100).toFixed(2)}%</div>
-              <div style={{ fontSize: "0.72rem", color: "#9ca3af" }}>platform fee</div>
+              <div style={{ fontSize: "0.72rem", color: "var(--shell-faint)" }}>platform fee</div>
             </>
           ) : snapshot.issuerCount !== null ? (
             <>
               <div style={{ fontSize: "1.2rem", fontWeight: 600 }}>{snapshot.issuerCount}</div>
-              <div style={{ fontSize: "0.72rem", color: "#9ca3af" }}>issuers</div>
+              <div style={{ fontSize: "0.72rem", color: "var(--shell-faint)" }}>issuers</div>
             </>
           ) : (
-            <div style={{ fontSize: "0.72rem", color: "#9ca3af" }}>—</div>
+            <div style={{ fontSize: "0.72rem", color: "var(--shell-faint)" }}>—</div>
           )}
         </div>
       </div>
@@ -437,7 +437,7 @@ function FeeModal({
         value={pct}
         onChange={(e) => setPct(e.target.value)}
       />
-      <div style={{ fontSize: "0.78rem", color: "#6b7280", marginTop: "0.45rem" }}>
+      <div style={{ fontSize: "0.78rem", color: "var(--shell-muted)", marginTop: "0.45rem" }}>
         = {bps} bps (was {snapshot.feeBps} bps)
       </div>
       <ModalActions
@@ -528,7 +528,7 @@ function ModalShell({ children, onClose }: { children: React.ReactNode; onClose:
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "#ffffff",
+          background: "var(--shell-card)",
           borderRadius: 14,
           padding: "1.5rem 1.75rem",
           width: 440,
@@ -590,8 +590,8 @@ function MiniStat({
 }) {
   const [copied, setCopied] = useState(false);
   return (
-    <div style={{ background: "#f7f8fa", border: "1px solid #eef0f3", borderRadius: 8, padding: "0.55rem 0.75rem" }}>
-      <div style={{ fontSize: "0.68rem", color: "#6b7280", marginBottom: "0.15rem", letterSpacing: 0.5, textTransform: "uppercase" }}>
+    <div style={{ background: "var(--shell-pill-bg)", border: "1px solid var(--shell-border)", borderRadius: 8, padding: "0.55rem 0.75rem" }}>
+      <div style={{ fontSize: "0.68rem", color: "var(--shell-muted)", marginBottom: "0.15rem", letterSpacing: 0.5, textTransform: "uppercase" }}>
         {label}
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.4rem" }}>
@@ -599,7 +599,7 @@ function MiniStat({
           style={{
             fontSize: mono ? "0.8rem" : "0.92rem",
             fontWeight: mono ? 500 : 600,
-            color: "#111827",
+            color: "var(--shell-fg)",
             fontFamily: mono ? "'SF Mono', Menlo, monospace" : "inherit",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -622,7 +622,7 @@ function MiniStat({
             style={{
               background: "transparent",
               border: "none",
-              color: "#6b7280",
+              color: "var(--shell-muted)",
               cursor: "pointer",
               fontSize: "0.7rem",
               padding: "0.15rem 0.3rem",
@@ -640,12 +640,12 @@ function CenteredCard({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         padding: "3rem 1.5rem",
         textAlign: "center",
-        color: "#6b7280",
+        color: "var(--shell-muted)",
       }}
     >
       {children}
@@ -659,7 +659,7 @@ function shorten(s: string): string {
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <label style={{ display: "block", fontSize: "0.78rem", color: "#374151", fontWeight: 500, marginBottom: "0.3rem" }}>
+    <label style={{ display: "block", fontSize: "0.78rem", color: "var(--shell-fg)", fontWeight: 500, marginBottom: "0.3rem" }}>
       {children}
     </label>
   );
@@ -667,10 +667,10 @@ function Label({ children }: { children: React.ReactNode }) {
 
 const input: React.CSSProperties = {
   width: "100%",
-  background: "#ffffff",
-  border: "1px solid #e5e7eb",
+  background: "var(--shell-card)",
+  border: "1px solid var(--shell-border-strong)",
   borderRadius: 8,
-  color: "#111827",
+  color: "var(--shell-fg)",
   padding: "0.6rem 0.8rem",
   fontSize: "0.88rem",
   outline: "none",
@@ -700,9 +700,9 @@ const btnDestructive: React.CSSProperties = {
 };
 
 const btnSecondary: React.CSSProperties = {
-  background: "#ffffff",
-  color: "#374151",
-  border: "1px solid #e5e7eb",
+  background: "var(--shell-card)",
+  color: "var(--shell-fg)",
+  border: "1px solid var(--shell-border-strong)",
   padding: "0.55rem 1rem",
   borderRadius: 8,
   fontSize: "0.84rem",
@@ -718,7 +718,7 @@ const modalTitle: React.CSSProperties = {
 
 const modalBlurb: React.CSSProperties = {
   fontSize: "0.85rem",
-  color: "#6b7280",
+  color: "var(--shell-muted)",
   marginBottom: "1.1rem",
 };
 

@@ -386,7 +386,7 @@ export function ChatPanel({ thread, viewerPubkey, onClose, embedded = false }: P
       style={{
         width: embedded ? "100%" : 420,
         maxWidth: embedded ? undefined : "94vw",
-        background: "#ffffff",
+        background: "var(--shell-card)",
         height: "100%",
         display: "flex",
         flexDirection: "column",
@@ -396,7 +396,7 @@ export function ChatPanel({ thread, viewerPubkey, onClose, embedded = false }: P
       <header
         style={{
           padding: "1rem 1.2rem",
-          borderBottom: "1px solid #eef0f3",
+          borderBottom: "1px solid var(--shell-border)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -404,13 +404,13 @@ export function ChatPanel({ thread, viewerPubkey, onClose, embedded = false }: P
         }}
       >
           <div>
-            <div style={{ fontSize: "0.78rem", color: "#6b7280", fontWeight: 500 }}>
+            <div style={{ fontSize: "0.78rem", color: "var(--shell-muted)", fontWeight: 500 }}>
               {header.label}
             </div>
             <div
               style={{
                 fontSize: "0.82rem",
-                color: "#111827",
+                color: "var(--shell-fg)",
                 fontFamily: thread.kind === "group" ? "inherit" : "'SF Mono', Menlo, monospace",
                 marginTop: "0.15rem",
               }}
@@ -423,7 +423,7 @@ export function ChatPanel({ thread, viewerPubkey, onClose, embedded = false }: P
             style={{
               background: "transparent",
               border: "none",
-              color: "#6b7280",
+              color: "var(--shell-muted)",
               fontSize: "1.35rem",
               cursor: "pointer",
               lineHeight: 1,
@@ -443,15 +443,15 @@ export function ChatPanel({ thread, viewerPubkey, onClose, embedded = false }: P
             display: "flex",
             flexDirection: "column",
             gap: "0.65rem",
-            background: "#fafbfc",
+            background: "var(--shell-card-alt)",
           }}
         >
           {messages === null ? (
-            <div style={{ color: "#9ca3af", fontSize: "0.85rem", textAlign: "center", marginTop: "2rem" }}>
+            <div style={{ color: "var(--shell-faint)", fontSize: "0.85rem", textAlign: "center", marginTop: "2rem" }}>
               Loading messages…
             </div>
           ) : messages.length === 0 ? (
-            <div style={{ color: "#9ca3af", fontSize: "0.85rem", textAlign: "center", marginTop: "2rem" }}>
+            <div style={{ color: "var(--shell-faint)", fontSize: "0.85rem", textAlign: "center", marginTop: "2rem" }}>
               {thread.kind === "group"
                 ? "No messages yet. Be the first to say hi."
                 : "No messages yet. Start the conversation."}
@@ -465,9 +465,9 @@ export function ChatPanel({ thread, viewerPubkey, onClose, embedded = false }: P
                   style={{
                     alignSelf: isMine ? "flex-end" : "flex-start",
                     maxWidth: "82%",
-                    background: isMine ? "#4f46e5" : "#ffffff",
-                    color: isMine ? "#ffffff" : "#111827",
-                    border: isMine ? "none" : "1px solid #e5e7eb",
+                    background: isMine ? "#4f46e5" : "var(--shell-card)",
+                    color: isMine ? "var(--shell-card)" : "var(--shell-fg)",
+                    border: isMine ? "none" : "1px solid var(--shell-border-strong)",
                     borderRadius: 12,
                     padding: "0.55rem 0.8rem",
                     fontSize: "0.88rem",
@@ -509,7 +509,7 @@ export function ChatPanel({ thread, viewerPubkey, onClose, embedded = false }: P
         <footer
           style={{
             padding: "0.85rem 1.2rem",
-            borderTop: "1px solid #eef0f3",
+            borderTop: "1px solid var(--shell-border)",
             display: "flex",
             gap: "0.5rem",
             alignItems: "flex-end",
@@ -539,22 +539,22 @@ export function ChatPanel({ thread, viewerPubkey, onClose, embedded = false }: P
               minHeight: 40,
               maxHeight: 140,
               resize: "none",
-              border: "1px solid #e5e7eb",
+              border: "1px solid var(--shell-border-strong)",
               borderRadius: 10,
               padding: "0.55rem 0.8rem",
               fontSize: "0.88rem",
               fontFamily: "inherit",
               outline: "none",
-              color: "#111827",
-              background: "#ffffff",
+              color: "var(--shell-fg)",
+              background: "var(--shell-card)",
             }}
           />
           <button
             onClick={() => void send()}
             disabled={!isAllowedToWrite || !canSign || sending || signing || !body.trim()}
             style={{
-              background: !body.trim() || !isAllowedToWrite || !canSign ? "#e5e7eb" : "#4f46e5",
-              color: !body.trim() || !isAllowedToWrite || !canSign ? "#9ca3af" : "#ffffff",
+              background: !body.trim() || !isAllowedToWrite || !canSign ? "var(--shell-border-strong)" : "#4f46e5",
+              color: !body.trim() || !isAllowedToWrite || !canSign ? "var(--shell-faint)" : "var(--shell-card)",
               border: "none",
               borderRadius: 10,
               padding: "0.55rem 1rem",

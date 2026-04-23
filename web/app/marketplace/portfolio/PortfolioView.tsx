@@ -158,7 +158,7 @@ export function PortfolioView() {
       <EmptyShell>
         <div>
           <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.3rem" }}>Connect wallet</h3>
-          <p style={{ color: "#6b7280", fontSize: "0.88rem", marginBottom: "1rem" }}>
+          <p style={{ color: "var(--shell-muted)", fontSize: "0.88rem", marginBottom: "1rem" }}>
             Connect a Solana wallet to view your RWA holdings.
           </p>
           <WalletMultiButton />
@@ -184,9 +184,9 @@ export function PortfolioView() {
         <h1 style={{ fontSize: "1.65rem", letterSpacing: "-0.02em", marginBottom: "0.3rem", fontWeight: 600 }}>
           Portfolio
         </h1>
-        <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>
+        <p style={{ color: "var(--shell-muted)", fontSize: "0.9rem" }}>
           Tokenised assets held in your wallet{" "}
-          <span style={{ color: "#111827", fontWeight: 500 }}>{publicKey && shorten(publicKey.toBase58())}</span>.
+          <span style={{ color: "var(--shell-fg)", fontWeight: 500 }}>{publicKey && shorten(publicKey.toBase58())}</span>.
           Includes both assets you tokenised and ones you bought.
         </p>
       </header>
@@ -202,10 +202,10 @@ export function PortfolioView() {
         <h3 style={{ fontSize: "1.05rem", fontWeight: 600, marginBottom: "0.75rem" }}>RWA holdings</h3>
         {rwaHoldings.length === 0 ? (
           <CenteredCard>
-            <div style={{ fontSize: "1rem", color: "#111827", fontWeight: 600, marginBottom: "0.35rem" }}>
+            <div style={{ fontSize: "1rem", color: "var(--shell-fg)", fontWeight: 600, marginBottom: "0.35rem" }}>
               No RWA tokens in wallet
             </div>
-            <div style={{ fontSize: "0.88rem", color: "#6b7280" }}>
+            <div style={{ fontSize: "0.88rem", color: "var(--shell-muted)" }}>
               Buy a listing on the marketplace or tokenise an asset to see it here.
             </div>
           </CenteredCard>
@@ -229,15 +229,15 @@ export function PortfolioView() {
           <h3 style={{ fontSize: "1.05rem", fontWeight: 600, marginBottom: "0.75rem" }}>Other Token-2022 balances</h3>
           <div
             style={{
-              background: "#ffffff",
-              border: "1px solid #eef0f3",
+              background: "var(--shell-card)",
+              border: "1px solid var(--shell-border)",
               borderRadius: 12,
               overflow: "hidden",
             }}
           >
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
               <thead>
-                <tr style={{ background: "#fafbfc", color: "#6b7280", fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: 0.8 }}>
+                <tr style={{ background: "var(--shell-card-alt)", color: "var(--shell-muted)", fontSize: "0.74rem", textTransform: "uppercase", letterSpacing: 0.8 }}>
                   <th style={{ textAlign: "left", padding: "0.8rem 1.2rem", fontWeight: 600 }}>Mint</th>
                   <th style={{ textAlign: "right", padding: "0.8rem 1.2rem", fontWeight: 600 }}>Balance</th>
                 </tr>
@@ -246,7 +246,7 @@ export function PortfolioView() {
                 {otherHoldings.map((h) => (
                   <tr key={h.mint} style={{ borderTop: "1px solid #f1f2f4" }}>
                     <td style={{ padding: "0.85rem 1.2rem" }}>
-                      <code style={{ fontFamily: "'SF Mono', Menlo, monospace", color: "#4338ca", fontSize: "0.78rem" }}>
+                      <code style={{ fontFamily: "'SF Mono', Menlo, monospace", color: "var(--shell-link)", fontSize: "0.78rem" }}>
                         {shorten(h.mint)}
                       </code>
                     </td>
@@ -270,8 +270,8 @@ function HoldingCard({ holding }: { holding: Holding }) {
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         overflow: "hidden",
       }}
@@ -295,7 +295,7 @@ function HoldingCard({ holding }: { holding: Holding }) {
             borderRadius: 4,
             fontSize: "0.7rem",
             fontWeight: 600,
-            color: "#374151",
+            color: "var(--shell-fg)",
           }}
         >
           {categoryLabel}
@@ -307,7 +307,7 @@ function HoldingCard({ holding }: { holding: Holding }) {
               bottom: 10,
               left: 10,
               background: "rgba(255,255,255,0.92)",
-              color: "#4338ca",
+              color: "var(--shell-link)",
               padding: "0.18rem 0.55rem",
               borderRadius: 4,
               fontSize: "0.68rem",
@@ -322,16 +322,16 @@ function HoldingCard({ holding }: { holding: Holding }) {
         <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: "0.15rem" }}>
           {holding.name ?? "(unnamed asset)"}
         </div>
-        <div style={{ fontSize: "0.74rem", color: "#9ca3af", fontFamily: "'SF Mono', Menlo, monospace", marginBottom: "0.8rem" }}>
+        <div style={{ fontSize: "0.74rem", color: "var(--shell-faint)", fontFamily: "'SF Mono', Menlo, monospace", marginBottom: "0.8rem" }}>
           {holding.symbol ?? "—"} · {shorten(holding.mint)}
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: "1.2rem", fontWeight: 600 }}>{holding.amount.toLocaleString()}</div>
-            <div style={{ fontSize: "0.7rem", color: "#6b7280" }}>tokens held</div>
+            <div style={{ fontSize: "0.7rem", color: "var(--shell-muted)" }}>tokens held</div>
           </div>
           {holding.issuerOwner ? (
-            <div style={{ fontSize: "0.72rem", color: "#6b7280", textAlign: "right" }}>
+            <div style={{ fontSize: "0.72rem", color: "var(--shell-muted)", textAlign: "right" }}>
               <div>Issuer</div>
               <div style={{ fontFamily: "'SF Mono', Menlo, monospace" }}>{shorten(holding.issuerOwner)}</div>
             </div>
@@ -358,16 +358,16 @@ function EmptyShell({ children }: { children: React.ReactNode }) {
         <h1 style={{ fontSize: "1.65rem", letterSpacing: "-0.02em", marginBottom: "0.3rem", fontWeight: 600 }}>
           Portfolio
         </h1>
-        <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>Tokenised assets held in your wallet.</p>
+        <p style={{ color: "var(--shell-muted)", fontSize: "0.9rem" }}>Tokenised assets held in your wallet.</p>
       </header>
       <div
         style={{
-          background: "#ffffff",
-          border: "1px solid #eef0f3",
+          background: "var(--shell-card)",
+          border: "1px solid var(--shell-border)",
           borderRadius: 12,
           padding: "3rem 1.5rem",
           textAlign: "center",
-          color: "#6b7280",
+          color: "var(--shell-muted)",
         }}
       >
         {children}
@@ -380,12 +380,12 @@ function CenteredCard({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         padding: "2.5rem 1.5rem",
         textAlign: "center",
-        color: "#6b7280",
+        color: "var(--shell-muted)",
       }}
     >
       {children}
@@ -395,10 +395,10 @@ function CenteredCard({ children }: { children: React.ReactNode }) {
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div style={{ background: "#ffffff", border: "1px solid #eef0f3", borderRadius: 12, padding: "1.1rem 1.2rem" }}>
-      <div style={{ fontSize: "0.78rem", color: "#6b7280", marginBottom: "0.5rem", fontWeight: 500 }}>{label}</div>
-      <div style={{ fontSize: "1.55rem", fontWeight: 600, letterSpacing: "-0.02em", color: "#111827" }}>{value}</div>
-      <div style={{ fontSize: "0.76rem", color: "#9ca3af", marginTop: "0.25rem" }}>{sub}</div>
+    <div style={{ background: "var(--shell-card)", border: "1px solid var(--shell-border)", borderRadius: 12, padding: "1.1rem 1.2rem" }}>
+      <div style={{ fontSize: "0.78rem", color: "var(--shell-muted)", marginBottom: "0.5rem", fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: "1.55rem", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--shell-fg)" }}>{value}</div>
+      <div style={{ fontSize: "0.76rem", color: "var(--shell-faint)", marginTop: "0.25rem" }}>{sub}</div>
     </div>
   );
 }

@@ -431,7 +431,7 @@ export function OtcView() {
       <EmptyShell>
         <div>
           <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.3rem" }}>Connect wallet</h3>
-          <p style={{ color: "#6b7280", fontSize: "0.88rem", marginBottom: "1rem" }}>
+          <p style={{ color: "var(--shell-muted)", fontSize: "0.88rem", marginBottom: "1rem" }}>
             Connect a Solana wallet to propose or accept OTC deals.
           </p>
           <WalletMultiButton />
@@ -447,7 +447,7 @@ export function OtcView() {
           <h1 style={{ fontSize: "1.65rem", letterSpacing: "-0.02em", marginBottom: "0.3rem", fontWeight: 600 }}>
             OTC deals
           </h1>
-          <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>
+          <p style={{ color: "var(--shell-muted)", fontSize: "0.9rem" }}>
             Peer-to-peer negotiated trades with dual-party escrow. Set a specific counterparty, price, and expiry; accept is atomic.
           </p>
         </div>
@@ -456,8 +456,8 @@ export function OtcView() {
           disabled={myAssets.length === 0}
           title={myAssets.length === 0 ? "Tokenise an asset first" : undefined}
           style={{
-            background: myAssets.length === 0 ? "#e5e7eb" : "#4f46e5",
-            color: myAssets.length === 0 ? "#9ca3af" : "#fff",
+            background: myAssets.length === 0 ? "var(--shell-border-strong)" : "#4f46e5",
+            color: myAssets.length === 0 ? "var(--shell-faint)" : "#fff",
             padding: "0.6rem 1.15rem",
             borderRadius: 8,
             fontSize: "0.88rem",
@@ -493,10 +493,10 @@ export function OtcView() {
         <CenteredCard>Failed to load: {state.message}</CenteredCard>
       ) : visible.length === 0 ? (
         <CenteredCard>
-          <div style={{ fontSize: "1rem", color: "#111827", fontWeight: 600, marginBottom: "0.35rem" }}>
+          <div style={{ fontSize: "1rem", color: "var(--shell-fg)", fontWeight: 600, marginBottom: "0.35rem" }}>
             No deals as {tab === "as_seller" ? "seller" : "buyer"}
           </div>
-          <div style={{ fontSize: "0.88rem", color: "#6b7280" }}>
+          <div style={{ fontSize: "0.88rem", color: "var(--shell-muted)" }}>
             {tab === "as_seller"
               ? "Propose a deal to a specific counterparty to get started."
               : "You will see OTC deals here when someone proposes one to your wallet."}
@@ -612,7 +612,7 @@ function ProposeModal({
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "#ffffff",
+          background: "var(--shell-card)",
           borderRadius: 14,
           padding: "1.5rem 1.75rem",
           width: 560,
@@ -623,7 +623,7 @@ function ProposeModal({
         }}
       >
         <h3 style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: "0.35rem" }}>Propose OTC deal</h3>
-        <p style={{ fontSize: "0.85rem", color: "#6b7280", marginBottom: "1.25rem" }}>
+        <p style={{ fontSize: "0.85rem", color: "var(--shell-muted)", marginBottom: "1.25rem" }}>
           Escrow your tokens and lock in terms for a specific counterparty. The deal auto-expires if not accepted in time.
         </p>
 
@@ -682,9 +682,9 @@ function ProposeModal({
                   padding: "0.45rem 0.85rem",
                   borderRadius: 6,
                   border: "1px solid",
-                  borderColor: expirySeconds === p.seconds ? "#4f46e5" : "#e5e7eb",
-                  background: expirySeconds === p.seconds ? "#eef2ff" : "#ffffff",
-                  color: expirySeconds === p.seconds ? "#4338ca" : "#374151",
+                  borderColor: expirySeconds === p.seconds ? "#4f46e5" : "var(--shell-border-strong)",
+                  background: expirySeconds === p.seconds ? "var(--shell-active-bg)" : "var(--shell-card)",
+                  color: expirySeconds === p.seconds ? "var(--shell-link)" : "var(--shell-fg)",
                   fontSize: "0.84rem",
                   fontWeight: 600,
                   cursor: "pointer",
@@ -706,8 +706,8 @@ function ProposeModal({
         </div>
         <div
           style={{
-            background: "#f7f8fa",
-            border: "1px solid #eef0f3",
+            background: "var(--shell-pill-bg)",
+            border: "1px solid var(--shell-border)",
             borderRadius: 10,
             padding: "0.8rem 1rem",
             fontSize: "0.84rem",
@@ -783,8 +783,8 @@ function DealCard({
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         padding: "1.1rem 1.3rem",
         display: "grid",
@@ -798,12 +798,12 @@ function DealCard({
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.3rem" }}>
           <div style={{ fontSize: "0.98rem", fontWeight: 600 }}>{deal.assetName ?? "(unnamed)"}</div>
-          <span style={{ fontSize: "0.72rem", color: "#6b7280", background: "#f3f4f6", padding: "0.16rem 0.5rem", borderRadius: 4, fontWeight: 500 }}>
+          <span style={{ fontSize: "0.72rem", color: "var(--shell-muted)", background: "var(--shell-divider)", padding: "0.16rem 0.5rem", borderRadius: 4, fontWeight: 500 }}>
             {categoryLabel}
           </span>
           <DealStatusPill status={deal.status} />
         </div>
-        <div style={{ fontSize: "0.8rem", color: "#6b7280", marginBottom: "0.35rem" }}>
+        <div style={{ fontSize: "0.8rem", color: "var(--shell-muted)", marginBottom: "0.35rem" }}>
           {viewerIsSeller ? (
             <>To: <code style={code}>{shorten(deal.buyer)}</code></>
           ) : (
@@ -811,7 +811,7 @@ function DealCard({
           )}{" "}
           · {deal.quantity} {deal.assetSymbol ?? ""} for ${deal.totalPriceUsdc.toFixed(2)} USDC
         </div>
-        <div style={{ fontSize: "0.76rem", color: "#9ca3af" }}>
+        <div style={{ fontSize: "0.76rem", color: "var(--shell-faint)" }}>
           {deal.status === "proposed" ? timeLeft : `Ended ${new Date(deal.expiresAt * 1000).toLocaleDateString()}`}
           {" · "}memo <code style={code}>{deal.memoHash.slice(0, 8)}…</code>
         </div>
@@ -838,9 +838,9 @@ function DealCard({
 
 function DealStatusPill({ status }: { status: DealStatusKey }) {
   const map = {
-    proposed: { bg: "rgba(79,70,229,0.12)", fg: "#4338ca", dot: "#6366f1", label: "Proposed" },
+    proposed: { bg: "rgba(79,70,229,0.12)", fg: "var(--shell-link)", dot: "#6366f1", label: "Proposed" },
     accepted: { bg: "rgba(16,185,129,0.12)", fg: "#059669", dot: "#10b981", label: "Accepted" },
-    cancelled: { bg: "rgba(107,114,128,0.12)", fg: "#4b5563", dot: "#6b7280", label: "Cancelled" },
+    cancelled: { bg: "rgba(107,114,128,0.12)", fg: "var(--shell-muted)", dot: "var(--shell-muted)", label: "Cancelled" },
     expired: { bg: "rgba(245,158,11,0.12)", fg: "#b45309", dot: "#f59e0b", label: "Expired" },
   };
   const c = map[status];
@@ -872,8 +872,8 @@ function TabButton({ active, children, onClick }: { active: boolean; children: R
         padding: "0.5rem 1rem",
         borderRadius: 8,
         border: "none",
-        background: active ? "#eef2ff" : "#ffffff",
-        color: active ? "#4338ca" : "#6b7280",
+        background: active ? "var(--shell-active-bg)" : "var(--shell-card)",
+        color: active ? "var(--shell-link)" : "var(--shell-muted)",
         fontSize: "0.86rem",
         fontWeight: 600,
         cursor: "pointer",
@@ -887,10 +887,10 @@ function TabButton({ active, children, onClick }: { active: boolean; children: R
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div style={{ background: "#ffffff", border: "1px solid #eef0f3", borderRadius: 12, padding: "1.1rem 1.2rem" }}>
-      <div style={{ fontSize: "0.78rem", color: "#6b7280", marginBottom: "0.5rem", fontWeight: 500 }}>{label}</div>
-      <div style={{ fontSize: "1.55rem", fontWeight: 600, letterSpacing: "-0.02em", color: "#111827" }}>{value}</div>
-      <div style={{ fontSize: "0.76rem", color: "#9ca3af", marginTop: "0.25rem" }}>{sub}</div>
+    <div style={{ background: "var(--shell-card)", border: "1px solid var(--shell-border)", borderRadius: 12, padding: "1.1rem 1.2rem" }}>
+      <div style={{ fontSize: "0.78rem", color: "var(--shell-muted)", marginBottom: "0.5rem", fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: "1.55rem", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--shell-fg)" }}>{value}</div>
+      <div style={{ fontSize: "0.76rem", color: "var(--shell-faint)", marginTop: "0.25rem" }}>{sub}</div>
     </div>
   );
 }
@@ -900,16 +900,16 @@ function EmptyShell({ children }: { children: React.ReactNode }) {
     <>
       <header style={{ marginBottom: "1.5rem" }}>
         <h1 style={{ fontSize: "1.65rem", letterSpacing: "-0.02em", marginBottom: "0.3rem", fontWeight: 600 }}>OTC deals</h1>
-        <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>Peer-to-peer negotiated trades with escrow.</p>
+        <p style={{ color: "var(--shell-muted)", fontSize: "0.9rem" }}>Peer-to-peer negotiated trades with escrow.</p>
       </header>
       <div
         style={{
-          background: "#ffffff",
-          border: "1px solid #eef0f3",
+          background: "var(--shell-card)",
+          border: "1px solid var(--shell-border)",
           borderRadius: 12,
           padding: "3rem 1.5rem",
           textAlign: "center",
-          color: "#6b7280",
+          color: "var(--shell-muted)",
         }}
       >
         {children}
@@ -922,12 +922,12 @@ function CenteredCard({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         padding: "2.5rem 1.5rem",
         textAlign: "center",
-        color: "#6b7280",
+        color: "var(--shell-muted)",
       }}
     >
       {children}
@@ -943,7 +943,7 @@ function Row({ k, v, bold }: { k: string; v: string; bold?: boolean }) {
         justifyContent: "space-between",
         padding: "0.25rem 0",
         fontWeight: bold ? 600 : 400,
-        color: bold ? "#111827" : "#4b5563",
+        color: bold ? "var(--shell-fg)" : "var(--shell-muted)",
       }}
     >
       <span>{k}</span>
@@ -954,7 +954,7 @@ function Row({ k, v, bold }: { k: string; v: string; bold?: boolean }) {
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <label style={{ display: "block", fontSize: "0.78rem", color: "#374151", fontWeight: 500, marginBottom: "0.3rem" }}>
+    <label style={{ display: "block", fontSize: "0.78rem", color: "var(--shell-fg)", fontWeight: 500, marginBottom: "0.3rem" }}>
       {children}
     </label>
   );
@@ -971,10 +971,10 @@ function shorten(s: string): string {
 
 const input: React.CSSProperties = {
   width: "100%",
-  background: "#ffffff",
-  border: "1px solid #e5e7eb",
+  background: "var(--shell-card)",
+  border: "1px solid var(--shell-border-strong)",
   borderRadius: 8,
-  color: "#111827",
+  color: "var(--shell-fg)",
   padding: "0.6rem 0.8rem",
   fontSize: "0.88rem",
   outline: "none",
@@ -994,9 +994,9 @@ const btnPrimary: React.CSSProperties = {
 };
 
 const btnSecondary: React.CSSProperties = {
-  background: "#ffffff",
-  color: "#374151",
-  border: "1px solid #e5e7eb",
+  background: "var(--shell-card)",
+  color: "var(--shell-fg)",
+  border: "1px solid var(--shell-border-strong)",
   padding: "0.6rem 1.15rem",
   borderRadius: 8,
   fontSize: "0.86rem",
@@ -1005,8 +1005,8 @@ const btnSecondary: React.CSSProperties = {
 };
 
 const code: React.CSSProperties = {
-  background: "#f3f4f6",
-  color: "#4338ca",
+  background: "var(--shell-divider)",
+  color: "var(--shell-link)",
   padding: "0.05rem 0.35rem",
   borderRadius: 4,
   fontFamily: "'SF Mono', Menlo, monospace",

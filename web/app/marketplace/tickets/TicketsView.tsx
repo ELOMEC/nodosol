@@ -166,14 +166,14 @@ export function TicketsView() {
         <h1 style={{ fontSize: "1.65rem", letterSpacing: "-0.02em", marginBottom: "0.3rem", fontWeight: 600 }}>
           My tickets
         </h1>
-        <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>
+        <p style={{ color: "var(--shell-muted)", fontSize: "0.9rem" }}>
           Compressed NFT tickets held in your wallet, joined with the event metadata on-chain. Bubblegum leaves are fetched via Helius DAS.
         </p>
       </header>
 
       {!connected ? (
         <CenteredCard>
-          <div style={{ fontSize: "1rem", color: "#111827", fontWeight: 600, marginBottom: "0.35rem" }}>
+          <div style={{ fontSize: "1rem", color: "var(--shell-fg)", fontWeight: 600, marginBottom: "0.35rem" }}>
             Connect wallet
           </div>
           <WalletMultiButton />
@@ -182,7 +182,7 @@ export function TicketsView() {
         <CenteredCard>Loading tickets from Helius DAS…</CenteredCard>
       ) : state.kind === "error" ? (
         <CenteredCard>
-          <div style={{ fontWeight: 600, color: "#111827", marginBottom: "0.4rem" }}>Could not load tickets</div>
+          <div style={{ fontWeight: 600, color: "var(--shell-fg)", marginBottom: "0.4rem" }}>Could not load tickets</div>
           <div style={{ fontSize: "0.88rem" }}>{state.message}</div>
           <button onClick={() => void reload()} style={{ marginTop: "1rem", ...btnSecondary }}>
             Retry
@@ -239,11 +239,11 @@ function ReadyView({
 
       {tickets.length === 0 && unknown.length === 0 ? (
         <CenteredCard>
-          <div style={{ fontSize: "1rem", color: "#111827", fontWeight: 600, marginBottom: "0.35rem" }}>
+          <div style={{ fontSize: "1rem", color: "var(--shell-fg)", fontWeight: 600, marginBottom: "0.35rem" }}>
             No compressed NFTs yet
           </div>
-          <div style={{ fontSize: "0.88rem", color: "#6b7280", marginBottom: "1.1rem" }}>
-            Once you buy an event ticket on <Link href="/marketplace/events" style={{ color: "#4338ca" }}>/marketplace/events</Link>, the cNFT will appear here within seconds.
+          <div style={{ fontSize: "0.88rem", color: "var(--shell-muted)", marginBottom: "1.1rem" }}>
+            Once you buy an event ticket on <Link href="/marketplace/events" style={{ color: "var(--shell-link)" }}>/marketplace/events</Link>, the cNFT will appear here within seconds.
           </div>
           <button style={btnSecondary} onClick={onReload}>Refresh</button>
         </CenteredCard>
@@ -282,7 +282,7 @@ function TicketCard({ ticket }: { ticket: TicketRow }) {
       href={`/marketplace/tickets/${ticket.assetId}`}
       style={{ textDecoration: "none", color: "inherit", display: "block" }}
     >
-    <div style={{ background: "#ffffff", border: "1px solid #eef0f3", borderRadius: 12, overflow: "hidden" }}>
+    <div style={{ background: "var(--shell-card)", border: "1px solid var(--shell-border)", borderRadius: 12, overflow: "hidden" }}>
       <div
         style={{
           height: 140,
@@ -305,7 +305,7 @@ function TicketCard({ ticket }: { ticket: TicketRow }) {
             top: 10,
             left: 10,
             background: "rgba(255,255,255,0.92)",
-            color: "#374151",
+            color: "var(--shell-fg)",
             padding: "0.18rem 0.55rem",
             borderRadius: 4,
             fontSize: "0.7rem",
@@ -336,12 +336,12 @@ function TicketCard({ ticket }: { ticket: TicketRow }) {
       <div style={{ padding: "0.95rem 1.05rem 1.05rem" }}>
         <div style={{ fontSize: "0.95rem", fontWeight: 600, marginBottom: "0.15rem" }}>{ticket.name}</div>
         {ticket.event ? (
-          <div style={{ fontSize: "0.78rem", color: "#6b7280", marginBottom: "0.7rem" }}>
+          <div style={{ fontSize: "0.78rem", color: "var(--shell-muted)", marginBottom: "0.7rem" }}>
             Event {ticket.event.symbol} · paid ${ticket.event.priceUsdc.toFixed(2)}
           </div>
         ) : null}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.4rem" }}>
-          <code style={{ fontSize: "0.7rem", color: "#9ca3af", fontFamily: "'SF Mono', Menlo, monospace" }}>
+          <code style={{ fontSize: "0.7rem", color: "var(--shell-faint)", fontFamily: "'SF Mono', Menlo, monospace" }}>
             {shorten(ticket.assetId)}
           </code>
           <a
@@ -349,7 +349,7 @@ function TicketCard({ ticket }: { ticket: TicketRow }) {
             target="_blank"
             rel="noreferrer"
             onClick={(e) => e.stopPropagation()}
-            style={{ fontSize: "0.75rem", color: "#4338ca", fontWeight: 600, textDecoration: "none" }}
+            style={{ fontSize: "0.75rem", color: "var(--shell-link)", fontWeight: 600, textDecoration: "none" }}
           >
             Explorer ↗
           </a>
@@ -365,7 +365,7 @@ function GenericCnftCard({ asset }: { asset: HeliusAsset }) {
   const image = asset.content?.links?.image;
   const explorerUrl = `https://explorer.solana.com/address/${asset.id}?cluster=devnet`;
   return (
-    <div style={{ background: "#ffffff", border: "1px solid #eef0f3", borderRadius: 12, overflow: "hidden" }}>
+    <div style={{ background: "var(--shell-card)", border: "1px solid var(--shell-border)", borderRadius: 12, overflow: "hidden" }}>
       <div
         style={{
           height: 100,
@@ -386,14 +386,14 @@ function GenericCnftCard({ asset }: { asset: HeliusAsset }) {
       <div style={{ padding: "0.85rem 1rem 0.95rem" }}>
         <div style={{ fontSize: "0.88rem", fontWeight: 600, marginBottom: "0.2rem" }}>{name}</div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.4rem" }}>
-          <code style={{ fontSize: "0.68rem", color: "#9ca3af", fontFamily: "'SF Mono', Menlo, monospace" }}>
+          <code style={{ fontSize: "0.68rem", color: "var(--shell-faint)", fontFamily: "'SF Mono', Menlo, monospace" }}>
             {shorten(asset.id)}
           </code>
           <a
             href={explorerUrl}
             target="_blank"
             rel="noreferrer"
-            style={{ fontSize: "0.72rem", color: "#4338ca", fontWeight: 600, textDecoration: "none" }}
+            style={{ fontSize: "0.72rem", color: "var(--shell-link)", fontWeight: 600, textDecoration: "none" }}
           >
             Explorer ↗
           </a>
@@ -405,17 +405,17 @@ function GenericCnftCard({ asset }: { asset: HeliusAsset }) {
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div style={{ background: "#ffffff", border: "1px solid #eef0f3", borderRadius: 12, padding: "1.1rem 1.2rem" }}>
-      <div style={{ fontSize: "0.78rem", color: "#6b7280", marginBottom: "0.5rem", fontWeight: 500 }}>{label}</div>
-      <div style={{ fontSize: "1.55rem", fontWeight: 600, letterSpacing: "-0.02em", color: "#111827" }}>{value}</div>
-      <div style={{ fontSize: "0.76rem", color: "#9ca3af", marginTop: "0.25rem" }}>{sub}</div>
+    <div style={{ background: "var(--shell-card)", border: "1px solid var(--shell-border)", borderRadius: 12, padding: "1.1rem 1.2rem" }}>
+      <div style={{ fontSize: "0.78rem", color: "var(--shell-muted)", marginBottom: "0.5rem", fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: "1.55rem", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--shell-fg)" }}>{value}</div>
+      <div style={{ fontSize: "0.76rem", color: "var(--shell-faint)", marginTop: "0.25rem" }}>{sub}</div>
     </div>
   );
 }
 
 function CenteredCard({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ background: "#ffffff", border: "1px solid #eef0f3", borderRadius: 12, padding: "3rem 1.5rem", textAlign: "center", color: "#6b7280" }}>
+    <div style={{ background: "var(--shell-card)", border: "1px solid var(--shell-border)", borderRadius: 12, padding: "3rem 1.5rem", textAlign: "center", color: "var(--shell-muted)" }}>
       {children}
     </div>
   );
@@ -427,7 +427,7 @@ function shorten(s: string): string {
 
 const sectionTitleStyle: React.CSSProperties = {
   fontSize: "0.82rem",
-  color: "#6b7280",
+  color: "var(--shell-muted)",
   letterSpacing: 1,
   textTransform: "uppercase",
   fontWeight: 600,
@@ -435,9 +435,9 @@ const sectionTitleStyle: React.CSSProperties = {
 };
 
 const btnSecondary: React.CSSProperties = {
-  background: "#ffffff",
-  color: "#374151",
-  border: "1px solid #e5e7eb",
+  background: "var(--shell-card)",
+  color: "var(--shell-fg)",
+  border: "1px solid var(--shell-border-strong)",
   padding: "0.5rem 1rem",
   borderRadius: 8,
   fontSize: "0.85rem",

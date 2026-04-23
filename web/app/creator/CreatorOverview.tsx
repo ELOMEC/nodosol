@@ -58,17 +58,17 @@ export function CreatorOverview() {
         <h1 style={{ fontSize: "1.65rem", letterSpacing: "-0.02em", marginBottom: "0.3rem", fontWeight: 600 }}>
           Creator dashboard
         </h1>
-        <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>
+        <p style={{ color: "var(--shell-muted)", fontSize: "0.9rem" }}>
           Manage your tip jar, subscription plans, and event tickets. All funds settle directly to your wallet — Nodosol never holds balances.
         </p>
       </header>
 
       {!connected ? (
         <CenteredCard>
-          <div style={{ fontSize: "1rem", color: "#111827", fontWeight: 600, marginBottom: "0.35rem" }}>
+          <div style={{ fontSize: "1rem", color: "var(--shell-fg)", fontWeight: 600, marginBottom: "0.35rem" }}>
             Connect wallet
           </div>
-          <div style={{ fontSize: "0.88rem", color: "#6b7280", marginBottom: "1rem" }}>
+          <div style={{ fontSize: "0.88rem", color: "var(--shell-muted)", marginBottom: "1rem" }}>
             Connect a Solana wallet to see your creator state.
           </div>
           <WalletMultiButton />
@@ -105,7 +105,7 @@ function ReadyView({ profile, plans }: { profile: CreatorProfileDoc | null; plan
   return (
     <>
       <div className="nds-grid-4" style={{ gap: "1rem", marginBottom: "1.5rem" }}>
-        <StatCard label="Tip jar" value={profile ? "Active" : "Not set up"} sub={profile ? `$${totalTips.toFixed(2)} from ${tipCount} tips` : "Initialize to start receiving"} valueColor={profile ? "#059669" : "#9ca3af"} />
+        <StatCard label="Tip jar" value={profile ? "Active" : "Not set up"} sub={profile ? `$${totalTips.toFixed(2)} from ${tipCount} tips` : "Initialize to start receiving"} valueColor={profile ? "#059669" : "var(--shell-faint)"} />
         <StatCard label="Subscription plans" value={plans.length.toString()} sub={`${activePlans} active · ${totalSubscribers} total subscribers`} />
         <StatCard label="Withdrawable now" value={`$${(withdrawableTips + planWithdrawable).toFixed(2)}`} sub="Tips + plans combined" />
         <StatCard label="Lifetime revenue" value={`$${(totalTips + planRevenue).toFixed(2)}`} sub="Across all creator rails" />
@@ -125,7 +125,7 @@ function ReadyView({ profile, plans }: { profile: CreatorProfileDoc | null; plan
               <KV k="Withdrawable" v={`$${withdrawableTips.toFixed(2)}`} />
             </>
           ) : (
-            <div style={{ fontSize: "0.88rem", color: "#6b7280", padding: "0.5rem 0" }}>
+            <div style={{ fontSize: "0.88rem", color: "var(--shell-muted)", padding: "0.5rem 0" }}>
               One-time setup creates your CreatorProfile PDA + USDC vault. Tips arrive instantly, you withdraw any time.
             </div>
           )}
@@ -144,7 +144,7 @@ function ReadyView({ profile, plans }: { profile: CreatorProfileDoc | null; plan
               <KV k="Withdrawable" v={`$${planWithdrawable.toFixed(2)}`} />
             </>
           ) : (
-            <div style={{ fontSize: "0.88rem", color: "#6b7280", padding: "0.5rem 0" }}>
+            <div style={{ fontSize: "0.88rem", color: "var(--shell-muted)", padding: "0.5rem 0" }}>
               Offer recurring monthly / weekly access. SPL token delegate pattern pre-approves N billing cycles so subscribers don&apos;t re-sign each period.
             </div>
           )}
@@ -158,7 +158,7 @@ function ReadyView({ profile, plans }: { profile: CreatorProfileDoc | null; plan
           href="/creator/events"
           cta="Manage events"
         >
-          <div style={{ fontSize: "0.88rem", color: "#6b7280", padding: "0.5rem 0" }}>
+          <div style={{ fontSize: "0.88rem", color: "var(--shell-muted)", padding: "0.5rem 0" }}>
             Sell event tickets as cNFTs. Each ticket is a Bubblegum leaf — transferable, viewable in Phantom Collectibles, Tensor / Magic Eden compatible.
           </div>
         </SectionCard>
@@ -169,10 +169,10 @@ function ReadyView({ profile, plans }: { profile: CreatorProfileDoc | null; plan
 
 function StatCard({ label, value, sub, valueColor }: { label: string; value: string; sub: string; valueColor?: string }) {
   return (
-    <div style={{ background: "#ffffff", border: "1px solid #eef0f3", borderRadius: 12, padding: "1.1rem 1.2rem" }}>
-      <div style={{ fontSize: "0.78rem", color: "#6b7280", marginBottom: "0.5rem", fontWeight: 500 }}>{label}</div>
-      <div style={{ fontSize: "1.55rem", fontWeight: 600, letterSpacing: "-0.02em", color: valueColor ?? "#111827" }}>{value}</div>
-      <div style={{ fontSize: "0.76rem", color: "#9ca3af", marginTop: "0.25rem" }}>{sub}</div>
+    <div style={{ background: "var(--shell-card)", border: "1px solid var(--shell-border)", borderRadius: 12, padding: "1.1rem 1.2rem" }}>
+      <div style={{ fontSize: "0.78rem", color: "var(--shell-muted)", marginBottom: "0.5rem", fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: "1.55rem", fontWeight: 600, letterSpacing: "-0.02em", color: valueColor ?? "var(--shell-fg)" }}>{value}</div>
+      <div style={{ fontSize: "0.76rem", color: "var(--shell-faint)", marginTop: "0.25rem" }}>{sub}</div>
     </div>
   );
 }
@@ -193,8 +193,8 @@ function SectionCard({
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         padding: "1.3rem 1.4rem",
       }}
@@ -202,7 +202,7 @@ function SectionCard({
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "0.75rem", gap: "1rem" }}>
         <div>
           <h3 style={{ fontSize: "1.05rem", fontWeight: 600, marginBottom: "0.2rem" }}>{title}</h3>
-          <p style={{ fontSize: "0.82rem", color: "#6b7280" }}>{subtitle}</p>
+          <p style={{ fontSize: "0.82rem", color: "var(--shell-muted)" }}>{subtitle}</p>
         </div>
         <Link
           href={href}
@@ -227,9 +227,9 @@ function SectionCard({
 
 function KV({ k, v }: { k: string; v: string }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", padding: "0.4rem 0", borderBottom: "1px solid #f3f4f6", fontSize: "0.88rem" }}>
-      <span style={{ color: "#6b7280" }}>{k}</span>
-      <span style={{ color: "#111827", fontWeight: 500 }}>{v}</span>
+    <div style={{ display: "flex", justifyContent: "space-between", padding: "0.4rem 0", borderBottom: "1px solid var(--shell-divider)", fontSize: "0.88rem" }}>
+      <span style={{ color: "var(--shell-muted)" }}>{k}</span>
+      <span style={{ color: "var(--shell-fg)", fontWeight: 500 }}>{v}</span>
     </div>
   );
 }
@@ -238,12 +238,12 @@ function CenteredCard({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         padding: "3rem 1.5rem",
         textAlign: "center",
-        color: "#6b7280",
+        color: "var(--shell-muted)",
       }}
     >
       {children}

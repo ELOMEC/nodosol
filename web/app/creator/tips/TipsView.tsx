@@ -168,14 +168,14 @@ export function TipsView() {
         <h1 style={{ fontSize: "1.65rem", letterSpacing: "-0.02em", marginBottom: "0.3rem", fontWeight: 600 }}>
           Tip jar
         </h1>
-        <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>
+        <p style={{ color: "var(--shell-muted)", fontSize: "0.9rem" }}>
           Receive direct fan-to-creator tips in USDC. Tips settle instantly into your CreatorProfile vault — withdraw any time.
         </p>
       </header>
 
       {!connected ? (
         <CenteredCard>
-          <div style={{ fontSize: "1rem", color: "#111827", fontWeight: 600, marginBottom: "0.35rem" }}>Connect wallet</div>
+          <div style={{ fontSize: "1rem", color: "var(--shell-fg)", fontWeight: 600, marginBottom: "0.35rem" }}>Connect wallet</div>
           <WalletMultiButton />
         </CenteredCard>
       ) : state.kind === "loading" ? (
@@ -184,10 +184,10 @@ export function TipsView() {
         <CenteredCard>Failed: {state.message}</CenteredCard>
       ) : state.kind === "ready" && !state.profile ? (
         <CenteredCard>
-          <div style={{ fontSize: "1rem", color: "#111827", fontWeight: 600, marginBottom: "0.35rem" }}>
+          <div style={{ fontSize: "1rem", color: "var(--shell-fg)", fontWeight: 600, marginBottom: "0.35rem" }}>
             Tip jar not initialised
           </div>
-          <p style={{ fontSize: "0.88rem", color: "#6b7280", marginBottom: "1.2rem", maxWidth: 420, margin: "0 auto 1.2rem" }}>
+          <p style={{ fontSize: "0.88rem", color: "var(--shell-muted)", marginBottom: "1.2rem", maxWidth: 420, margin: "0 auto 1.2rem" }}>
             One-time setup creates a CreatorProfile PDA + USDC vault owned by you. Tipping starts immediately after.
           </p>
           <button
@@ -240,8 +240,8 @@ function ReadyView({
 
       <div
         style={{
-          background: "#ffffff",
-          border: "1px solid #eef0f3",
+          background: "var(--shell-card)",
+          border: "1px solid var(--shell-border)",
           borderRadius: 12,
           padding: "1.3rem 1.4rem",
           marginBottom: "1rem",
@@ -254,7 +254,7 @@ function ReadyView({
       >
         <div>
           <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.25rem" }}>Withdraw funds</h3>
-          <p style={{ fontSize: "0.84rem", color: "#6b7280" }}>
+          <p style={{ fontSize: "0.84rem", color: "var(--shell-muted)" }}>
             Moves USDC from your tip jar vault to your wallet&apos;s ATA. Instant, on-chain.
           </p>
         </div>
@@ -262,8 +262,8 @@ function ReadyView({
           onClick={onWithdraw}
           disabled={busy || vaultBalance <= 0}
           style={{
-            background: vaultBalance <= 0 ? "#e5e7eb" : "#4f46e5",
-            color: vaultBalance <= 0 ? "#9ca3af" : "#fff",
+            background: vaultBalance <= 0 ? "var(--shell-border-strong)" : "#4f46e5",
+            color: vaultBalance <= 0 ? "var(--shell-faint)" : "#fff",
             border: "none",
             padding: "0.65rem 1.35rem",
             borderRadius: 8,
@@ -276,9 +276,9 @@ function ReadyView({
         </button>
       </div>
 
-      <div style={{ background: "#ffffff", border: "1px solid #eef0f3", borderRadius: 12, padding: "1.3rem 1.4rem" }}>
+      <div style={{ background: "var(--shell-card)", border: "1px solid var(--shell-border)", borderRadius: 12, padding: "1.3rem 1.4rem" }}>
         <h3 style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.35rem" }}>Share your tip link</h3>
-        <p style={{ fontSize: "0.84rem", color: "#6b7280", marginBottom: "1rem" }}>
+        <p style={{ fontSize: "0.84rem", color: "var(--shell-muted)", marginBottom: "1rem" }}>
           Share these URLs on Twitter / X, Discord, or a Solana wallet-aware page. First link is a Solana Action (Blink); second opens natively on nodosol.com.
         </p>
         <CopyRow label="Solana Action URL (Blinks-aware clients)" url={blinkUrl} />
@@ -292,18 +292,18 @@ function CopyRow({ label, url }: { label: string; url: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <div style={{ marginBottom: "0.75rem" }}>
-      <div style={{ fontSize: "0.72rem", color: "#6b7280", marginBottom: "0.25rem", letterSpacing: 0.6 }}>{label}</div>
+      <div style={{ fontSize: "0.72rem", color: "var(--shell-muted)", marginBottom: "0.25rem", letterSpacing: 0.6 }}>{label}</div>
       <div style={{ display: "flex", gap: "0.5rem" }}>
         <code
           style={{
             flex: 1,
-            background: "#f7f8fa",
-            border: "1px solid #eef0f3",
+            background: "var(--shell-pill-bg)",
+            border: "1px solid var(--shell-border)",
             borderRadius: 8,
             padding: "0.5rem 0.8rem",
             fontSize: "0.8rem",
             fontFamily: "'SF Mono', Menlo, monospace",
-            color: "#4338ca",
+            color: "var(--shell-link)",
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
@@ -322,9 +322,9 @@ function CopyRow({ label, url }: { label: string; url: string }) {
             }
           }}
           style={{
-            background: "#ffffff",
-            border: "1px solid #e5e7eb",
-            color: "#374151",
+            background: "var(--shell-card)",
+            border: "1px solid var(--shell-border-strong)",
+            color: "var(--shell-fg)",
             padding: "0.5rem 0.95rem",
             borderRadius: 8,
             fontSize: "0.82rem",
@@ -341,10 +341,10 @@ function CopyRow({ label, url }: { label: string; url: string }) {
 
 function StatCard({ label, value, sub, valueColor }: { label: string; value: string; sub: string; valueColor?: string }) {
   return (
-    <div style={{ background: "#ffffff", border: "1px solid #eef0f3", borderRadius: 12, padding: "1.1rem 1.2rem" }}>
-      <div style={{ fontSize: "0.78rem", color: "#6b7280", marginBottom: "0.5rem", fontWeight: 500 }}>{label}</div>
-      <div style={{ fontSize: "1.55rem", fontWeight: 600, letterSpacing: "-0.02em", color: valueColor ?? "#111827" }}>{value}</div>
-      <div style={{ fontSize: "0.76rem", color: "#9ca3af", marginTop: "0.25rem" }}>{sub}</div>
+    <div style={{ background: "var(--shell-card)", border: "1px solid var(--shell-border)", borderRadius: 12, padding: "1.1rem 1.2rem" }}>
+      <div style={{ fontSize: "0.78rem", color: "var(--shell-muted)", marginBottom: "0.5rem", fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: "1.55rem", fontWeight: 600, letterSpacing: "-0.02em", color: valueColor ?? "var(--shell-fg)" }}>{value}</div>
+      <div style={{ fontSize: "0.76rem", color: "var(--shell-faint)", marginTop: "0.25rem" }}>{sub}</div>
     </div>
   );
 }
@@ -353,12 +353,12 @@ function CenteredCard({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         padding: "3rem 1.5rem",
         textAlign: "center",
-        color: "#6b7280",
+        color: "var(--shell-muted)",
       }}
     >
       {children}

@@ -286,7 +286,7 @@ export function IssuersView() {
           <h1 style={{ fontSize: "1.65rem", letterSpacing: "-0.02em", marginBottom: "0.3rem", fontWeight: 600 }}>
             Issuer registry
           </h1>
-          <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>
+          <p style={{ color: "var(--shell-muted)", fontSize: "0.9rem" }}>
             Licenced RWA issuers tracked on-chain. Only the registry authority can register, suspend, revoke, or edit metadata. Everyone can read.
           </p>
         </div>
@@ -343,10 +343,10 @@ export function IssuersView() {
 
           {state.issuers.length === 0 ? (
             <CenteredCard>
-              <div style={{ fontSize: "1rem", color: "#111827", fontWeight: 600, marginBottom: "0.35rem" }}>
+              <div style={{ fontSize: "1rem", color: "var(--shell-fg)", fontWeight: 600, marginBottom: "0.35rem" }}>
                 No issuers registered yet
               </div>
-              <div style={{ fontSize: "0.88rem", color: "#6b7280" }}>
+              <div style={{ fontSize: "0.88rem", color: "var(--shell-muted)" }}>
                 {isAuthority
                   ? "Click Register issuer above to add the first."
                   : "Waiting for the registry authority to add issuers."}
@@ -416,8 +416,8 @@ function IssuerRowCard({
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         padding: "1rem 1.3rem",
         display: "grid",
@@ -434,7 +434,7 @@ function IssuerRowCard({
           </span>
           <StatusPill status={row.status} />
         </div>
-        <div style={{ fontSize: "0.78rem", color: "#6b7280" }}>
+        <div style={{ fontSize: "0.78rem", color: "var(--shell-muted)" }}>
           {row.jurisdictions.join(", ") || "—"} · {assetClassLabels(row.assetClasses).join(" · ") || "no classes"} · KYC {row.kycRef || "—"}
         </div>
       </div>
@@ -657,9 +657,9 @@ function AssetClassPicker({ value, onChange }: { value: number; onChange: (bitma
               padding: "0.4rem 0.75rem",
               borderRadius: 6,
               border: "1px solid",
-              borderColor: enabled ? "#4f46e5" : "#e5e7eb",
-              background: enabled ? "#eef2ff" : "#ffffff",
-              color: enabled ? "#4338ca" : "#6b7280",
+              borderColor: enabled ? "#4f46e5" : "var(--shell-border-strong)",
+              background: enabled ? "var(--shell-active-bg)" : "var(--shell-card)",
+              color: enabled ? "var(--shell-link)" : "var(--shell-muted)",
               fontSize: "0.8rem",
               fontWeight: 600,
               cursor: "pointer",
@@ -678,7 +678,7 @@ function StatusPill({ status }: { status: IssuerStatusKey }) {
     active: { bg: "rgba(16,185,129,0.12)", fg: "#059669", dot: "#10b981", label: "Active" },
     pending: { bg: "rgba(234,179,8,0.12)", fg: "#854d0e", dot: "#eab308", label: "Pending" },
     suspended: { bg: "rgba(245,158,11,0.12)", fg: "#b45309", dot: "#f59e0b", label: "Suspended" },
-    revoked: { bg: "rgba(107,114,128,0.12)", fg: "#4b5563", dot: "#6b7280", label: "Revoked" },
+    revoked: { bg: "rgba(107,114,128,0.12)", fg: "var(--shell-muted)", dot: "var(--shell-muted)", label: "Revoked" },
   };
   const c = map[status];
   return (
@@ -719,7 +719,7 @@ function ModalShell({ children, onClose }: { children: React.ReactNode; onClose:
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "#ffffff",
+          background: "var(--shell-card)",
           borderRadius: 14,
           padding: "1.5rem 1.75rem",
           width: 480,
@@ -770,10 +770,10 @@ function ModalActions({
 
 function StatCard({ label, value, sub }: { label: string; value: string; sub: string }) {
   return (
-    <div style={{ background: "#ffffff", border: "1px solid #eef0f3", borderRadius: 12, padding: "1.1rem 1.2rem" }}>
-      <div style={{ fontSize: "0.78rem", color: "#6b7280", marginBottom: "0.5rem", fontWeight: 500 }}>{label}</div>
-      <div style={{ fontSize: "1.55rem", fontWeight: 600, letterSpacing: "-0.02em", color: "#111827" }}>{value}</div>
-      <div style={{ fontSize: "0.76rem", color: "#9ca3af", marginTop: "0.25rem" }}>{sub}</div>
+    <div style={{ background: "var(--shell-card)", border: "1px solid var(--shell-border)", borderRadius: 12, padding: "1.1rem 1.2rem" }}>
+      <div style={{ fontSize: "0.78rem", color: "var(--shell-muted)", marginBottom: "0.5rem", fontWeight: 500 }}>{label}</div>
+      <div style={{ fontSize: "1.55rem", fontWeight: 600, letterSpacing: "-0.02em", color: "var(--shell-fg)" }}>{value}</div>
+      <div style={{ fontSize: "0.76rem", color: "var(--shell-faint)", marginTop: "0.25rem" }}>{sub}</div>
     </div>
   );
 }
@@ -782,12 +782,12 @@ function CenteredCard({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         padding: "3rem 1.5rem",
         textAlign: "center",
-        color: "#6b7280",
+        color: "var(--shell-muted)",
       }}
     >
       {children}
@@ -797,7 +797,7 @@ function CenteredCard({ children }: { children: React.ReactNode }) {
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <label style={{ display: "block", fontSize: "0.78rem", color: "#374151", fontWeight: 500, marginBottom: "0.3rem" }}>
+    <label style={{ display: "block", fontSize: "0.78rem", color: "var(--shell-fg)", fontWeight: 500, marginBottom: "0.3rem" }}>
       {children}
     </label>
   );
@@ -809,10 +809,10 @@ function shorten(s: string): string {
 
 const input: React.CSSProperties = {
   width: "100%",
-  background: "#ffffff",
-  border: "1px solid #e5e7eb",
+  background: "var(--shell-card)",
+  border: "1px solid var(--shell-border-strong)",
   borderRadius: 8,
-  color: "#111827",
+  color: "var(--shell-fg)",
   padding: "0.6rem 0.8rem",
   fontSize: "0.88rem",
   outline: "none",
@@ -831,9 +831,9 @@ const btnPrimary: React.CSSProperties = {
 };
 
 const btnSecondary: React.CSSProperties = {
-  background: "#ffffff",
-  color: "#374151",
-  border: "1px solid #e5e7eb",
+  background: "var(--shell-card)",
+  color: "var(--shell-fg)",
+  border: "1px solid var(--shell-border-strong)",
   padding: "0.45rem 0.9rem",
   borderRadius: 6,
   fontSize: "0.8rem",
@@ -842,8 +842,8 @@ const btnSecondary: React.CSSProperties = {
 };
 
 const code: React.CSSProperties = {
-  background: "#f3f4f6",
-  color: "#4338ca",
+  background: "var(--shell-divider)",
+  color: "var(--shell-link)",
   padding: "0.08rem 0.35rem",
   borderRadius: 4,
   fontSize: "0.78rem",
@@ -858,6 +858,6 @@ const modalTitle: React.CSSProperties = {
 
 const modalBlurb: React.CSSProperties = {
   fontSize: "0.85rem",
-  color: "#6b7280",
+  color: "var(--shell-muted)",
   marginBottom: "1.1rem",
 };

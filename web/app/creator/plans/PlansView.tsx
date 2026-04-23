@@ -202,7 +202,7 @@ export function PlansView() {
           <h1 style={{ fontSize: "1.65rem", letterSpacing: "-0.02em", marginBottom: "0.3rem", fontWeight: 600 }}>
             Subscription plans
           </h1>
-          <p style={{ color: "#6b7280", fontSize: "0.9rem" }}>
+          <p style={{ color: "var(--shell-muted)", fontSize: "0.9rem" }}>
             Recurring monthly / weekly / daily access. Subscribers pre-approve 12 billing cycles via SPL delegate so you don&apos;t need them to re-sign every period.
           </p>
         </div>
@@ -227,7 +227,7 @@ export function PlansView() {
 
       {!connected ? (
         <CenteredCard>
-          <div style={{ fontSize: "1rem", color: "#111827", fontWeight: 600, marginBottom: "0.35rem" }}>Connect wallet</div>
+          <div style={{ fontSize: "1rem", color: "var(--shell-fg)", fontWeight: 600, marginBottom: "0.35rem" }}>Connect wallet</div>
           <WalletMultiButton />
         </CenteredCard>
       ) : state.kind === "loading" ? (
@@ -236,10 +236,10 @@ export function PlansView() {
         <CenteredCard>Failed: {state.message}</CenteredCard>
       ) : plans.length === 0 ? (
         <CenteredCard>
-          <div style={{ fontSize: "1rem", color: "#111827", fontWeight: 600, marginBottom: "0.35rem" }}>
+          <div style={{ fontSize: "1rem", color: "var(--shell-fg)", fontWeight: 600, marginBottom: "0.35rem" }}>
             No subscription plans yet
           </div>
-          <p style={{ fontSize: "0.88rem", color: "#6b7280" }}>
+          <p style={{ fontSize: "0.88rem", color: "var(--shell-muted)" }}>
             Click <strong>Create plan</strong> above to offer your first recurring tier.
           </p>
         </CenteredCard>
@@ -295,8 +295,8 @@ function PlanCard({
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         padding: "1.2rem 1.4rem",
         opacity: busy ? 0.55 : 1,
@@ -308,13 +308,13 @@ function PlanCard({
             <div style={{ fontSize: "1.08rem", fontWeight: 600 }}>${price.toFixed(2)} / {period}</div>
             <PlanStatusPill status={plan.status} />
           </div>
-          <div style={{ fontSize: "0.78rem", color: "#6b7280" }}>
+          <div style={{ fontSize: "0.78rem", color: "var(--shell-muted)" }}>
             Plan id {plan.planId} · created {new Date(plan.createdAt * 1000).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: "1.35rem", fontWeight: 600, color: "#4338ca" }}>{plan.subscriberCount}</div>
-          <div style={{ fontSize: "0.72rem", color: "#9ca3af" }}>subscribers</div>
+          <div style={{ fontSize: "1.35rem", fontWeight: 600, color: "var(--shell-link)" }}>{plan.subscriberCount}</div>
+          <div style={{ fontSize: "0.72rem", color: "var(--shell-faint)" }}>subscribers</div>
         </div>
       </div>
 
@@ -324,9 +324,9 @@ function PlanCard({
         <MiniStat label="Withdrawn" value={`$${withdrawn.toFixed(2)}`} />
       </div>
 
-      <div style={{ background: "#f7f8fa", border: "1px solid #eef0f3", borderRadius: 8, padding: "0.55rem 0.8rem", marginBottom: "0.85rem" }}>
-        <div style={{ fontSize: "0.7rem", color: "#6b7280", marginBottom: "0.2rem", letterSpacing: 0.6 }}>SUBSCRIBE LINK (Blink)</div>
-        <code style={{ fontSize: "0.76rem", color: "#4338ca", fontFamily: "'SF Mono', Menlo, monospace", wordBreak: "break-all" }}>{blinkUrl}</code>
+      <div style={{ background: "var(--shell-pill-bg)", border: "1px solid var(--shell-border)", borderRadius: 8, padding: "0.55rem 0.8rem", marginBottom: "0.85rem" }}>
+        <div style={{ fontSize: "0.7rem", color: "var(--shell-muted)", marginBottom: "0.2rem", letterSpacing: 0.6 }}>SUBSCRIBE LINK (Blink)</div>
+        <code style={{ fontSize: "0.76rem", color: "var(--shell-link)", fontFamily: "'SF Mono', Menlo, monospace", wordBreak: "break-all" }}>{blinkUrl}</code>
       </div>
 
       <div style={{ display: "flex", gap: "0.45rem", flexWrap: "wrap" }}>
@@ -384,7 +384,7 @@ function CreatePlanModal({
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: "#ffffff",
+          background: "var(--shell-card)",
           borderRadius: 14,
           padding: "1.5rem 1.75rem",
           width: 460,
@@ -393,7 +393,7 @@ function CreatePlanModal({
         }}
       >
         <h3 style={{ fontSize: "1.15rem", fontWeight: 600, marginBottom: "0.35rem" }}>Create subscription plan</h3>
-        <p style={{ fontSize: "0.85rem", color: "#6b7280", marginBottom: "1.25rem" }}>
+        <p style={{ fontSize: "0.85rem", color: "var(--shell-muted)", marginBottom: "1.25rem" }}>
           Creates a Plan PDA + USDC vault. Subscribers pre-approve 12 cycles when they subscribe.
         </p>
 
@@ -413,9 +413,9 @@ function CreatePlanModal({
                   padding: "0.45rem 0.85rem",
                   borderRadius: 6,
                   border: "1px solid",
-                  borderColor: preset === p.key ? "#4f46e5" : "#e5e7eb",
-                  background: preset === p.key ? "#eef2ff" : "#ffffff",
-                  color: preset === p.key ? "#4338ca" : "#374151",
+                  borderColor: preset === p.key ? "#4f46e5" : "var(--shell-border-strong)",
+                  background: preset === p.key ? "var(--shell-active-bg)" : "var(--shell-card)",
+                  color: preset === p.key ? "var(--shell-link)" : "var(--shell-fg)",
                   fontSize: "0.84rem",
                   fontWeight: 600,
                   cursor: "pointer",
@@ -426,7 +426,7 @@ function CreatePlanModal({
             ))}
           </div>
         </div>
-        <div style={{ background: "#f7f8fa", border: "1px solid #eef0f3", borderRadius: 8, padding: "0.7rem 0.9rem", fontSize: "0.82rem", marginBottom: "1.25rem" }}>
+        <div style={{ background: "var(--shell-pill-bg)", border: "1px solid var(--shell-border)", borderRadius: 8, padding: "0.7rem 0.9rem", fontSize: "0.82rem", marginBottom: "1.25rem" }}>
           <SummaryRow k="Price" v={priceNum > 0 ? `$${priceNum.toFixed(2)}` : "—"} />
           <SummaryRow k="Period" v={periodLabel(periodSeconds)} />
           <SummaryRow k="12-cycle commitment" v={priceNum > 0 ? `$${(priceNum * 12).toFixed(2)}` : "—"} bold />
@@ -465,7 +465,7 @@ function SummaryRow({ k, v, bold }: { k: string; v: string; bold?: boolean }) {
         justifyContent: "space-between",
         padding: "0.2rem 0",
         fontWeight: bold ? 600 : 400,
-        color: bold ? "#111827" : "#4b5563",
+        color: bold ? "var(--shell-fg)" : "var(--shell-muted)",
       }}
     >
       <span>{k}</span>
@@ -478,7 +478,7 @@ function PlanStatusPill({ status }: { status: PlanStatusKey }) {
   const map = {
     active: { bg: "rgba(16,185,129,0.12)", fg: "#059669", dot: "#10b981", label: "Active" },
     paused: { bg: "rgba(245,158,11,0.12)", fg: "#b45309", dot: "#f59e0b", label: "Paused" },
-    closed: { bg: "rgba(107,114,128,0.12)", fg: "#4b5563", dot: "#6b7280", label: "Closed" },
+    closed: { bg: "rgba(107,114,128,0.12)", fg: "var(--shell-muted)", dot: "var(--shell-muted)", label: "Closed" },
   };
   const c = map[status];
   return (
@@ -503,8 +503,8 @@ function PlanStatusPill({ status }: { status: PlanStatusKey }) {
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ background: "#f7f8fa", border: "1px solid #eef0f3", borderRadius: 8, padding: "0.55rem 0.75rem" }}>
-      <div style={{ fontSize: "0.7rem", color: "#6b7280", marginBottom: "0.15rem" }}>{label}</div>
+    <div style={{ background: "var(--shell-pill-bg)", border: "1px solid var(--shell-border)", borderRadius: 8, padding: "0.55rem 0.75rem" }}>
+      <div style={{ fontSize: "0.7rem", color: "var(--shell-muted)", marginBottom: "0.15rem" }}>{label}</div>
       <div style={{ fontSize: "0.92rem", fontWeight: 600 }}>{value}</div>
     </div>
   );
@@ -514,12 +514,12 @@ function CenteredCard({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         padding: "3rem 1.5rem",
         textAlign: "center",
-        color: "#6b7280",
+        color: "var(--shell-muted)",
       }}
     >
       {children}
@@ -529,7 +529,7 @@ function CenteredCard({ children }: { children: React.ReactNode }) {
 
 function Label({ children }: { children: React.ReactNode }) {
   return (
-    <label style={{ display: "block", fontSize: "0.78rem", color: "#374151", fontWeight: 500, marginBottom: "0.3rem" }}>
+    <label style={{ display: "block", fontSize: "0.78rem", color: "var(--shell-fg)", fontWeight: 500, marginBottom: "0.3rem" }}>
       {children}
     </label>
   );
@@ -537,10 +537,10 @@ function Label({ children }: { children: React.ReactNode }) {
 
 const input: React.CSSProperties = {
   width: "100%",
-  background: "#ffffff",
-  border: "1px solid #e5e7eb",
+  background: "var(--shell-card)",
+  border: "1px solid var(--shell-border-strong)",
   borderRadius: 8,
-  color: "#111827",
+  color: "var(--shell-fg)",
   padding: "0.6rem 0.8rem",
   fontSize: "0.88rem",
   outline: "none",
@@ -559,9 +559,9 @@ const btnPrimary: React.CSSProperties = {
 };
 
 const btnSecondary: React.CSSProperties = {
-  background: "#ffffff",
-  color: "#374151",
-  border: "1px solid #e5e7eb",
+  background: "var(--shell-card)",
+  color: "var(--shell-fg)",
+  border: "1px solid var(--shell-border-strong)",
   padding: "0.55rem 1rem",
   borderRadius: 8,
   fontSize: "0.84rem",

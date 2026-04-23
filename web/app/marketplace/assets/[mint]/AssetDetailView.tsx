@@ -664,10 +664,10 @@ export function AssetDetailView({ mint }: { mint: string }) {
       <>
         <Back />
         <CenteredCard>
-          <div style={{ fontSize: "1rem", color: "#111827", fontWeight: 600, marginBottom: "0.35rem" }}>
+          <div style={{ fontSize: "1rem", color: "var(--shell-fg)", fontWeight: 600, marginBottom: "0.35rem" }}>
             Asset not found
           </div>
-          <div style={{ fontSize: "0.88rem", color: "#6b7280" }}>
+          <div style={{ fontSize: "0.88rem", color: "var(--shell-muted)" }}>
             No RWA Asset PDA is registered for mint{" "}
             <code style={code}>{shorten(mint)}</code>.
           </div>
@@ -768,7 +768,7 @@ export function AssetDetailView({ mint }: { mint: string }) {
 
           {media?.description ? (
             <Panel title="Description">
-              <div style={{ fontSize: "0.9rem", color: "#374151", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+              <div style={{ fontSize: "0.9rem", color: "var(--shell-fg)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
                 {media.description}
               </div>
             </Panel>
@@ -787,7 +787,7 @@ export function AssetDetailView({ mint }: { mint: string }) {
               marginBottom: "1.5rem",
             }}
           >
-            <div style={{ fontSize: "0.9rem", color: "#6b7280" }}>
+            <div style={{ fontSize: "0.9rem", color: "var(--shell-muted)" }}>
               {asset.symbol} · <code style={code}>{shorten(asset.mint)}</code>
             </div>
             <ContactSellerButton
@@ -826,7 +826,7 @@ export function AssetDetailView({ mint }: { mint: string }) {
 
           {media?.location ? (
             <Panel title="Location">
-              <div style={{ fontSize: "0.85rem", color: "#374151", marginBottom: "0.55rem" }}>
+              <div style={{ fontSize: "0.85rem", color: "var(--shell-fg)", marginBottom: "0.55rem" }}>
                 {media.location.address}
               </div>
               <LocationView location={media.location} />
@@ -843,18 +843,18 @@ export function AssetDetailView({ mint }: { mint: string }) {
                 <KV k="KYC ref" v={issuer.kycRef} />
               </>
             ) : (
-              <div style={{ fontSize: "0.85rem", color: "#6b7280" }}>Issuer record not found.</div>
+              <div style={{ fontSize: "0.85rem", color: "var(--shell-muted)" }}>Issuer record not found.</div>
             )}
           </Panel>
 
           {asset.metadataUri ? (
             <Panel title="Metadata">
-              <div style={{ fontSize: "0.84rem", color: "#4b5563", wordBreak: "break-all" }}>
+              <div style={{ fontSize: "0.84rem", color: "var(--shell-muted)", wordBreak: "break-all" }}>
                 <a
                   href={asset.metadataUri.replace(/^ipfs:\/\//, "https://ipfs.io/ipfs/")}
                   target="_blank"
                   rel="noreferrer"
-                  style={{ color: "#4338ca", textDecoration: "none", fontWeight: 500 }}
+                  style={{ color: "var(--shell-link)", textDecoration: "none", fontWeight: 500 }}
                 >
                   {asset.metadataUri} ↗
                 </a>
@@ -869,13 +869,13 @@ export function AssetDetailView({ mint }: { mint: string }) {
             <div style={{ padding: "1.1rem 1.2rem" }}>
               {cheapest ? (
                 <>
-                  <div style={{ fontSize: "0.75rem", color: "#6b7280", marginBottom: "0.3rem", fontWeight: 500 }}>
+                  <div style={{ fontSize: "0.75rem", color: "var(--shell-muted)", marginBottom: "0.3rem", fontWeight: 500 }}>
                     Lowest listing
                   </div>
                   <div style={{ fontSize: "1.85rem", fontWeight: 600, letterSpacing: "-0.02em" }}>
                     ${cheapest.priceUsdc.toFixed(2)}
                   </div>
-                  <div style={{ fontSize: "0.78rem", color: "#9ca3af", marginBottom: "1rem" }}>
+                  <div style={{ fontSize: "0.78rem", color: "var(--shell-faint)", marginBottom: "1rem" }}>
                     per {asset.symbol} · {cheapest.remainingQuantity} of {cheapest.initialQuantity} left
                   </div>
 
@@ -895,10 +895,10 @@ export function AssetDetailView({ mint }: { mint: string }) {
                       cancelling={cancelling === cheapest.address}
                     />
                   ) : isOwn ? (
-                    <div style={{ fontSize: "0.82rem", color: "#6b7280" }}>You are the issuer.</div>
+                    <div style={{ fontSize: "0.82rem", color: "var(--shell-muted)" }}>You are the issuer.</div>
                   ) : (
                     <>
-                      <label style={{ fontSize: "0.78rem", color: "#374151", fontWeight: 500, display: "block", marginBottom: "0.3rem" }}>
+                      <label style={{ fontSize: "0.78rem", color: "var(--shell-fg)", fontWeight: 500, display: "block", marginBottom: "0.3rem" }}>
                         Quantity
                       </label>
                       <input
@@ -933,10 +933,10 @@ export function AssetDetailView({ mint }: { mint: string }) {
                 </>
               ) : (
                 <div>
-                  <div style={{ fontSize: "0.95rem", fontWeight: 600, color: "#111827", marginBottom: "0.35rem" }}>
+                  <div style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--shell-fg)", marginBottom: "0.35rem" }}>
                     Not for sale
                   </div>
-                  <div style={{ fontSize: "0.82rem", color: "#6b7280" }}>
+                  <div style={{ fontSize: "0.82rem", color: "var(--shell-muted)" }}>
                     No active marketplace listings for this asset.
                   </div>
                 </div>
@@ -955,7 +955,7 @@ export function AssetDetailView({ mint }: { mint: string }) {
                       key={l.address}
                       style={{
                         padding: "0.6rem 1rem",
-                        borderBottom: "1px solid #f3f4f6",
+                        borderBottom: "1px solid var(--shell-divider)",
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
@@ -965,7 +965,7 @@ export function AssetDetailView({ mint }: { mint: string }) {
                     >
                       <div>
                         <div style={{ fontWeight: 600 }}>${l.priceUsdc.toFixed(2)}</div>
-                        <div style={{ fontSize: "0.74rem", color: "#9ca3af" }}>
+                        <div style={{ fontSize: "0.74rem", color: "var(--shell-faint)" }}>
                           by {mine ? "you" : shorten(l.seller)} · {l.remainingQuantity} left
                         </div>
                       </div>
@@ -1010,12 +1010,12 @@ export function AssetDetailView({ mint }: { mint: string }) {
                       key={l.address}
                       style={{
                         padding: "0.55rem 1rem",
-                        borderBottom: "1px solid #f3f4f6",
+                        borderBottom: "1px solid var(--shell-divider)",
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
                         fontSize: "0.82rem",
-                        color: "#6b7280",
+                        color: "var(--shell-muted)",
                       }}
                     >
                       <span>${l.priceUsdc.toFixed(2)} × {l.initialQuantity}</span>
@@ -1049,7 +1049,7 @@ export function AssetDetailView({ mint }: { mint: string }) {
             <div style={panel}>
               <div style={panelHeader}>Your holding</div>
               <div style={{ padding: "1rem 1.2rem" }}>
-                <div style={{ fontSize: "0.82rem", color: "#6b7280", marginBottom: "0.35rem" }}>
+                <div style={{ fontSize: "0.82rem", color: "var(--shell-muted)", marginBottom: "0.35rem" }}>
                   Balance
                 </div>
                 <div style={{ fontSize: "1.35rem", fontWeight: 600, letterSpacing: "-0.02em" }}>
@@ -1135,8 +1135,8 @@ function SellerActions({
           disabled={cancelling}
           style={{
             flex: 1,
-            background: "#fff",
-            border: "1px solid #e5e7eb",
+            background: "var(--shell-card)",
+            border: "1px solid var(--shell-border-strong)",
             color: "#b91c1c",
             padding: "0.65rem 1rem",
             borderRadius: 8,
@@ -1194,7 +1194,7 @@ function EditPriceModal({
         style={{
           width: 380,
           maxWidth: "94vw",
-          background: "#fff",
+          background: "var(--shell-card)",
           borderRadius: 14,
           padding: "1.4rem 1.5rem",
           boxShadow: "0 20px 50px rgba(0,0,0,0.2)",
@@ -1203,11 +1203,11 @@ function EditPriceModal({
         <div style={{ fontSize: "1.05rem", fontWeight: 600, marginBottom: "0.2rem" }}>
           Update listing price
         </div>
-        <div style={{ fontSize: "0.8rem", color: "#6b7280", marginBottom: "1rem" }}>
+        <div style={{ fontSize: "0.8rem", color: "var(--shell-muted)", marginBottom: "1rem" }}>
           {remainingQty} {symbol} remaining at ${currentPrice.toFixed(2)} / token
         </div>
 
-        <label style={{ fontSize: "0.78rem", color: "#374151", fontWeight: 500, display: "block", marginBottom: "0.3rem" }}>
+        <label style={{ fontSize: "0.78rem", color: "var(--shell-fg)", fontWeight: 500, display: "block", marginBottom: "0.3rem" }}>
           New price (USDC per {symbol})
         </label>
         <input
@@ -1220,8 +1220,8 @@ function EditPriceModal({
         />
 
         {valid && changed ? (
-          <div style={{ fontSize: "0.82rem", color: "#4b5563", marginTop: "0.75rem" }}>
-            New total asking: <strong style={{ color: "#111827" }}>${(newPrice * remainingQty).toFixed(2)} USDC</strong>
+          <div style={{ fontSize: "0.82rem", color: "var(--shell-muted)", marginTop: "0.75rem" }}>
+            New total asking: <strong style={{ color: "var(--shell-fg)" }}>${(newPrice * remainingQty).toFixed(2)} USDC</strong>
           </div>
         ) : null}
 
@@ -1230,9 +1230,9 @@ function EditPriceModal({
             onClick={onClose}
             style={{
               flex: 1,
-              background: "#fff",
-              border: "1px solid #e5e7eb",
-              color: "#374151",
+              background: "var(--shell-card)",
+              border: "1px solid var(--shell-border-strong)",
+              color: "var(--shell-fg)",
               padding: "0.6rem 1rem",
               borderRadius: 8,
               fontSize: "0.86rem",
@@ -1261,9 +1261,9 @@ function EditPriceModal({
 }
 
 const rowActBtn: React.CSSProperties = {
-  background: "#fff",
-  border: "1px solid #e5e7eb",
-  color: "#4338ca",
+  background: "var(--shell-card)",
+  border: "1px solid var(--shell-border-strong)",
+  color: "var(--shell-link)",
   padding: "0.3rem 0.65rem",
   borderRadius: 6,
   fontSize: "0.76rem",
@@ -1325,7 +1325,7 @@ function ListModal({
         style={{
           width: 380,
           maxWidth: "94vw",
-          background: "#fff",
+          background: "var(--shell-card)",
           borderRadius: 14,
           padding: "1.4rem 1.5rem",
           boxShadow: "0 20px 50px rgba(0,0,0,0.2)",
@@ -1334,11 +1334,11 @@ function ListModal({
         <div style={{ fontSize: "1.05rem", fontWeight: 600, marginBottom: "0.2rem" }}>
           List {symbol} tokens
         </div>
-        <div style={{ fontSize: "0.8rem", color: "#6b7280", marginBottom: "1rem" }}>
+        <div style={{ fontSize: "0.8rem", color: "var(--shell-muted)", marginBottom: "1rem" }}>
           Holdings move into an escrow vault on-chain until sold or cancelled.
         </div>
 
-        <label style={{ fontSize: "0.78rem", color: "#374151", fontWeight: 500, display: "block", marginBottom: "0.3rem" }}>
+        <label style={{ fontSize: "0.78rem", color: "var(--shell-fg)", fontWeight: 500, display: "block", marginBottom: "0.3rem" }}>
           Quantity (max {maxQty})
         </label>
         <input
@@ -1350,7 +1350,7 @@ function ListModal({
           style={input}
         />
 
-        <label style={{ fontSize: "0.78rem", color: "#374151", fontWeight: 500, display: "block", marginTop: "0.75rem", marginBottom: "0.3rem" }}>
+        <label style={{ fontSize: "0.78rem", color: "var(--shell-fg)", fontWeight: 500, display: "block", marginTop: "0.75rem", marginBottom: "0.3rem" }}>
           Price per {symbol} (USDC)
         </label>
         <input
@@ -1363,8 +1363,8 @@ function ListModal({
         />
 
         {totalValid ? (
-          <div style={{ fontSize: "0.82rem", color: "#4b5563", marginTop: "0.75rem" }}>
-            Asking <strong style={{ color: "#111827" }}>${total.toFixed(2)} USDC</strong> for {qtyNum} {symbol}
+          <div style={{ fontSize: "0.82rem", color: "var(--shell-muted)", marginTop: "0.75rem" }}>
+            Asking <strong style={{ color: "var(--shell-fg)" }}>${total.toFixed(2)} USDC</strong> for {qtyNum} {symbol}
           </div>
         ) : null}
 
@@ -1373,9 +1373,9 @@ function ListModal({
             onClick={onClose}
             style={{
               flex: 1,
-              background: "#fff",
-              border: "1px solid #e5e7eb",
-              color: "#374151",
+              background: "var(--shell-card)",
+              border: "1px solid var(--shell-border-strong)",
+              color: "var(--shell-fg)",
               padding: "0.6rem 1rem",
               borderRadius: 8,
               fontSize: "0.86rem",
@@ -1405,10 +1405,10 @@ function ListModal({
 
 function DealRow({ deal, viewer }: { deal: OtcDealRow; viewer: string | null }) {
   const statusMeta: Record<DealStatusKey, { label: string; color: string }> = {
-    proposed: { label: "Proposed", color: "#4338ca" },
+    proposed: { label: "Proposed", color: "var(--shell-link)" },
     accepted: { label: "Accepted", color: "#047857" },
-    cancelled: { label: "Cancelled", color: "#6b7280" },
-    expired: { label: "Expired", color: "#6b7280" },
+    cancelled: { label: "Cancelled", color: "var(--shell-muted)" },
+    expired: { label: "Expired", color: "var(--shell-muted)" },
   };
   const s = statusMeta[deal.status];
   const isMine = viewer && (viewer === deal.seller || viewer === deal.buyer);
@@ -1417,12 +1417,12 @@ function DealRow({ deal, viewer }: { deal: OtcDealRow; viewer: string | null }) 
     <div
       style={{
         padding: "0.6rem 1rem",
-        borderBottom: "1px solid #f3f4f6",
+        borderBottom: "1px solid var(--shell-divider)",
         fontSize: "0.82rem",
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
-        <span style={{ fontWeight: 600, color: "#111827" }}>
+        <span style={{ fontWeight: 600, color: "var(--shell-fg)" }}>
           ${deal.totalPriceUsdc.toFixed(2)} × {deal.quantity}
         </span>
         <span
@@ -1437,7 +1437,7 @@ function DealRow({ deal, viewer }: { deal: OtcDealRow; viewer: string | null }) 
           {s.label}
         </span>
       </div>
-      <div style={{ fontSize: "0.74rem", color: "#9ca3af", marginTop: "0.2rem" }}>
+      <div style={{ fontSize: "0.74rem", color: "var(--shell-faint)", marginTop: "0.2rem" }}>
         {isMine ? `with ${shorten(counterparty)}` : `${shorten(deal.seller)} → ${shorten(deal.buyer)}`}
         {" · "}
         {new Date(deal.createdAt * 1000).toLocaleString("en-US", {
@@ -1458,8 +1458,8 @@ function BuySummary({ qty, price, feeBps }: { qty: number; price: number; feeBps
   return (
     <div
       style={{
-        background: "#f7f8fa",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-pill-bg)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 8,
         padding: "0.6rem 0.8rem",
         fontSize: "0.8rem",
@@ -1482,7 +1482,7 @@ function Back() {
         display: "inline-flex",
         alignItems: "center",
         gap: "0.35rem",
-        color: "#6b7280",
+        color: "var(--shell-muted)",
         textDecoration: "none",
         fontSize: "0.86rem",
         marginBottom: "1rem",
@@ -1502,7 +1502,7 @@ function Badge({ children }: { children: React.ReactNode }) {
         borderRadius: 5,
         fontSize: "0.72rem",
         fontWeight: 600,
-        color: "#374151",
+        color: "var(--shell-fg)",
       }}
     >
       {children}
@@ -1538,7 +1538,7 @@ function IssuerPill({ status }: { status: IssuerStatusKey }) {
     active: { bg: "rgba(16,185,129,0.12)", fg: "#059669", dot: "#10b981", label: "Active" },
     pending: { bg: "rgba(234,179,8,0.12)", fg: "#854d0e", dot: "#eab308", label: "Pending" },
     suspended: { bg: "rgba(245,158,11,0.12)", fg: "#b45309", dot: "#f59e0b", label: "Suspended" },
-    revoked: { bg: "rgba(107,114,128,0.12)", fg: "#4b5563", dot: "#6b7280", label: "Revoked" },
+    revoked: { bg: "rgba(107,114,128,0.12)", fg: "var(--shell-muted)", dot: "var(--shell-muted)", label: "Revoked" },
   };
   const c = map[status];
   return (
@@ -1565,14 +1565,14 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
   return (
     <div
       style={{
-        background: "#ffffff",
-        border: "1px solid #eef0f3",
+        background: "var(--shell-card)",
+        border: "1px solid var(--shell-border)",
         borderRadius: 12,
         padding: "1.2rem 1.4rem",
         marginBottom: "1rem",
       }}
     >
-      <h3 style={{ fontSize: "0.82rem", color: "#6b7280", textTransform: "uppercase", letterSpacing: 1, fontWeight: 600, marginBottom: "0.85rem" }}>
+      <h3 style={{ fontSize: "0.82rem", color: "var(--shell-muted)", textTransform: "uppercase", letterSpacing: 1, fontWeight: 600, marginBottom: "0.85rem" }}>
         {title}
       </h3>
       <div style={{ display: "flex", flexDirection: "column", gap: "0.2rem" }}>{children}</div>
@@ -1582,9 +1582,9 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
 
 function KV({ k, v }: { k: string; v: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0", borderBottom: "1px solid #f3f4f6", fontSize: "0.88rem" }}>
-      <span style={{ color: "#6b7280" }}>{k}</span>
-      <span style={{ color: "#111827", fontWeight: 500 }}>{v}</span>
+    <div style={{ display: "flex", justifyContent: "space-between", padding: "0.5rem 0", borderBottom: "1px solid var(--shell-divider)", fontSize: "0.88rem" }}>
+      <span style={{ color: "var(--shell-muted)" }}>{k}</span>
+      <span style={{ color: "var(--shell-fg)", fontWeight: 500 }}>{v}</span>
     </div>
   );
 }
@@ -1597,7 +1597,7 @@ function Row({ k, v, bold }: { k: string; v: string; bold?: boolean }) {
         justifyContent: "space-between",
         padding: "0.2rem 0",
         fontWeight: bold ? 600 : 400,
-        color: bold ? "#111827" : "#4b5563",
+        color: bold ? "var(--shell-fg)" : "var(--shell-muted)",
       }}
     >
       <span>{k}</span>
@@ -1612,12 +1612,12 @@ function CenteredCard({ children }: { children: React.ReactNode }) {
       <Back />
       <div
         style={{
-          background: "#ffffff",
-          border: "1px solid #eef0f3",
+          background: "var(--shell-card)",
+          border: "1px solid var(--shell-border)",
           borderRadius: 12,
           padding: "3rem 1.5rem",
           textAlign: "center",
-          color: "#6b7280",
+          color: "var(--shell-muted)",
         }}
       >
         {children}
@@ -1643,8 +1643,8 @@ function shorten(s: string): string {
 }
 
 const panel: React.CSSProperties = {
-  background: "#ffffff",
-  border: "1px solid #eef0f3",
+  background: "var(--shell-card)",
+  border: "1px solid var(--shell-border)",
   borderRadius: 12,
   overflow: "hidden",
 };
@@ -1653,19 +1653,19 @@ const panelHeader: React.CSSProperties = {
   padding: "0.85rem 1rem",
   fontSize: "0.78rem",
   fontWeight: 600,
-  color: "#111827",
-  borderBottom: "1px solid #eef0f3",
-  background: "#fafbfc",
+  color: "var(--shell-fg)",
+  borderBottom: "1px solid var(--shell-border)",
+  background: "var(--shell-card-alt)",
   textTransform: "uppercase",
   letterSpacing: 0.8,
 };
 
 const input: React.CSSProperties = {
   width: "100%",
-  background: "#ffffff",
-  border: "1px solid #e5e7eb",
+  background: "var(--shell-card)",
+  border: "1px solid var(--shell-border-strong)",
   borderRadius: 8,
-  color: "#111827",
+  color: "var(--shell-fg)",
   padding: "0.55rem 0.75rem",
   fontSize: "0.88rem",
   outline: "none",
@@ -1685,8 +1685,8 @@ const btnPrimary: React.CSSProperties = {
 };
 
 const code: React.CSSProperties = {
-  background: "#f3f4f6",
-  color: "#4338ca",
+  background: "var(--shell-divider)",
+  color: "var(--shell-link)",
   padding: "0.1rem 0.4rem",
   borderRadius: 4,
   fontSize: "0.78rem",
