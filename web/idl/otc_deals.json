@@ -625,6 +625,53 @@
       ]
     },
     {
+      "name": "update_pause",
+      "discriminator": [
+        6,
+        56,
+        103,
+        134,
+        181,
+        122,
+        69,
+        108
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "paused",
+          "type": "bool"
+        }
+      ]
+    },
+    {
       "name": "update_treasury",
       "discriminator": [
         60,
@@ -791,6 +838,19 @@
       ]
     },
     {
+      "name": "PauseUpdated",
+      "discriminator": [
+        203,
+        203,
+        33,
+        225,
+        130,
+        103,
+        90,
+        105
+      ]
+    },
+    {
       "name": "TreasuryUpdated",
       "discriminator": [
         80,
@@ -879,6 +939,11 @@
       "code": 6014,
       "name": "ArithmeticOverflow",
       "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6015,
+      "name": "Paused",
+      "msg": "Program is paused — fund-moving instructions are temporarily disabled"
     }
   ],
   "types": [
@@ -924,11 +989,22 @@
             "type": "u8"
           },
           {
+            "name": "paused",
+            "docs": [
+              "Emergency kill-switch. When true, all fund-moving instructions",
+              "revert with `...Error::Paused`. Flipped by `update_pause`, which",
+              "is authority-gated. Stored where the first byte of `reserved`",
+              "used to live so existing on-chain accounts still deserialize",
+              "cleanly (old bytes were zero → paused = false)."
+            ],
+            "type": "bool"
+          },
+          {
             "name": "reserved",
             "type": {
               "array": [
                 "u8",
-                64
+                63
               ]
             }
           }
@@ -1214,6 +1290,26 @@
           {
             "name": "next",
             "type": "u16"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "PauseUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "paused",
+            "type": "bool"
           },
           {
             "name": "timestamp",

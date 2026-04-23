@@ -20,14 +20,14 @@ custom-heap = []
 custom-panic = []
 
 [dependencies]
-anchor-lang = { version = "1.0.0", features = ["init-if-needed"] }
-anchor-spl = { version = "1.0.0", features = ["token_2022"] }
-solana-security-txt = "1.1.1"
+anchor-lang = { version = "1.0.1", features = ["init-if-needed"] }
+anchor-spl = { version = "1.0.1", features = ["token_2022"] }
+solana-security-txt = "1.1.2"
 
 [dev-dependencies]
 litesvm = "0.11.0"
 litesvm-token = { version = "0.11.0", features = ["token-2022"] }
-anchor-spl = { version = "1.0.0", features = ["token_2022"] }
+anchor-spl = { version = "1.0.1", features = ["token_2022"] }
 solana-message = "3.0.1"
 solana-transaction = "3.0.2"
 solana-signer = "3.0.0"
