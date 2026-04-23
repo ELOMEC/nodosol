@@ -85,8 +85,11 @@ Deno.serve(async (req) => {
     return jsonResp({ error: "Challenge expired — re-sign" }, 401);
   }
 
-  // 3. Sign a Supabase-verifiable JWT.
-  const jwtSecret = Deno.env.get("SUPABASE_JWT_SECRET") ?? "";
+  // 3. Sign a Supabase-verifiable JWT. Must match the project's JWT secret
+  // from Dashboard → Settings → API → JWT Settings. Stored as CHAT_JWT_SECRET
+  // because the Supabase Edge Functions runtime reserves the SUPABASE_ prefix
+  // for platform-provided env vars and refuses user-set ones with that prefix.
+  const jwtSecret = Deno.env.get("CHAT_JWT_SECRET") ?? "";
   if (!jwtSecret) return jsonResp({ error: "Function not configured" }, 500);
   const secretKey = new TextEncoder().encode(jwtSecret);
 
