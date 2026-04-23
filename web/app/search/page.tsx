@@ -10,7 +10,7 @@ export default async function SearchPage({
   const params = await searchParams;
   const q = params.q ?? "";
   return (
-    <MarketplaceShell active="marketplace">
+    <MarketplaceShell active="search">
       <SearchView initialQuery={q} />
     </MarketplaceShell>
   );

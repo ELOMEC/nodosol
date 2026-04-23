@@ -135,13 +135,30 @@ export function AuctionsView() {
           <Card>
             <Centered>
               <div style={{ fontWeight: 600, marginBottom: "0.35rem" }}>No auctions</div>
-              <div style={{ fontSize: "0.82rem", color: "#6b7280" }}>
+              <div style={{ fontSize: "0.82rem", color: "#6b7280", marginBottom: "0.9rem" }}>
                 {filter === "live"
                   ? "Nothing live right now."
                   : filter === "mine"
                   ? "You haven't created any auctions yet."
                   : "No results for this filter."}
               </div>
+              {filter !== "live" ? (
+                <button
+                  onClick={() => setFilter("live")}
+                  style={{
+                    background: "var(--shell-card, #fff)",
+                    border: "1px solid var(--shell-border, #e5e7eb)",
+                    color: "#4338ca",
+                    padding: "0.5rem 0.95rem",
+                    borderRadius: 8,
+                    fontSize: "0.82rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Show live auctions
+                </button>
+              ) : null}
             </Centered>
           </Card>
         ) : (

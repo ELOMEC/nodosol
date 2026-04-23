@@ -28,7 +28,14 @@ type EventIndex = Map<
 type FetchState =
   | { kind: "idle" }
   | { kind: "loading" }
-  | { kind: "ready"; tickets: TicketRow[]; unknownCompressed: HeliusAsset[] }
+  | {
+      kind: "ready";
+      tickets: TicketRow[];
+      unknownCompressed: HeliusAsset[];
+      /** True when the Event PDA index couldn't be fetched — ticket↔event
+       *  matching is best-effort in that case. */
+      indexDegraded: boolean;
+    }
   | { kind: "error"; message: string };
 
 type TicketRow = {
@@ -62,6 +69,7 @@ export function TicketsView() {
       const provider = new AnchorProvider(connection, wallet as unknown as Wallet, {
         commitment: "confirmed",
       });
+      let indexDegraded = false;
       const program = eventTicketsProgram(provider);
       const api = (program.account as Record<string, {
         all: () => Promise<Array<{
@@ -93,8 +101,9 @@ export function TicketsView() {
               },
             ])
         );
-      } catch {
-        // event_tickets not deployed yet — index stays empty.
+      } catch (err) {
+        console.warn("event index fetch failed; ticket matching will be partial", err);
+        indexDegraded = true;
       }
 
       // 2. Fetch all compressed assets owned by the wallet via Helius DAS.
@@ -102,12 +111,11 @@ export function TicketsView() {
       try {
         owned = await getAssetsByOwner(publicKey.toBase58());
       } catch (err) {
+        console.error("Helius DAS fetch failed", err);
         setState({
           kind: "error",
           message:
-            err instanceof Error
-              ? `${err.message}. Set NEXT_PUBLIC_HELIUS_API_KEY on Vercel to enable the public DAS API.`
-              : "Helius DAS call failed",
+            "We couldn't load your tickets from the indexer right now. Please try again in a moment.",
         });
         return;
       }
@@ -137,7 +145,7 @@ export function TicketsView() {
         }
       }
 
-      setState({ kind: "ready", tickets, unknownCompressed });
+      setState({ kind: "ready", tickets, unknownCompressed, indexDegraded });
     } catch (err) {
       console.error(err);
       setState({
@@ -181,7 +189,12 @@ export function TicketsView() {
           </button>
         </CenteredCard>
       ) : state.kind === "ready" ? (
-        <ReadyView tickets={state.tickets} unknown={state.unknownCompressed} onReload={() => void reload()} />
+        <ReadyView
+          tickets={state.tickets}
+          unknown={state.unknownCompressed}
+          indexDegraded={state.indexDegraded}
+          onReload={() => void reload()}
+        />
       ) : null}
     </>
   );
@@ -190,14 +203,34 @@ export function TicketsView() {
 function ReadyView({
   tickets,
   unknown,
+  indexDegraded,
   onReload,
 }: {
   tickets: TicketRow[];
   unknown: HeliusAsset[];
+  indexDegraded: boolean;
   onReload: () => void;
 }) {
   return (
     <>
+      {indexDegraded ? (
+        <div
+          style={{
+            background: "#fffbeb",
+            border: "1px solid #fde68a",
+            color: "#92400e",
+            borderRadius: 8,
+            padding: "0.65rem 0.85rem",
+            fontSize: "0.82rem",
+            marginBottom: "1rem",
+          }}
+        >
+          The event index is temporarily unavailable, so some tickets may
+          show as &ldquo;Other cNFTs&rdquo; until it comes back. Your tickets are
+          safe on-chain — this only affects matching.
+        </div>
+      ) : null}
+
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1rem", marginBottom: "1.5rem" }}>
         <StatCard label="Event tickets" value={tickets.length.toString()} sub="matched to an on-chain event" />
         <StatCard label="Other cNFTs" value={unknown.length.toString()} sub="compressed assets not tied to a nodosol event" />

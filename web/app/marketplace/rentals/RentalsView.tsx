@@ -178,9 +178,26 @@ export function RentalsView() {
           <Card>
             <Centered>
               <div style={{ fontWeight: 600, marginBottom: "0.3rem" }}>No rentals yet</div>
-              <div style={{ fontSize: "0.82rem", color: "#6b7280" }}>
+              <div style={{ fontSize: "0.82rem", color: "#6b7280", marginBottom: "0.9rem" }}>
                 {filter === "mine" ? "You haven't listed anything." : "Nothing to show."}
               </div>
+              {filter !== "active" ? (
+                <button
+                  onClick={() => setFilter("active")}
+                  style={{
+                    background: "var(--shell-card, #fff)",
+                    border: "1px solid var(--shell-border, #e5e7eb)",
+                    color: "#4338ca",
+                    padding: "0.5rem 0.95rem",
+                    borderRadius: 8,
+                    fontSize: "0.82rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Show active rentals
+                </button>
+              ) : null}
             </Centered>
           </Card>
         ) : (
