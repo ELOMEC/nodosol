@@ -16,7 +16,9 @@ import {
   Transaction,
 } from "@solana/web3.js";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import { MarketSearchBar } from "@/components/MarketSearchBar";
 
 import { getUsdcMint, USDC_UNIT } from "@/lib/constants";
 import {
@@ -78,6 +80,10 @@ export function EventsView() {
   const [busyEvent, setBusyEvent] = useState<string | null>(null);
   const [feeBps, setFeeBps] = useState(250);
   const [buyQty, setBuyQty] = useState("1");
+  const [search, setSearch] = useState("");
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
+  const [sortKey, setSortKey] = useState<"newest" | "starting_soon" | "price_asc" | "price_desc" | "availability">("starting_soon");
   const toast = useToast();
 
   const reload = useCallback(async () => {
@@ -446,6 +452,33 @@ export function EventsView() {
   const mine = state.kind === "ready" ? state.mine : [];
   const pub = state.kind === "ready" ? state.public : [];
 
+  const visiblePub = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const min = priceMin === "" ? null : Number(priceMin);
+    const max = priceMax === "" ? null : Number(priceMax);
+    return pub
+      .filter((e) => {
+        if (q && !e.name.toLowerCase().includes(q) && !e.symbol.toLowerCase().includes(q)) return false;
+        if (min !== null && !Number.isNaN(min) && e.price < min) return false;
+        if (max !== null && !Number.isNaN(max) && e.price > max) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        switch (sortKey) {
+          case "newest":
+            return b.startsAt - a.startsAt;
+          case "starting_soon":
+            return a.startsAt - b.startsAt;
+          case "price_asc":
+            return a.price - b.price;
+          case "price_desc":
+            return b.price - a.price;
+          case "availability":
+            return (b.capacity - b.sold) - (a.capacity - a.sold);
+        }
+      });
+  }, [pub, search, priceMin, priceMax, sortKey]);
+
   return (
     <>
       <header style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem", gap: "1.5rem" }}>
@@ -508,24 +541,55 @@ export function EventsView() {
             </div>
           </CenteredCard>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1rem" }}>
-            {pub.map((e) => {
-              const isOwn = connected && publicKey && publicKey.toBase58() === e.creator;
-              return (
-                <PublicEventCard
-                  key={e.address}
-                  event={e}
-                  feeBps={feeBps}
-                  isOwn={Boolean(isOwn)}
-                  connected={connected}
-                  busy={busyEvent === e.address}
-                  qty={buyQty}
-                  onQtyChange={setBuyQty}
-                  onBuy={() => void buyTicket(e)}
-                />
-              );
-            })}
-          </div>
+          <>
+            <MarketSearchBar
+              search={search}
+              onSearch={setSearch}
+              searchPlaceholder="Search events by name or symbol…"
+              priceMin={priceMin}
+              priceMax={priceMax}
+              onPriceMin={setPriceMin}
+              onPriceMax={setPriceMax}
+              priceLabel="Ticket price"
+              sortKey={sortKey}
+              onSort={setSortKey}
+              sortOptions={[
+                { value: "starting_soon", label: "Sort: Starting soon" },
+                { value: "newest", label: "Sort: Newest" },
+                { value: "price_asc", label: "Sort: Price ↑" },
+                { value: "price_desc", label: "Sort: Price ↓" },
+                { value: "availability", label: "Sort: Most available" },
+              ]}
+              filteredCount={visiblePub.length}
+              totalCount={pub.length}
+              countLabel="events"
+            />
+            {visiblePub.length === 0 ? (
+              <CenteredCard>
+                <div style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.35rem" }}>No matches</div>
+                <div style={{ fontSize: "0.88rem", color: "var(--shell-muted)" }}>Try clearing the search or widening the price range.</div>
+              </CenteredCard>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1rem" }}>
+                {visiblePub.map((e) => {
+                  const isOwn = connected && publicKey && publicKey.toBase58() === e.creator;
+                  return (
+                    <PublicEventCard
+                      key={e.address}
+                      event={e}
+                      feeBps={feeBps}
+                      isOwn={Boolean(isOwn)}
+                      connected={connected}
+                      busy={busyEvent === e.address}
+                      qty={buyQty}
+                      onQtyChange={setBuyQty}
+                      onBuy={() => void buyTicket(e)}
+                    />
+                  );
+                })}
+              </div>
+            )}
+          </>
         )
       ) : !connected ? (
         <CenteredCard>

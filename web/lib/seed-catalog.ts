@@ -13,6 +13,18 @@ export type SeedMetadata = {
   image: string;
   /** Optional venue template id for events — matches VENUE_TEMPLATES in venue-templates.ts. */
   venueTemplate?: "arena-circle" | "open-air" | "theatre" | "conference";
+
+  // Auction-shape fields. Present on auction-* slugs so /api/metadata serves
+  // a JSON the auction UI's fetchAuctionMetadata can consume directly.
+  memo?: string;
+  gallery?: string[];
+  videoUrl?: string;
+  location?: { address: string; lat?: number; lng?: number };
+
+  // Rental-shape fields. Present on rental-* slugs.
+  title?: string;
+  amenities?: string[];
+  terms?: string;
 };
 
 export const SEED_METADATA: Record<string, SeedMetadata> = {
@@ -219,5 +231,70 @@ export const SEED_METADATA: Record<string, SeedMetadata> = {
     description: "90-day spring exhibition at MoCA Belgrade.",
     image: "https://images.unsplash.com/photo-1577720580479-7d839d829c73?w=900&q=80",
     venueTemplate: "theatre",
+  },
+
+  // Auctions — shaped for AuctionMetadata (memo/description/gallery/location).
+  "auction-belgrade-penthouse": {
+    name: "Belgrade penthouse — 30-day rights",
+    symbol: "PENT",
+    memo: "Belgrade penthouse — 30-day rights",
+    description:
+      "Sealed-bid auction for 30 consecutive days of exclusive use of a 220 m² penthouse in central Belgrade. Includes parking + concierge.",
+    image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1200&q=80",
+    gallery: [
+      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1200&q=80",
+      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1200&q=80",
+      "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=1200&q=80",
+    ],
+    location: { address: "Knez Mihailova 42, Belgrade, Serbia", lat: 44.8167, lng: 20.4574 },
+  },
+  "auction-exit-vip-2026": {
+    name: "EXIT 2026 VIP weekend pass",
+    symbol: "EXIT",
+    memo: "EXIT 2026 VIP weekend pass",
+    description:
+      "4-day VIP wristband for EXIT Festival 2026 in Petrovaradin Fortress. Backstage access + premium camping.",
+    image: "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=1200&q=80",
+    gallery: [
+      "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=1200&q=80",
+      "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=1200&q=80",
+    ],
+    location: { address: "Petrovaradinska tvrđava, Novi Sad, Serbia", lat: 45.2517, lng: 19.8616 },
+  },
+  "auction-wheat-q3": {
+    name: "Pannonian wheat futures — Q3 2026",
+    symbol: "WHQ3",
+    memo: "Pannonian wheat futures — Q3 2026",
+    description:
+      "Forward contract for 100 tonnes of certified organic winter wheat, deliverable Q3 2026 FOB Belgrade port.",
+    image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=1200&q=80",
+    gallery: [
+      "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=1200&q=80",
+      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=1200&q=80",
+    ],
+    location: { address: "Pannonian Plain, Vojvodina, Serbia" },
+  },
+  "auction-carbon-100t": {
+    name: "Carbon offset bundle — 100 t CO₂",
+    symbol: "CO2",
+    memo: "Carbon offset bundle — 100 t CO₂",
+    description:
+      "Verified VCS carbon credits, 100 tonnes CO₂ equivalent, vintage 2025. Paired with on-chain retirement record.",
+    image: "https://images.unsplash.com/photo-1473773508845-188df298d2d1?w=1200&q=80",
+    gallery: [
+      "https://images.unsplash.com/photo-1473773508845-188df298d2d1?w=1200&q=80",
+      "https://images.unsplash.com/photo-1503328427499-d92d1ac3d174?w=1200&q=80",
+    ],
+  },
+  "auction-zvezda-jersey": {
+    name: "Legendary jersey — Crvena Zvezda 1991",
+    symbol: "ZVZ91",
+    memo: "Legendary jersey — Crvena Zvezda 1991",
+    description:
+      "Match-worn jersey from the 1991 European Cup final. Provenance documented; physical delivery on settlement.",
+    image: "https://images.unsplash.com/photo-1551958219-acbc608c6377?w=1200&q=80",
+    gallery: [
+      "https://images.unsplash.com/photo-1551958219-acbc608c6377?w=1200&q=80",
+    ],
   },
 };

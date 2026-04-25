@@ -8,6 +8,7 @@ import {
 } from "@solana/wallet-adapter-react";
 import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
 import { PublicKey } from "@solana/web3.js";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { fetchImagesForUris, toHttp } from "@/lib/metadataImages";
@@ -246,9 +247,12 @@ export function PortfolioView() {
                 {otherHoldings.map((h) => (
                   <tr key={h.mint} style={{ borderTop: "1px solid #f1f2f4" }}>
                     <td style={{ padding: "0.85rem 1.2rem" }}>
-                      <code style={{ fontFamily: "'SF Mono', Menlo, monospace", color: "var(--shell-link)", fontSize: "0.78rem" }}>
+                      <Link
+                        href={`/marketplace/assets/${h.mint}`}
+                        style={{ fontFamily: "'SF Mono', Menlo, monospace", color: "var(--shell-link)", fontSize: "0.78rem", textDecoration: "none" }}
+                      >
                         {shorten(h.mint)}
-                      </code>
+                      </Link>
                     </td>
                     <td style={{ padding: "0.85rem 1.2rem", textAlign: "right", fontWeight: 600 }}>
                       {h.amount.toLocaleString()}
@@ -268,12 +272,17 @@ function HoldingCard({ holding }: { holding: Holding }) {
   const gradient = CATEGORY_GRADIENT[holding.category ?? "other"] ?? CATEGORY_GRADIENT.other;
   const categoryLabel = CATEGORY_LABEL[holding.category ?? "other"] ?? "RWA";
   return (
-    <div
+    <Link
+      href={`/marketplace/assets/${holding.mint}`}
       style={{
         background: "var(--shell-card)",
         border: "1px solid var(--shell-border)",
         borderRadius: 12,
         overflow: "hidden",
+        textDecoration: "none",
+        color: "inherit",
+        display: "block",
+        transition: "transform 0.15s ease, box-shadow 0.15s ease",
       }}
     >
       <div style={{ background: holding.imageUrl ? "#111" : gradient, height: 90, position: "relative", overflow: "hidden" }}>
@@ -338,7 +347,7 @@ function HoldingCard({ holding }: { holding: Holding }) {
           ) : null}
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 

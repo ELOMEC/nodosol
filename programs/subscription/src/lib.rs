@@ -72,6 +72,10 @@ pub mod subscription {
         handle_charge(ctx)
     }
 
+    pub fn expire(ctx: Context<Expire>) -> Result<()> {
+        handle_expire(ctx)
+    }
+
     pub fn withdraw_plan_revenue(
         ctx: Context<WithdrawPlanRevenue>,
         amount: u64,

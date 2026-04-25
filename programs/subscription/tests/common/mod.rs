@@ -297,6 +297,24 @@ pub fn charge_ix(
     }
 }
 
+pub fn expire_ix(
+    program_id: &Pubkey,
+    cranker: &Pubkey,
+    plan: &Pubkey,
+    subscription_account: &Pubkey,
+) -> Instruction {
+    Instruction {
+        program_id: *program_id,
+        accounts: subscription::accounts::Expire {
+            cranker: *cranker,
+            plan: *plan,
+            subscription: *subscription_account,
+        }
+        .to_account_metas(None),
+        data: subscription::instruction::Expire {}.data(),
+    }
+}
+
 /// Creates a creator + plan fixture, plus program Config (default fee_bps = 0).
 pub struct PlanFixture {
     pub ctx: TestCtx,

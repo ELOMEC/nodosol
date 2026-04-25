@@ -54,13 +54,30 @@ export function CreatorOverview() {
 
   return (
     <>
-      <header style={{ marginBottom: "1.5rem" }}>
-        <h1 style={{ fontSize: "1.65rem", letterSpacing: "-0.02em", marginBottom: "0.3rem", fontWeight: 600 }}>
-          Creator dashboard
-        </h1>
-        <p style={{ color: "var(--shell-muted)", fontSize: "0.9rem" }}>
-          Manage your tip jar, subscription plans, and event tickets. All funds settle directly to your wallet — Nodosol never holds balances.
-        </p>
+      <header style={{ marginBottom: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
+        <div>
+          <h1 style={{ fontSize: "1.65rem", letterSpacing: "-0.02em", marginBottom: "0.3rem", fontWeight: 600 }}>
+            Creator dashboard
+          </h1>
+          <p style={{ color: "var(--shell-muted)", fontSize: "0.9rem" }}>
+            Manage your tip jar, subscription plans, and event tickets. All funds settle directly to your wallet — Nodosol never holds balances.
+          </p>
+        </div>
+        <Link
+          href="/creator/profile"
+          style={{
+            padding: "0.55rem 1.05rem",
+            borderRadius: 8,
+            border: "1px solid var(--shell-border-strong)",
+            color: "var(--shell-fg)",
+            fontSize: "0.85rem",
+            fontWeight: 600,
+            textDecoration: "none",
+            whiteSpace: "nowrap",
+          }}
+        >
+          Public profile →
+        </Link>
       </header>
 
       {!connected ? (

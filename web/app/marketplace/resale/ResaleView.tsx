@@ -20,6 +20,7 @@ import {
 } from "@/lib/ticketResale";
 import { explainSolanaError } from "@/lib/solanaErrors";
 import { useToast } from "@/components/ToastProvider";
+import { MarketSearchBar } from "@/components/MarketSearchBar";
 
 type EventIndex = Map<
   string,
@@ -45,6 +46,10 @@ export function ResaleView() {
   const [eventFilter, setEventFilter] = useState<string>("");
   const [busyListing, setBusyListing] = useState<string | null>(null);
   const [privateBuyModal, setPrivateBuyModal] = useState<OnChainResaleListing | null>(null);
+  const [search, setSearch] = useState("");
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
+  const [sortKey, setSortKey] = useState<"newest" | "expiring_soon" | "price_asc" | "price_desc">("newest");
   const toast = useToast();
 
   const load = useCallback(async () => {
@@ -246,9 +251,37 @@ export function ResaleView() {
 
   const visible = useMemo(() => {
     if (state.kind !== "ready") return [] as OnChainResaleListing[];
-    if (!eventFilter) return state.listings;
-    return state.listings.filter((l) => l.event === eventFilter);
-  }, [state, eventFilter]);
+    const q = search.trim().toLowerCase();
+    const min = priceMin === "" ? null : Number(priceMin);
+    const max = priceMax === "" ? null : Number(priceMax);
+    return state.listings
+      .filter((l) => (eventFilter ? l.event === eventFilter : true))
+      .filter((l) => {
+        if (q) {
+          const meta = state.events.get(l.event);
+          const eventName = meta?.name?.toLowerCase() ?? "";
+          const sym = meta?.symbol?.toLowerCase() ?? "";
+          if (!eventName.includes(q) && !sym.includes(q) && !l.seller.toLowerCase().includes(q)) return false;
+        }
+        if (!l.isPrivate) {
+          if (min !== null && !Number.isNaN(min) && l.priceUsdc < min) return false;
+          if (max !== null && !Number.isNaN(max) && l.priceUsdc > max) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        switch (sortKey) {
+          case "newest":
+            return b.createdAt - a.createdAt;
+          case "expiring_soon":
+            return a.expiresAt - b.expiresAt;
+          case "price_asc":
+            return (a.isPrivate ? Number.MAX_SAFE_INTEGER : a.priceUsdc) - (b.isPrivate ? Number.MAX_SAFE_INTEGER : b.priceUsdc);
+          case "price_desc":
+            return (b.isPrivate ? -1 : b.priceUsdc) - (a.isPrivate ? -1 : a.priceUsdc);
+        }
+      });
+  }, [state, eventFilter, search, priceMin, priceMax, sortKey]);
 
   const eventOptions = useMemo(() => {
     if (state.kind !== "ready") return [] as Array<{ pubkey: string; label: string; count: number }>;
@@ -315,30 +348,54 @@ export function ResaleView() {
           )}
 
           {state.listings.length > 0 && (
-            <Card>
-              <label style={{ fontSize: "0.78rem", color: "#6b7280", fontWeight: 600, marginRight: "0.5rem" }}>
-                Event filter
-              </label>
-              <select
-                value={eventFilter}
-                onChange={(e) => setEventFilter(e.target.value)}
-                style={{
-                  padding: "0.4rem 0.6rem",
-                  borderRadius: 6,
-                  border: "1px solid var(--shell-border, #eef0f3)",
-                  background: "var(--shell-card, #fff)",
-                  color: "var(--shell-fg, #111827)",
-                  fontSize: "0.82rem",
-                }}
-              >
-                <option value="">All events ({state.listings.length})</option>
-                {eventOptions.map((e) => (
-                  <option key={e.pubkey} value={e.pubkey}>
-                    {e.label} — {e.count}
-                  </option>
-                ))}
-              </select>
-            </Card>
+            <>
+              <Card>
+                <label style={{ fontSize: "0.78rem", color: "#6b7280", fontWeight: 600, marginRight: "0.5rem" }}>
+                  Event filter
+                </label>
+                <select
+                  value={eventFilter}
+                  onChange={(e) => setEventFilter(e.target.value)}
+                  style={{
+                    padding: "0.4rem 0.6rem",
+                    borderRadius: 6,
+                    border: "1px solid var(--shell-border, #eef0f3)",
+                    background: "var(--shell-card, #fff)",
+                    color: "var(--shell-fg, #111827)",
+                    fontSize: "0.82rem",
+                  }}
+                >
+                  <option value="">All events ({state.listings.length})</option>
+                  {eventOptions.map((e) => (
+                    <option key={e.pubkey} value={e.pubkey}>
+                      {e.label} — {e.count}
+                    </option>
+                  ))}
+                </select>
+              </Card>
+
+              <MarketSearchBar
+                search={search}
+                onSearch={setSearch}
+                searchPlaceholder="Search by event name, symbol, or seller…"
+                priceMin={priceMin}
+                priceMax={priceMax}
+                onPriceMin={setPriceMin}
+                onPriceMax={setPriceMax}
+                priceLabel="Resale price"
+                sortKey={sortKey}
+                onSort={setSortKey}
+                sortOptions={[
+                  { value: "newest", label: "Sort: Newest" },
+                  { value: "expiring_soon", label: "Sort: Expiring soon" },
+                  { value: "price_asc", label: "Sort: Price ↑" },
+                  { value: "price_desc", label: "Sort: Price ↓" },
+                ]}
+                filteredCount={visible.length}
+                totalCount={state.listings.length}
+                countLabel="listings"
+              />
+            </>
           )}
 
           {visible.length === 0 ? (

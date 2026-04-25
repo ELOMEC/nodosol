@@ -164,6 +164,26 @@ function Step1({ connected }: { connected: boolean }) {
           <WalletMultiButton />
         )}
       </div>
+      <div
+        style={{
+          marginTop: "2rem",
+          padding: "1rem 1.1rem",
+          background: "rgba(123,156,255,0.06)",
+          border: "1px solid rgba(123,156,255,0.18)",
+          borderRadius: 10,
+        }}
+      >
+        <div style={{ fontSize: "0.85rem", color: "#c5cdf5", fontWeight: 600, marginBottom: "0.5rem" }}>
+          Devnet quickstart
+        </div>
+        <div style={{ fontSize: "0.82rem", color: "#9ca3af", lineHeight: 1.6 }}>
+          1. Switch your wallet to <strong style={{ color: "#e8e8e8" }}>devnet</strong> (Phantom: Settings → Developer Settings → Testnet Mode)
+          <br />
+          2. <a href="https://faucet.quicknode.com/solana/devnet" target="_blank" rel="noreferrer" style={linkStyle}>Get devnet SOL</a> for tx fees (~0.5 SOL is plenty)
+          <br />
+          3. Need test USDC for buys/tips? Ask in <a href="mailto:office@nodosol.com" style={linkStyle}>office@nodosol.com</a> or run <code style={codeInline}>npx tsx scripts/fund-user.ts &lt;pubkey&gt;</code> from the repo
+        </div>
+      </div>
       <p style={{ ...mutedStyle, marginTop: "1.5rem" }}>
         New to Solana wallets?{" "}
         <a href="https://phantom.com/" target="_blank" rel="noreferrer" style={linkStyle}>
@@ -173,11 +193,6 @@ function Step1({ connected }: { connected: boolean }) {
         <a href="https://backpack.app/" target="_blank" rel="noreferrer" style={linkStyle}>
           Install Backpack
         </a>
-        . You&apos;ll also need devnet SOL — request from{" "}
-        <a href="https://faucet.quicknode.com/solana/devnet" target="_blank" rel="noreferrer" style={linkStyle}>
-          QuickNode faucet
-        </a>
-        .
       </p>
     </>
   );
@@ -324,6 +339,11 @@ function Step4({
         body="Head to the marketplace and explore listings, OTC deals, and events. Your purchases settle directly to your wallet."
         cta="Open the marketplace"
         onFinish={onFinish}
+        suggestions={[
+          { label: "Browse events", href: "/marketplace/events" },
+          { label: "See sealed-bid auctions", href: "/marketplace/auctions" },
+          { label: "Check the resale board", href: "/marketplace/resale" },
+        ]}
       />
     );
   }
@@ -341,9 +361,13 @@ function Step4({
     return (
       <FinalStep
         title="Read the pitch + live stats"
-        body="The pitch page is the one-pager you can forward to your partners. Stats page is queried from Solana RPC live."
+        body="The pitch page is the one-pager you can forward to your partners. Architecture and security details live on /tech. Stats are queried from Solana RPC live, no caching."
         cta="Open the pitch"
         onFinish={onFinish}
+        suggestions={[
+          { label: "Architecture & security (/tech)", href: "/tech" },
+          { label: "Live program stats", href: "/stats" },
+        ]}
       />
     );
   }
@@ -362,19 +386,48 @@ function FinalStep({
   body,
   cta,
   onFinish,
+  suggestions,
 }: {
   title: string;
   body: string;
   cta: string;
   onFinish: () => void;
+  suggestions?: ReadonlyArray<{ label: string; href: string }>;
 }) {
   return (
     <>
       <h1 style={h1Style}>{title}</h1>
       <p style={leadStyle}>{body}</p>
-      <div style={{ marginTop: "2rem" }}>
+      <div style={{ marginTop: "2rem", display: "flex", gap: "0.6rem", flexWrap: "wrap" }}>
         <button onClick={onFinish} style={btnPrimary}>{cta} →</button>
       </div>
+      {suggestions && suggestions.length > 0 ? (
+        <div style={{ marginTop: "1.75rem", paddingTop: "1.25rem", borderTop: "1px solid #1a1a1a" }}>
+          <div style={{ fontSize: "0.78rem", color: "#8a8a8a", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.7rem" }}>
+            Or jump straight to
+          </div>
+          <div style={{ display: "flex", gap: "0.55rem", flexWrap: "wrap" }}>
+            {suggestions.map((s) => (
+              <Link
+                key={s.href}
+                href={s.href}
+                style={{
+                  background: "#0a0a0a",
+                  border: "1px solid #1a1a1a",
+                  color: "#c5cdf5",
+                  padding: "0.5rem 0.95rem",
+                  borderRadius: 8,
+                  fontSize: "0.85rem",
+                  fontWeight: 500,
+                  textDecoration: "none",
+                }}
+              >
+                {s.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }
@@ -572,6 +625,15 @@ const btnSecondary: React.CSSProperties = {
   fontSize: "0.92rem",
   fontWeight: 500,
   cursor: "pointer",
+};
+
+const codeInline: React.CSSProperties = {
+  background: "#1a1a1a",
+  padding: "0.1rem 0.4rem",
+  borderRadius: 4,
+  fontFamily: "'SF Mono', Menlo, monospace",
+  fontSize: "0.78rem",
+  color: "#e8e8e8",
 };
 
 const greenPill: React.CSSProperties = {

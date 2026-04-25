@@ -10,6 +10,7 @@ import {
   fetchAllAuctions,
   OnChainAuction,
 } from "@/lib/auctions";
+import { MarketSearchBar } from "@/components/MarketSearchBar";
 
 type State =
   | { kind: "loading" }
@@ -26,6 +27,10 @@ export function AuctionsView() {
   const [state, setState] = useState<State>({ kind: "loading" });
   const [filter, setFilter] = useState<Filter>("live");
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
+  const [search, setSearch] = useState("");
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
+  const [sortKey, setSortKey] = useState<"newest" | "ending_soon" | "price_asc" | "price_desc">("ending_soon");
 
   useEffect(() => {
     const t = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 15);
@@ -59,18 +64,42 @@ export function AuctionsView() {
   const visible = useMemo(() => {
     if (state.kind !== "ready") return [];
     const me = publicKey?.toBase58();
-    return state.auctions.filter((a) => {
-      if (filter === "mine") return me && a.seller === me;
-      if (filter === "past") return a.status === "settled" || a.status === "cancelled";
-      if (filter === "all") return true;
-      // live: not terminal, and still within reveal window
-      return (
-        a.status !== "settled" &&
-        a.status !== "cancelled" &&
-        now < a.revealEndsAt
-      );
-    }).sort((a, b) => b.createdAt - a.createdAt);
-  }, [state, filter, publicKey, now]);
+    const q = search.trim().toLowerCase();
+    const min = priceMin === "" ? null : Number(priceMin);
+    const max = priceMax === "" ? null : Number(priceMax);
+    return state.auctions
+      .filter((a) => {
+        if (filter === "mine") return me && a.seller === me;
+        if (filter === "past") return a.status === "settled" || a.status === "cancelled";
+        if (filter === "all") return true;
+        return (
+          a.status !== "settled" &&
+          a.status !== "cancelled" &&
+          now < a.revealEndsAt
+        );
+      })
+      .filter((a) => {
+        if (q && !a.memo.toLowerCase().includes(q) && !a.seller.toLowerCase().includes(q)) return false;
+        if (min !== null && !Number.isNaN(min) && a.startPriceUsdc < min) return false;
+        if (max !== null && !Number.isNaN(max) && a.startPriceUsdc > max) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        switch (sortKey) {
+          case "newest":
+            return b.createdAt - a.createdAt;
+          case "ending_soon": {
+            const aEnd = a.status === "settled" || a.status === "cancelled" ? Number.MAX_SAFE_INTEGER : (now < a.commitEndsAt ? a.commitEndsAt : a.revealEndsAt);
+            const bEnd = b.status === "settled" || b.status === "cancelled" ? Number.MAX_SAFE_INTEGER : (now < b.commitEndsAt ? b.commitEndsAt : b.revealEndsAt);
+            return aEnd - bEnd;
+          }
+          case "price_asc":
+            return a.startPriceUsdc - b.startPriceUsdc;
+          case "price_desc":
+            return b.startPriceUsdc - a.startPriceUsdc;
+        }
+      });
+  }, [state, filter, publicKey, now, search, priceMin, priceMax, sortKey]);
 
   return (
     <>
@@ -127,6 +156,28 @@ export function AuctionsView() {
           ))}
         </div>
       </Card>
+
+      <MarketSearchBar
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Search by memo or seller address…"
+        priceMin={priceMin}
+        priceMax={priceMax}
+        onPriceMin={setPriceMin}
+        onPriceMax={setPriceMax}
+        priceLabel="Start price"
+        sortKey={sortKey}
+        onSort={setSortKey}
+        sortOptions={[
+          { value: "ending_soon", label: "Sort: Ending soon" },
+          { value: "newest", label: "Sort: Newest" },
+          { value: "price_asc", label: "Sort: Price ↑" },
+          { value: "price_desc", label: "Sort: Price ↓" },
+        ]}
+        filteredCount={visible.length}
+        totalCount={state.kind === "ready" ? state.auctions.length : 0}
+        countLabel="auctions"
+      />
 
       {state.kind === "loading" && <Card><Centered>Loading auctions…</Centered></Card>}
       {state.kind === "error" && <Card><Centered>Failed: {state.message}</Centered></Card>}

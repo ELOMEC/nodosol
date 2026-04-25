@@ -15,6 +15,7 @@
     "fund-user-ct": "tsx fund-user-ct.ts",
     "seed-demo": "tsx seed-demo-data.ts",
     "seed-plans": "tsx seed-demo-plans.ts",
+    "seed-auctions": "tsx seed-demo-auctions.ts",
     "seed-tiers": "tsx seed-event-tiers.ts",
     "retry-tree": "tsx retry-event-tree.ts"
   },

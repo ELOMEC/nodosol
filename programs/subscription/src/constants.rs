@@ -24,3 +24,9 @@ pub const CONFIG_SEED: &[u8] = b"config";
 
 pub const MAX_FEE_BPS: u16 = 1_000;
 pub const BPS_DENOMINATOR: u64 = 10_000;
+
+/// Grace period after `next_charge_at` before a permissionless caller
+/// can expire a stuck subscription. 7 days lets a subscriber re-fund
+/// their wallet or re-approve the delegate before the subscription is
+/// marked Expired.
+pub const EXPIRE_GRACE_SECONDS: i64 = 604_800;

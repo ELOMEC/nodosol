@@ -579,7 +579,10 @@ export function AssetsView() {
               {rows.map((r) => (
                 <tr key={r.address} style={{ borderTop: "1px solid #f1f2f4", opacity: busyAsset === r.address ? 0.5 : 1 }}>
                   <Td>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
+                    <Link
+                      href={`/marketplace/assets/${r.mint}`}
+                      style={{ display: "flex", alignItems: "center", gap: "0.65rem", textDecoration: "none", color: "inherit" }}
+                    >
                       {r.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
@@ -596,7 +599,7 @@ export function AssetsView() {
                           {r.symbol} · {shorten(r.mint)}
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   </Td>
                   <Td>
                     <span style={{ fontSize: "0.78rem", color: "var(--shell-muted)", background: "var(--shell-divider)", padding: "0.2rem 0.55rem", borderRadius: 4, fontWeight: 500 }}>

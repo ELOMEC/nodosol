@@ -34,4 +34,6 @@ pub enum SubscriptionError {
     TreasuryMismatch,
     #[msg("Program is paused — fund-moving instructions are temporarily disabled")]
     Paused,
+    #[msg("Grace period after the missed charge has not yet elapsed")]
+    ExpireGraceNotElapsed,
 }

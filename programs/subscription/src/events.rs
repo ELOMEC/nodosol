@@ -43,6 +43,17 @@ pub struct SubscriptionCancelled {
 }
 
 #[event]
+pub struct SubscriptionExpired {
+    pub plan: Pubkey,
+    pub subscription: Pubkey,
+    pub subscriber: Pubkey,
+    pub expired_by: Pubkey,
+    pub charge_count: u64,
+    pub total_paid: u64,
+    pub timestamp: i64,
+}
+
+#[event]
 pub struct PlanRevenueWithdrawn {
     pub plan: Pubkey,
     pub creator: Pubkey,

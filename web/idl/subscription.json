@@ -410,6 +410,91 @@
       ]
     },
     {
+      "name": "expire",
+      "discriminator": [
+        243,
+        83,
+        205,
+        58,
+        57,
+        201,
+        247,
+        146
+      ],
+      "accounts": [
+        {
+          "name": "cranker",
+          "docs": [
+            "Permissionless crank — anyone can pay the tx fee. No authority",
+            "is granted beyond moving stuck state forward."
+          ],
+          "signer": true
+        },
+        {
+          "name": "plan",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  112,
+                  108,
+                  97,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "plan.creator",
+                "account": "SubscriptionPlan"
+              },
+              {
+                "kind": "account",
+                "path": "plan.plan_id",
+                "account": "SubscriptionPlan"
+              }
+            ]
+          }
+        },
+        {
+          "name": "subscription",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  115,
+                  117,
+                  98,
+                  115,
+                  99,
+                  114,
+                  105,
+                  112,
+                  116,
+                  105,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "plan"
+              },
+              {
+                "kind": "account",
+                "path": "subscription.subscriber",
+                "account": "Subscription"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "initialize_config",
       "discriminator": [
         208,
@@ -1128,6 +1213,19 @@
       ]
     },
     {
+      "name": "SubscriptionExpired",
+      "discriminator": [
+        22,
+        7,
+        157,
+        5,
+        79,
+        164,
+        150,
+        39
+      ]
+    },
+    {
       "name": "TreasuryUpdated",
       "discriminator": [
         80,
@@ -1221,6 +1319,11 @@
       "code": 6015,
       "name": "Paused",
       "msg": "Program is paused — fund-moving instructions are temporarily disabled"
+    },
+    {
+      "code": 6016,
+      "name": "ExpireGraceNotElapsed",
+      "msg": "Grace period after the missed charge has not yet elapsed"
     }
   ],
   "types": [
@@ -1613,6 +1716,42 @@
           {
             "name": "next_charge_at",
             "type": "i64"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "SubscriptionExpired",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "plan",
+            "type": "pubkey"
+          },
+          {
+            "name": "subscription",
+            "type": "pubkey"
+          },
+          {
+            "name": "subscriber",
+            "type": "pubkey"
+          },
+          {
+            "name": "expired_by",
+            "type": "pubkey"
+          },
+          {
+            "name": "charge_count",
+            "type": "u64"
+          },
+          {
+            "name": "total_paid",
+            "type": "u64"
           },
           {
             "name": "timestamp",

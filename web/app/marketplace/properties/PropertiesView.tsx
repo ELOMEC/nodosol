@@ -22,6 +22,7 @@ type PropertyCard = {
   href: string;
   title: string;
   priceLabel: string;
+  priceUsdc: number;
   statusLabel: string;
   statusColor: { bg: string; fg: string };
   hero: string | null;
@@ -46,6 +47,8 @@ export function PropertiesView() {
   const [state, setState] = useState<State>({ kind: "loading" });
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
 
   useEffect(() => {
@@ -133,6 +136,8 @@ export function PropertiesView() {
   const visible = useMemo(() => {
     if (state.kind !== "ready") return [];
     const q = query.trim().toLowerCase();
+    const min = priceMin === "" ? null : Number(priceMin);
+    const max = priceMax === "" ? null : Number(priceMax);
     return state.cards
       .filter((c) => (filter === "all" ? true : c.kind === filter))
       .filter((c) =>
@@ -142,8 +147,13 @@ export function PropertiesView() {
             (c.city?.toLowerCase().includes(q) ?? false)
           : true
       )
+      .filter((c) => {
+        if (min !== null && !Number.isNaN(min) && c.priceUsdc < min) return false;
+        if (max !== null && !Number.isNaN(max) && c.priceUsdc > max) return false;
+        return true;
+      })
       .sort((a, b) => b.sortScore - a.sortScore);
-  }, [state, filter, query]);
+  }, [state, filter, query, priceMin, priceMax]);
 
   return (
     <>
@@ -201,6 +211,28 @@ export function PropertiesView() {
               fontSize: "0.85rem",
             }}
           />
+          <div style={{ display: "flex", alignItems: "center", gap: "0.3rem", fontSize: "0.78rem", color: "#6b7280" }}>
+            <span>Price (USDC):</span>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              placeholder="min"
+              value={priceMin}
+              onChange={(e) => setPriceMin(e.target.value)}
+              style={{ width: 80, padding: "0.4rem 0.55rem", borderRadius: 7, border: "1px solid var(--shell-border, #eef0f3)", background: "var(--shell-card, #fff)", color: "var(--shell-fg, #111827)", fontSize: "0.82rem" }}
+            />
+            <span style={{ color: "#9ca3af" }}>—</span>
+            <input
+              type="number"
+              min={0}
+              step="0.01"
+              placeholder="max"
+              value={priceMax}
+              onChange={(e) => setPriceMax(e.target.value)}
+              style={{ width: 80, padding: "0.4rem 0.55rem", borderRadius: 7, border: "1px solid var(--shell-border, #eef0f3)", background: "var(--shell-card, #fff)", color: "var(--shell-fg, #111827)", fontSize: "0.82rem" }}
+            />
+          </div>
         </div>
       </Card>
 
@@ -260,6 +292,7 @@ function auctionCard(
     href: `/marketplace/auctions/${a.address}`,
     title: meta.memo || a.memo,
     priceLabel: `Floor $${a.startPriceUsdc.toFixed(2)} · min bid ${a.minDepositUsdc.toFixed(2)}`,
+    priceUsdc: a.startPriceUsdc,
     statusLabel: label,
     statusColor: { bg, fg },
     hero: meta.gallery?.[0] ?? null,
@@ -294,6 +327,7 @@ function rentalCard(
     href: `/marketplace/rentals/${p.publicKey.toBase58()}`,
     title: meta.title,
     priceLabel: `$${price.toFixed(2)} / ${periodDays} day${periodDays === 1 ? "" : "s"}`,
+    priceUsdc: price,
     statusLabel: p.account.active ? "Renting" : "Paused",
     statusColor: p.account.active
       ? { bg: "#dcfce7", fg: "#166534" }

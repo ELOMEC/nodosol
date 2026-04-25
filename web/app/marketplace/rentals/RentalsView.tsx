@@ -9,6 +9,7 @@ import { PublicKey } from "@solana/web3.js";
 import { USDC_UNIT } from "@/lib/constants";
 import { subscriptionProgram } from "@/lib/subscription";
 import { fetchRentalMetadataBatch, RentalMetadata } from "@/lib/rentalMetadata";
+import { MarketSearchBar } from "@/components/MarketSearchBar";
 
 type RentalPlan = {
   address: string;
@@ -35,6 +36,10 @@ export function RentalsView() {
 
   const [state, setState] = useState<State>({ kind: "loading" });
   const [filter, setFilter] = useState<Filter>("active");
+  const [search, setSearch] = useState("");
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
+  const [sortKey, setSortKey] = useState<"newest" | "price_asc" | "price_desc" | "popular">("newest");
 
   const load = useCallback(async () => {
     setState({ kind: "loading" });
@@ -88,14 +93,38 @@ export function RentalsView() {
   const visible = useMemo(() => {
     if (state.kind !== "ready") return [];
     const me = publicKey?.toBase58();
+    const q = search.trim().toLowerCase();
+    const min = priceMin === "" ? null : Number(priceMin);
+    const max = priceMax === "" ? null : Number(priceMax);
     return state.plans
       .filter((p) => {
         if (filter === "mine") return me && p.creator === me;
         if (filter === "active") return p.active;
         return true;
       })
-      .sort((a, b) => b.createdAt - a.createdAt);
-  }, [state, filter, publicKey]);
+      .filter((p) => {
+        if (q) {
+          const title = (p.metadata?.title ?? "").toLowerCase();
+          const addr = (p.metadata?.location?.address ?? "").toLowerCase();
+          if (!title.includes(q) && !addr.includes(q) && !p.creator.toLowerCase().includes(q)) return false;
+        }
+        if (min !== null && !Number.isNaN(min) && p.priceUsdc < min) return false;
+        if (max !== null && !Number.isNaN(max) && p.priceUsdc > max) return false;
+        return true;
+      })
+      .sort((a, b) => {
+        switch (sortKey) {
+          case "newest":
+            return b.createdAt - a.createdAt;
+          case "price_asc":
+            return a.priceUsdc - b.priceUsdc;
+          case "price_desc":
+            return b.priceUsdc - a.priceUsdc;
+          case "popular":
+            return b.subscriberCount - a.subscriberCount;
+        }
+      });
+  }, [state, filter, publicKey, search, priceMin, priceMax, sortKey]);
 
   return (
     <>
@@ -170,6 +199,28 @@ export function RentalsView() {
           ))}
         </div>
       </Card>
+
+      <MarketSearchBar
+        search={search}
+        onSearch={setSearch}
+        searchPlaceholder="Search by title, address, or landlord…"
+        priceMin={priceMin}
+        priceMax={priceMax}
+        onPriceMin={setPriceMin}
+        onPriceMax={setPriceMax}
+        priceLabel="Price/period"
+        sortKey={sortKey}
+        onSort={setSortKey}
+        sortOptions={[
+          { value: "newest", label: "Sort: Newest" },
+          { value: "price_asc", label: "Sort: Price ↑" },
+          { value: "price_desc", label: "Sort: Price ↓" },
+          { value: "popular", label: "Sort: Most tenants" },
+        ]}
+        filteredCount={visible.length}
+        totalCount={state.kind === "ready" ? state.plans.length : 0}
+        countLabel="rentals"
+      />
 
       {state.kind === "loading" && <Card><Centered>Loading…</Centered></Card>}
       {state.kind === "error" && <Card><Centered>{state.message}</Centered></Card>}

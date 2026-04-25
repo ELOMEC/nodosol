@@ -1,8 +1,8 @@
 "use client";
 
-import { useConnection } from "@solana/wallet-adapter-react";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { ConfirmedSignatureInfo, PublicKey } from "@solana/web3.js";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import tipJarIdl from "@/idl/tip_jar.json";
 import subscriptionIdl from "@/idl/subscription.json";
@@ -12,6 +12,15 @@ import mintIdl from "@/idl/rwa_mint.json";
 import marketplaceIdl from "@/idl/marketplace.json";
 import otcIdl from "@/idl/otc_deals.json";
 import eventTicketsIdl from "@/idl/event_tickets.json";
+
+import { getCachedChatJwt } from "@/lib/chatSession";
+import {
+  fetchNotifications,
+  markNotificationsRead,
+  NotificationRow,
+  subscribeToNotifications,
+} from "@/lib/notifications";
+import { createAuthedSupabaseClient } from "@/lib/supabase";
 
 const PROGRAMS = [
   { label: "tip_jar", id: (tipJarIdl as { address: string }).address },
@@ -56,12 +65,18 @@ function persistSeenSet(set: Set<string>): void {
 
 export function NotificationsBell() {
   const { connection } = useConnection();
+  const { publicKey } = useWallet();
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Activity[]>([]);
+  const [personalItems, setPersonalItems] = useState<NotificationRow[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const seenRef = useRef<Set<string>>(new Set());
   const popoverRef = useRef<HTMLDivElement | null>(null);
+
+  const wallet = publicKey?.toBase58() ?? null;
+  const cachedJwt = useMemo(() => (wallet ? getCachedChatJwt(wallet) : null), [wallet]);
+  const hasPersonalAuth = Boolean(cachedJwt && cachedJwt.expiresAt > Math.floor(Date.now() / 1000) + 30);
 
   // Initial load on mount.
   const reload = useCallback(async () => {
@@ -102,11 +117,48 @@ export function NotificationsBell() {
 
   useEffect(() => {
     seenRef.current = loadSeenSet();
-    void reload();
-    // Re-fetch every 60s in the background.
-    const interval = setInterval(() => void reload(), 60_000);
-    return () => clearInterval(interval);
-  }, [reload]);
+    if (!hasPersonalAuth) {
+      // Personal feed not available — fall back to RPC global activity.
+      void reload();
+      const interval = setInterval(() => void reload(), 60_000);
+      return () => clearInterval(interval);
+    }
+  }, [reload, hasPersonalAuth]);
+
+  // Personal feed: load + subscribe to inserts when wallet has a cached JWT.
+  useEffect(() => {
+    if (!wallet || !cachedJwt || !hasPersonalAuth) {
+      setPersonalItems(null);
+      return;
+    }
+    let cancelled = false;
+    void (async () => {
+      const rows = await fetchNotifications(cachedJwt.jwt, 30);
+      if (!cancelled) setPersonalItems(rows);
+    })();
+
+    const client = createAuthedSupabaseClient(cachedJwt.jwt);
+    client.realtime.setAuth(cachedJwt.jwt);
+    const unsubscribe = subscribeToNotifications(client, wallet, (row) => {
+      setPersonalItems((prev) => (prev ? [row, ...prev].slice(0, 30) : [row]));
+    });
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [wallet, cachedJwt, hasPersonalAuth]);
+
+  // When the dropdown opens AND we have a personal feed, mark all as read.
+  useEffect(() => {
+    if (!open || !cachedJwt || !personalItems) return;
+    const unreadIds = personalItems.filter((n) => !n.read).map((n) => n.id);
+    if (unreadIds.length === 0) return;
+    void markNotificationsRead(cachedJwt.jwt, unreadIds);
+    setPersonalItems((prev) =>
+      prev ? prev.map((n) => (unreadIds.includes(n.id) ? { ...n, read: true } : n)) : prev
+    );
+  }, [open, cachedJwt, personalItems]);
 
   // When the dropdown opens, mark current items as seen.
   useEffect(() => {
@@ -129,7 +181,9 @@ export function NotificationsBell() {
     return () => window.removeEventListener("mousedown", onDoc);
   }, [open]);
 
-  const unreadCount = items.filter((it) => !seenRef.current.has(it.signature)).length;
+  const unreadCount = personalItems
+    ? personalItems.filter((n) => !n.read).length
+    : items.filter((it) => !seenRef.current.has(it.signature)).length;
 
   return (
     <div ref={popoverRef} style={{ position: "relative" }}>
@@ -207,31 +261,70 @@ export function NotificationsBell() {
             }}
           >
             <div>
-              <div style={{ fontWeight: 600, fontSize: "0.92rem" }}>Recent activity</div>
+              <div style={{ fontWeight: 600, fontSize: "0.92rem" }}>
+                {personalItems ? "Your notifications" : "Recent activity"}
+              </div>
               <div style={{ fontSize: "0.74rem", color: "var(--shell-muted)" }}>
-                Last 3 txs from each of {PROGRAMS.length} programs
+                {personalItems
+                  ? "Push-driven, scoped to your wallet"
+                  : `Last 3 txs from each of ${PROGRAMS.length} programs`}
               </div>
             </div>
-            <button
-              onClick={() => void reload()}
-              disabled={loading}
-              style={{
-                background: "transparent",
-                border: "1px solid var(--shell-border-strong)",
-                color: "var(--shell-muted)",
-                padding: "0.25rem 0.6rem",
-                borderRadius: 6,
-                fontSize: "0.74rem",
-                fontWeight: 500,
-                cursor: loading ? "wait" : "pointer",
-              }}
-            >
-              {loading ? "…" : "Refresh"}
-            </button>
+            {!personalItems ? (
+              <button
+                onClick={() => void reload()}
+                disabled={loading}
+                style={{
+                  background: "transparent",
+                  border: "1px solid var(--shell-border-strong)",
+                  color: "var(--shell-muted)",
+                  padding: "0.25rem 0.6rem",
+                  borderRadius: 6,
+                  fontSize: "0.74rem",
+                  fontWeight: 500,
+                  cursor: loading ? "wait" : "pointer",
+                }}
+              >
+                {loading ? "…" : "Refresh"}
+              </button>
+            ) : null}
           </header>
 
           <div style={{ overflowY: "auto", flex: 1 }}>
-            {error ? (
+            {personalItems ? (
+              personalItems.length === 0 ? (
+                <div style={{ padding: "1.5rem 1rem", fontSize: "0.85rem", color: "var(--shell-muted)", textAlign: "center" }}>
+                  Nothing yet. New events will land here in real time.
+                </div>
+              ) : (
+                personalItems.map((n) => (
+                  <a
+                    key={n.id}
+                    href={n.href ?? (n.signature ? `https://explorer.solana.com/tx/${n.signature}?cluster=devnet` : "#")}
+                    target={n.href?.startsWith("http") || !n.href ? "_blank" : undefined}
+                    rel="noreferrer"
+                    style={{
+                      padding: "0.7rem 1rem",
+                      borderBottom: "1px solid var(--shell-divider)",
+                      display: "block",
+                      textDecoration: "none",
+                      color: "var(--shell-fg)",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.2rem" }}>
+                      {!n.read ? <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4f46e5" }} /> : null}
+                      <div style={{ fontWeight: 600, fontSize: "0.86rem" }}>{n.title}</div>
+                    </div>
+                    {n.body ? (
+                      <div style={{ fontSize: "0.78rem", color: "var(--shell-muted)" }}>{n.body}</div>
+                    ) : null}
+                    <div style={{ fontSize: "0.7rem", color: "var(--shell-faint)", marginTop: "0.3rem" }}>
+                      {timeAgo(Math.floor(new Date(n.created_at).getTime() / 1000))}
+                    </div>
+                  </a>
+                ))
+              )
+            ) : error ? (
               <div style={{ padding: "1rem", fontSize: "0.85rem", color: "#b91c1c" }}>{error}</div>
             ) : items.length === 0 ? (
               <div style={{ padding: "1.5rem 1rem", fontSize: "0.85rem", color: "var(--shell-muted)", textAlign: "center" }}>
