@@ -35,7 +35,8 @@ export function MarketplaceShell({
     | "chat"
     | "search"
     | "settings"
-    | "settings-notifications";
+    | "settings-notifications"
+    | "creators";
   children: ReactNode;
 }) {
   const nav: NavItem[] = [
@@ -60,6 +61,9 @@ export function MarketplaceShell({
   ];
   const settingsNav: NavItem[] = [
     { href: "/settings/notifications", label: "Notifications", icon: IconBell(), active: active === "settings-notifications" },
+  ];
+  const discoveryNav: NavItem[] = [
+    { href: "/creators", label: "Creators", icon: IconUsers(), active: active === "creators" },
   ];
   const adminNav: NavItem[] = [
     { href: "/admin", label: "Programs", icon: IconShield(), active: active === "admin" },
@@ -164,6 +168,16 @@ export function MarketplaceShell({
           ))}
         </nav>
 
+        <SectionLabel>Discovery</SectionLabel>
+        <nav style={{ display: "flex", flexDirection: "column", gap: "0.125rem", marginBottom: "1.5rem" }}>
+          {discoveryNav.map((item) => (
+            <Link key={item.href} href={item.href} style={navLinkStyle(item.active)}>
+              <span style={{ width: 18, height: 18, display: "inline-flex", alignItems: "center" }}>{item.icon}</span>
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
         <SectionLabel>Settings</SectionLabel>
         <nav style={{ display: "flex", flexDirection: "column", gap: "0.125rem", marginBottom: "1.5rem" }}>
           {settingsNav.map((item) => (
@@ -216,6 +230,7 @@ export function MarketplaceShell({
           adminNav={adminNav}
           communityNav={communityNav}
           settingsNav={settingsNav}
+          discoveryNav={discoveryNav}
         />
         <main className="nds-shell-main">{children}</main>
       </div>
@@ -229,12 +244,14 @@ function Topbar({
   adminNav,
   communityNav,
   settingsNav,
+  discoveryNav,
 }: {
   nav: NavItem[];
   creatorNav: NavItem[];
   adminNav: NavItem[];
   communityNav: NavItem[];
   settingsNav: NavItem[];
+  discoveryNav: NavItem[];
 }) {
   return (
     <header className="nds-topbar">
@@ -273,6 +290,15 @@ function Topbar({
           <SectionLabel>Community</SectionLabel>
           <nav style={{ display: "flex", flexDirection: "column", gap: "0.125rem", marginBottom: "1rem" }}>
             {communityNav.map((item) => (
+              <Link key={item.href} href={item.href} style={navLinkStyle(item.active)}>
+                <span style={{ width: 18, height: 18, display: "inline-flex", alignItems: "center" }}>{item.icon}</span>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+          <SectionLabel>Discovery</SectionLabel>
+          <nav style={{ display: "flex", flexDirection: "column", gap: "0.125rem", marginBottom: "1rem" }}>
+            {discoveryNav.map((item) => (
               <Link key={item.href} href={item.href} style={navLinkStyle(item.active)}>
                 <span style={{ width: 18, height: 18, display: "inline-flex", alignItems: "center" }}>{item.icon}</span>
                 {item.label}

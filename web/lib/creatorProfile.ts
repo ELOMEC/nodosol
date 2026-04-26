@@ -79,6 +79,76 @@ export async function isHandleAvailable(handle: string): Promise<boolean> {
   return existing === null;
 }
 
+export type ListSort = "newest" | "recent" | "handle";
+
+export type ListProfilesOpts = {
+  query?: string;
+  sort?: ListSort;
+  /** 1-indexed page. */
+  page?: number;
+  pageSize?: number;
+};
+
+export type ListProfilesResult = {
+  rows: CreatorProfileRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+/**
+ * Lists public creator_profiles. Reads are RLS-public so the anon
+ * client suffices. Uses Supabase `count: exact` so a single round-trip
+ * returns rows + the matching total for pagination headers.
+ */
+export async function listProfiles(
+  opts: ListProfilesOpts = {}
+): Promise<ListProfilesResult> {
+  const supabase = getSupabaseClient();
+  const sort: ListSort = opts.sort ?? "newest";
+  const page = Math.max(1, Math.floor(opts.page ?? 1));
+  const pageSize = Math.min(60, Math.max(1, Math.floor(opts.pageSize ?? 20)));
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let q = supabase
+    .from("creator_profiles")
+    .select("*", { count: "exact" })
+    .range(from, to);
+
+  if (opts.query && opts.query.trim()) {
+    // Escape ILIKE wildcards in user input.
+    const safe = opts.query.trim().replace(/[%_\\]/g, (c) => `\\${c}`);
+    const pattern = `%${safe}%`;
+    q = q.or(`handle.ilike.${pattern},display_name.ilike.${pattern}`);
+  }
+
+  switch (sort) {
+    case "recent":
+      q = q.order("updated_at", { ascending: false });
+      break;
+    case "handle":
+      q = q.order("handle", { ascending: true });
+      break;
+    case "newest":
+    default:
+      q = q.order("created_at", { ascending: false });
+      break;
+  }
+
+  const { data, error, count } = await q;
+  if (error) {
+    console.warn("listProfiles failed", error);
+    return { rows: [], total: 0, page, pageSize };
+  }
+  return {
+    rows: (data ?? []) as CreatorProfileRow[],
+    total: count ?? 0,
+    page,
+    pageSize,
+  };
+}
+
 /**
  * Insert or update the calling wallet's profile. Caller must provide a
  * Supabase-signed JWT (issue-chat-jwt Edge Function) so the row's
