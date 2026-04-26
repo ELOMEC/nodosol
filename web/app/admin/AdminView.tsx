@@ -22,6 +22,7 @@ import {
 } from "@/lib/admin";
 import { simulateAndSend } from "@/lib/tx";
 import { explainSolanaError } from "@/lib/solanaErrors";
+import { AdminPanicButton } from "@/components/AdminPanicButton";
 import { AdminSecurityEventsWidget } from "@/components/AdminSecurityEventsWidget";
 import { AdminVolumeWidget } from "@/components/AdminVolumeWidget";
 import { useToast } from "@/components/ToastProvider";
@@ -284,6 +285,8 @@ export function AdminView() {
         </div>
         {!connected ? <WalletMultiButton /> : null}
       </header>
+
+      <AdminPanicButton />
 
       <AdminVolumeWidget />
 
