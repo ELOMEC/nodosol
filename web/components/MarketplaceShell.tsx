@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { ChatBell } from "./ChatBell";
+import { LocaleToggle } from "./LocaleToggle";
 import { NotificationsBell } from "./NotificationsBell";
 import { PrivyLoginButton } from "./PrivyLoginButton";
 import { ThemeToggle } from "./ThemeToggle";
@@ -333,6 +334,7 @@ function Topbar({
         />
       </form>
       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <LocaleToggle />
         <ThemeToggle />
         <ChatBell />
         <NotificationsBell />

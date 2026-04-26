@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { LocaleToggle } from "@/components/LocaleToggle";
 import { OnboardingTour } from "@/components/OnboardingTour";
 import { TrendingPanel } from "@/components/TrendingPanel";
 import { TrustSignals } from "@/components/TrustSignals";
@@ -61,6 +62,7 @@ export default function HomePage() {
           >
             Get started →
           </Link>
+          <LocaleToggle />
         </div>
       </nav>
 

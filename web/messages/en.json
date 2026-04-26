@@ -1,0 +1,70 @@
+{
+  "nav": {
+    "marketplace": "Marketplace",
+    "tokenize": "Tokenize",
+    "stats": "Stats",
+    "investors": "Investors",
+    "creators": "Creators",
+    "settings": "Settings",
+    "get_started": "Get started",
+    "sign_in": "Sign in"
+  },
+  "actions": {
+    "tip": "Tip",
+    "subscribe": "Subscribe",
+    "buy_ticket": "Buy ticket",
+    "buy": "Buy",
+    "sell": "Sell",
+    "list": "List",
+    "place_bid": "Place bid",
+    "withdraw": "Withdraw",
+    "cancel": "Cancel",
+    "save": "Save",
+    "back": "Back",
+    "next": "Next",
+    "skip": "Skip",
+    "done": "Done",
+    "refresh": "Refresh",
+    "remove": "Remove",
+    "connect_wallet": "Connect wallet",
+    "disconnect": "Disconnect",
+    "send": "Send"
+  },
+  "common": {
+    "loading": "Loading…",
+    "saving": "Saving…",
+    "error": "Something went wrong",
+    "empty": "Nothing here yet",
+    "search": "Search",
+    "all": "All",
+    "newest": "Newest",
+    "active": "Active",
+    "paused": "Paused",
+    "expired": "Expired",
+    "verified": "Verified",
+    "unverified": "Not verified",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "landing": {
+    "tagline": "Compliant RWA + creator economy on Solana",
+    "explore_marketplace": "Explore the marketplace",
+    "tokenize_an_asset": "Tokenize an asset",
+    "get_early_access": "Get early access",
+    "live_network_state": "Live network state (devnet)",
+    "trending_now": "Trending now",
+    "top_creators": "Top creators",
+    "auctions_ending": "Auctions ending soon",
+    "recent_sales": "Recent ticket sales"
+  },
+  "settings": {
+    "notifications_title": "Notification settings",
+    "email_address": "Email address",
+    "send_verification": "Send verification email",
+    "money_in": "Money in",
+    "activity": "Activity",
+    "confirmations": "Confirmations",
+    "manage_preferences": "Manage preferences",
+    "unsubscribe_all": "Unsubscribe from all"
+  }
+}
