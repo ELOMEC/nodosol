@@ -7,6 +7,7 @@ import { ConfirmedSignatureInfo, PublicKey } from "@solana/web3.js";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { USDC_UNIT } from "@/lib/constants";
+import { earningsToCsv, fetchEarnings } from "@/lib/earnings";
 import {
   CreatorProfileDoc,
   creatorProfilePda,
@@ -78,6 +79,7 @@ export function AnalyticsView() {
 
   const [snapshot, setSnapshot] = useState<CachedSnapshot | null>(null);
   const [busy, setBusy] = useState(false);
+  const [earningsBusy, setEarningsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const walletStr = publicKey?.toBase58() ?? null;
@@ -163,6 +165,35 @@ export function AnalyticsView() {
     return snapshot.signatures.slice(0, RECENT_LIMIT);
   }, [snapshot]);
 
+  async function exportEarnings() {
+    if (!walletStr || !publicKey) return;
+    setEarningsBusy(true);
+    try {
+      const provider = new AnchorProvider(connection, wallet as unknown as Wallet, {
+        commitment: "confirmed",
+      });
+      const rows = await fetchEarnings(provider, walletStr);
+      if (rows.length === 0) {
+        toast.info("No on-chain earnings yet");
+        return;
+      }
+      const csv = earningsToCsv(rows);
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `nodosol-earnings-${walletStr.slice(0, 8)}-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(`Exported ${rows.length} earnings row${rows.length === 1 ? "" : "s"}`);
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Earnings export failed");
+    } finally {
+      setEarningsBusy(false);
+    }
+  }
+
   function exportCsv() {
     if (!snapshot || !walletStr) return;
     const header = "iso_timestamp,signature,slot,status\n";
@@ -224,9 +255,17 @@ export function AnalyticsView() {
             type="button"
             onClick={exportCsv}
             disabled={!snapshot || snapshot.signatures.length === 0}
+            style={SECONDARY_BTN}
+          >
+            Export signatures
+          </button>
+          <button
+            type="button"
+            onClick={() => void exportEarnings()}
+            disabled={earningsBusy}
             style={PRIMARY_BTN}
           >
-            Export CSV
+            {earningsBusy ? "Building…" : "Export earnings"}
           </button>
         </div>
       </header>

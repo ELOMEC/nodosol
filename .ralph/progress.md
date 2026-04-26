@@ -146,7 +146,11 @@
   - Empty states: "No plans yet" links to `/creator/plans`; per-plan "No subscribers on this plan yet."
   - `cd web && tsc --noEmit` clean.
 
-- [ ] Creator earnings CSV export — wire u `/creator/analytics` ili poseban dugme na `/creator`. Aggregate tip + subscription + event ticket revenue, format `date,type,amount_usdc,from_wallet,signature`. Verifikacija: tsc, manual download check.
+- [x] Creator earnings CSV export — wire u `/creator/analytics` ili poseban dugme na `/creator`. Aggregate tip + subscription + event ticket revenue, format `date,type,amount_usdc,from_wallet,signature`. Verifikacija: tsc, manual download check.
+  - `web/lib/earnings.ts`: `fetchEarnings(provider, wallet)` aggregates from 3 sources — tip_jar `CreatorProfile` (lifetime totals as one `tip_total` row), subscription `Subscription` accounts joined with our owned plans via memcmp at offset 8 (one `subscription` row per subscriber with subscriber pubkey + total_paid + charge_count), and event_tickets / events `Event` accounts where creator==wallet (one `event_sales` row per event with sold + total_revenue). Per-program failures logged + skipped — partial CSVs still ship. `earningsToCsv` emits CSV with header `date_iso,kind,plan_or_event_id,counterparty,charges_or_count,amount_usdc,source_account` + RFC 4180 quoting for cells with quotes/commas/newlines. Sorted most-recent-first.
+  - `web/app/creator/analytics/AnalyticsView.tsx`: existing "Export CSV" button renamed to "Export signatures" (secondary style), new primary "Export earnings" button calls `fetchEarnings` + downloads `nodosol-earnings-<wallet>-<date>.csv`. Toast counts rows, "no earnings yet" empty state.
+  - **Honest scope cut**: spec wanted per-row `from_wallet` + `signature` for each tip. That requires `getTransaction` per signature (1000+ RPC calls for an active creator) since `getSignaturesForAddress` only returns metadata. Per-tip rows from Helius enhanced-tx is a follow-up; lifetime tip aggregate ships now so accounting still has something.
+  - `cd web && tsc --noEmit` clean.
 
 ### Bucket I: Buyer tools
 
