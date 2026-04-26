@@ -10,6 +10,7 @@ import {
   fetchAllAuctions,
   OnChainAuction,
 } from "@/lib/auctions";
+import { useSearchParamsState } from "@/lib/useSearchParamsState";
 import { EmptyState } from "@/components/EmptyState";
 import { MarketSearchBar } from "@/components/MarketSearchBar";
 
@@ -26,12 +27,18 @@ export function AuctionsView() {
   const { publicKey } = wallet;
 
   const [state, setState] = useState<State>({ kind: "loading" });
-  const [filter, setFilter] = useState<Filter>("live");
+  const [filter, setFilter] = useSearchParamsState<Filter>("filter", "live", {
+    allowed: ["live", "mine", "past", "all"] as const,
+  });
   const [now, setNow] = useState(() => Math.floor(Date.now() / 1000));
-  const [search, setSearch] = useState("");
-  const [priceMin, setPriceMin] = useState("");
-  const [priceMax, setPriceMax] = useState("");
-  const [sortKey, setSortKey] = useState<"newest" | "ending_soon" | "price_asc" | "price_desc">("ending_soon");
+  const [search, setSearch] = useSearchParamsState<string>("q", "", { debounceMs: 300 });
+  const [priceMin, setPriceMin] = useSearchParamsState<string>("min", "", { debounceMs: 300 });
+  const [priceMax, setPriceMax] = useSearchParamsState<string>("max", "", { debounceMs: 300 });
+  const [sortKey, setSortKey] = useSearchParamsState<
+    "newest" | "ending_soon" | "price_asc" | "price_desc"
+  >("sort", "ending_soon", {
+    allowed: ["newest", "ending_soon", "price_asc", "price_desc"] as const,
+  });
 
   useEffect(() => {
     const t = setInterval(() => setNow(Math.floor(Date.now() / 1000)), 15);
