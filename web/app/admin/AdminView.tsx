@@ -22,6 +22,7 @@ import {
 } from "@/lib/admin";
 import { simulateAndSend } from "@/lib/tx";
 import { explainSolanaError } from "@/lib/solanaErrors";
+import { AdminVolumeWidget } from "@/components/AdminVolumeWidget";
 import { useToast } from "@/components/ToastProvider";
 
 const ADMIN_ALLOWLIST: ReadonlySet<string> = new Set(
@@ -282,6 +283,8 @@ export function AdminView() {
         </div>
         {!connected ? <WalletMultiButton /> : null}
       </header>
+
+      <AdminVolumeWidget />
 
       {state.kind === "loading" || state.kind === "idle" ? (
         <CenteredCard>Loading configs…</CenteredCard>
