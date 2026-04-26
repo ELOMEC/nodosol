@@ -197,7 +197,10 @@
 
 ### Bucket K: UX polish
 
-- [ ] Onboarding tour (first-visit) — `web/components/OnboardingTour.tsx` 4-step overlay (Connect wallet → Fund USDC → Browse marketplace → Done). `localStorage` flag `nodosol_tour_completed`. Skip + "Don't show again". Trigger na `/` i `/marketplace` first visit. Verifikacija: tsc.
+- [x] Onboarding tour (first-visit) — `web/components/OnboardingTour.tsx` 4-step overlay (Connect wallet → Fund USDC → Browse marketplace → Done). `localStorage` flag `nodosol_tour_completed`. Skip + "Don't show again". Trigger na `/` i `/marketplace` first visit. Verifikacija: tsc.
+  - `web/components/OnboardingTour.tsx`: 5-step modal overlay (welcome + 4 steps: connect wallet, fund USDC via /welcome faucet, browse marketplace, done). Per-step CTA links open the relevant route inline (Get started, devnet faucet, marketplace, creators, settings). Backdrop click + "Skip · don't show again" both flip the `nodosol_tour_completed` flag in localStorage. SSR-safe — renders nothing on the server (`isCompleted()` returns true when `window` undefined) and 400ms after mount on first visit so the page paints first.
+  - Mounted on `/` (`web/app/page.tsx` after the last section) and `/marketplace` (`web/app/marketplace/page.tsx` inside MarketplaceShell). Other surfaces are unchanged — first-time visitors land on one of these two before getting deep into the app.
+  - `cd web && tsc --noEmit` clean.
 
 - [ ] PWA manifest + install prompt — `web/public/manifest.json` (icons koristi postojeći logo, theme_color, display standalone). `web/public/sw.js` minimal (offline cache shell). `web/components/InstallPrompt.tsx` deferred prompt pattern + iOS Safari "Add to Home Screen" hint banner. `<link rel="manifest">` u `web/app/layout.tsx`. Verifikacija: tsc + Lighthouse PWA audit.
 

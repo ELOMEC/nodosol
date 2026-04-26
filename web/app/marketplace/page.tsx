@@ -1,4 +1,5 @@
 import { MarketplaceShell } from "@/components/MarketplaceShell";
+import { OnboardingTour } from "@/components/OnboardingTour";
 
 import { MarketplaceView } from "./MarketplaceView";
 
@@ -11,6 +12,7 @@ export default function MarketplacePage() {
   return (
     <MarketplaceShell active="marketplace">
       <MarketplaceView />
+      <OnboardingTour />
     </MarketplaceShell>
   );
 }

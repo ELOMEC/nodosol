@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { OnboardingTour } from "@/components/OnboardingTour";
 import { TrendingPanel } from "@/components/TrendingPanel";
 import { TrustSignals } from "@/components/TrustSignals";
 import { WaitlistForm } from "@/components/WaitlistForm";
@@ -217,6 +218,7 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+      <OnboardingTour />
     </main>
   );
 }
