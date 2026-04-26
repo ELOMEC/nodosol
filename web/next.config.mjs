@@ -18,6 +18,24 @@ async function maybeWithAnalyzer(config) {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  images: {
+    // Hosts that ship user-supplied media. The Supabase project hosts
+    // creator avatars, banners, asset gallery + auction-metadata
+    // covers under the `asset-media` bucket. Helius CDN serves
+    // compressed-NFT thumbnails for ticket assets. arweave.net /
+    // ipfs.io are common JSON-URI image targets for tokenized assets.
+    remotePatterns: [
+      { protocol: "https", hostname: "xvgxaodxylrolkpyuszx.supabase.co", pathname: "/storage/**" },
+      { protocol: "https", hostname: "*.supabase.co", pathname: "/storage/**" },
+      { protocol: "https", hostname: "*.helius-rpc.com" },
+      { protocol: "https", hostname: "cdn.helius-rpc.com" },
+      { protocol: "https", hostname: "arweave.net" },
+      { protocol: "https", hostname: "*.arweave.net" },
+      { protocol: "https", hostname: "ipfs.io", pathname: "/ipfs/**" },
+      { protocol: "https", hostname: "*.ipfs.io" },
+    ],
+    formats: ["image/avif", "image/webp"],
+  },
   async headers() {
     // Solana Actions require CORS for wallet adapters (dial.to etc.) to
     // fetch the Action metadata and POST the build-tx requests.

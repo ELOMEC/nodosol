@@ -471,8 +471,20 @@ function AssetResultCard({ hit }: { hit: AssetHit }) {
   return (
     <Link href={`/marketplace/assets/${hit.mint}`} style={linkRowStyle}>
       {hit.imageUrl ? (
+        // Asset metadata images come from arbitrary IPFS / Arweave / CDN
+        // hosts; the `images.remotePatterns` whitelist covers the common
+        // ones but the long tail still needs the raw <img>. Width/height
+        // + lazy + async decode keep CLS clean either way.
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={toHttp(hit.imageUrl)} alt={hit.name} style={thumbStyle} />
+        <img
+          src={toHttp(hit.imageUrl)}
+          alt={hit.name}
+          width={40}
+          height={40}
+          loading="lazy"
+          decoding="async"
+          style={thumbStyle}
+        />
       ) : (
         <div style={{ ...thumbStyle, background: "var(--shell-active-bg)" }} />
       )}
