@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { TrendingPanel } from "@/components/TrendingPanel";
+import { TrustSignals } from "@/components/TrustSignals";
 import { WaitlistForm } from "@/components/WaitlistForm";
 
 import { LandingProviders } from "./LandingProviders";
@@ -92,13 +93,14 @@ export default function HomePage() {
           On-chain marketplace for tokenised real-world assets,
           <span style={{ color: "#9a9a9a" }}> built for licenced issuers.</span>
         </h1>
-        <p style={{ fontSize: "1.08rem", color: "#b5b5b5", lineHeight: 1.6, marginBottom: "2rem", maxWidth: 660 }}>
+        <p style={{ fontSize: "1.08rem", color: "#b5b5b5", lineHeight: 1.6, marginBottom: "1.6rem", maxWidth: 660 }}>
           Nodosol is a Solana super-app combining creator payments (tips,
           subscriptions, event tickets) with an RWA marketplace where licenced
           issuers can tokenise commodities, tickets, and debt — and trade them
           instantly in USDC with on-chain settlement, platform fee routing, and
           OTC escrow for private deals.
         </p>
+        <TrustSignals />
         <div style={{ display: "flex", gap: "0.8rem", alignItems: "center", flexWrap: "wrap" }}>
           <Link
             href="/marketplace"
