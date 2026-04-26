@@ -13,6 +13,7 @@ import marketplaceIdl from "@/idl/marketplace.json";
 import otcIdl from "@/idl/otc_deals.json";
 import eventTicketsIdl from "@/idl/event_tickets.json";
 
+import { useToast } from "@/components/ToastProvider";
 import { getCachedChatJwt } from "@/lib/chatSession";
 import {
   fetchNotifications,
@@ -21,6 +22,70 @@ import {
   subscribeToNotifications,
 } from "@/lib/notifications";
 import { createAuthedSupabaseClient } from "@/lib/supabase";
+
+type FilterKey = "all" | "tips" | "sales" | "subscriptions" | "auctions";
+
+const FILTER_CHIPS: Array<{ key: FilterKey; label: string }> = [
+  { key: "all", label: "All" },
+  { key: "tips", label: "Tips" },
+  { key: "sales", label: "Sales" },
+  { key: "subscriptions", label: "Subs" },
+  { key: "auctions", label: "Auctions" },
+];
+
+const TYPE_TO_CATEGORY: Record<string, FilterKey> = {
+  tip_received: "tips",
+  tip_sent: "tips",
+  ticket_sold: "sales",
+  ticket_bought: "sales",
+  listing_sold: "sales",
+  listing_bought: "sales",
+  resale_sold: "sales",
+  resale_bought: "sales",
+  subscription_charged: "subscriptions",
+  subscription_revenue: "subscriptions",
+  subscription_expired: "subscriptions",
+  bid_committed: "auctions",
+  bid_revealed: "auctions",
+  auction_settled_seller: "auctions",
+  otc_proposed: "auctions",
+  otc_accepted: "auctions",
+  otc_accepted_self: "auctions",
+};
+
+function categoriseNotification(type: string): FilterKey {
+  return TYPE_TO_CATEGORY[type] ?? "all";
+}
+
+type DayBucket = {
+  label: "Today" | "Yesterday" | "Earlier";
+  rows: NotificationRow[];
+};
+
+function bucketByDay(rows: NotificationRow[]): DayBucket[] {
+  if (rows.length === 0) return [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const todayMs = today.getTime();
+  const yesterdayMs = todayMs - 24 * 60 * 60 * 1000;
+
+  const todayRows: NotificationRow[] = [];
+  const yesterdayRows: NotificationRow[] = [];
+  const earlierRows: NotificationRow[] = [];
+
+  for (const row of rows) {
+    const ts = new Date(row.created_at).getTime();
+    if (ts >= todayMs) todayRows.push(row);
+    else if (ts >= yesterdayMs) yesterdayRows.push(row);
+    else earlierRows.push(row);
+  }
+
+  const buckets: DayBucket[] = [];
+  if (todayRows.length) buckets.push({ label: "Today", rows: todayRows });
+  if (yesterdayRows.length) buckets.push({ label: "Yesterday", rows: yesterdayRows });
+  if (earlierRows.length) buckets.push({ label: "Earlier", rows: earlierRows });
+  return buckets;
+}
 
 const PROGRAMS = [
   { label: "tip_jar", id: (tipJarIdl as { address: string }).address },
@@ -73,6 +138,8 @@ export function NotificationsBell() {
   const [error, setError] = useState<string | null>(null);
   const seenRef = useRef<Set<string>>(new Set());
   const popoverRef = useRef<HTMLDivElement | null>(null);
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const toast = useToast();
 
   const wallet = publicKey?.toBase58() ?? null;
   const cachedJwt = useMemo(() => (wallet ? getCachedChatJwt(wallet) : null), [wallet]);
@@ -150,6 +217,7 @@ export function NotificationsBell() {
   }, [wallet, cachedJwt, hasPersonalAuth]);
 
   // When the dropdown opens AND we have a personal feed, mark all as read.
+  // Toasts the count so the action is visible (vs the previous silent flip).
   useEffect(() => {
     if (!open || !cachedJwt || !personalItems) return;
     const unreadIds = personalItems.filter((n) => !n.read).map((n) => n.id);
@@ -158,7 +226,13 @@ export function NotificationsBell() {
     setPersonalItems((prev) =>
       prev ? prev.map((n) => (unreadIds.includes(n.id) ? { ...n, read: true } : n)) : prev
     );
-  }, [open, cachedJwt, personalItems]);
+    toast.info(
+      unreadIds.length === 1
+        ? "1 notification marked read"
+        : `${unreadIds.length} notifications marked read`,
+      { durationMs: 2500 }
+    );
+  }, [open, cachedJwt, personalItems, toast]);
 
   // When the dropdown opens, mark current items as seen.
   useEffect(() => {
@@ -184,6 +258,17 @@ export function NotificationsBell() {
   const unreadCount = personalItems
     ? personalItems.filter((n) => !n.read).length
     : items.filter((it) => !seenRef.current.has(it.signature)).length;
+
+  const filteredPersonal = useMemo(() => {
+    if (!personalItems) return null;
+    if (filter === "all") return personalItems;
+    return personalItems.filter((n) => categoriseNotification(n.type) === filter);
+  }, [personalItems, filter]);
+
+  const personalBuckets = useMemo(
+    () => (filteredPersonal ? bucketByDay(filteredPersonal) : []),
+    [filteredPersonal]
+  );
 
   return (
     <div ref={popoverRef} style={{ position: "relative" }}>
@@ -290,38 +375,91 @@ export function NotificationsBell() {
             ) : null}
           </header>
 
+          {personalItems ? (
+            <div
+              style={{
+                display: "flex",
+                gap: "0.35rem",
+                padding: "0.55rem 1rem",
+                borderBottom: "1px solid var(--shell-divider)",
+                overflowX: "auto",
+              }}
+            >
+              {FILTER_CHIPS.map((chip) => (
+                <button
+                  key={chip.key}
+                  onClick={() => setFilter(chip.key)}
+                  style={{
+                    padding: "0.18rem 0.6rem",
+                    borderRadius: 999,
+                    border: "1px solid",
+                    borderColor: filter === chip.key ? "var(--shell-link)" : "var(--shell-border)",
+                    background: filter === chip.key ? "rgba(79,70,229,0.12)" : "transparent",
+                    color: filter === chip.key ? "var(--shell-link)" : "var(--shell-muted)",
+                    fontSize: "0.74rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+          ) : null}
+
           <div style={{ overflowY: "auto", flex: 1 }}>
             {personalItems ? (
               personalItems.length === 0 ? (
-                <div style={{ padding: "1.5rem 1rem", fontSize: "0.85rem", color: "var(--shell-muted)", textAlign: "center" }}>
-                  Nothing yet. New events will land here in real time.
+                <EmptyPersonalState />
+              ) : filteredPersonal && filteredPersonal.length === 0 ? (
+                <div style={{ padding: "1.25rem 1rem", fontSize: "0.82rem", color: "var(--shell-muted)", textAlign: "center" }}>
+                  Nothing in this category yet.
                 </div>
               ) : (
-                personalItems.map((n) => (
-                  <a
-                    key={n.id}
-                    href={n.href ?? (n.signature ? `https://explorer.solana.com/tx/${n.signature}?cluster=devnet` : "#")}
-                    target={n.href?.startsWith("http") || !n.href ? "_blank" : undefined}
-                    rel="noreferrer"
-                    style={{
-                      padding: "0.7rem 1rem",
-                      borderBottom: "1px solid var(--shell-divider)",
-                      display: "block",
-                      textDecoration: "none",
-                      color: "var(--shell-fg)",
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.2rem" }}>
-                      {!n.read ? <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4f46e5" }} /> : null}
-                      <div style={{ fontWeight: 600, fontSize: "0.86rem" }}>{n.title}</div>
+                personalBuckets.map((bucket) => (
+                  <section key={bucket.label}>
+                    <div
+                      style={{
+                        padding: "0.45rem 1rem",
+                        fontSize: "0.7rem",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        color: "var(--shell-faint)",
+                        background: "var(--shell-pill-bg)",
+                        borderBottom: "1px solid var(--shell-divider)",
+                      }}
+                    >
+                      {bucket.label}
                     </div>
-                    {n.body ? (
-                      <div style={{ fontSize: "0.78rem", color: "var(--shell-muted)" }}>{n.body}</div>
-                    ) : null}
-                    <div style={{ fontSize: "0.7rem", color: "var(--shell-faint)", marginTop: "0.3rem" }}>
-                      {timeAgo(Math.floor(new Date(n.created_at).getTime() / 1000))}
-                    </div>
-                  </a>
+                    {bucket.rows.map((n) => (
+                      <a
+                        key={n.id}
+                        href={n.href ?? (n.signature ? `https://explorer.solana.com/tx/${n.signature}?cluster=devnet` : "#")}
+                        target={n.href?.startsWith("http") || !n.href ? "_blank" : undefined}
+                        rel="noreferrer"
+                        style={{
+                          padding: "0.7rem 1rem",
+                          borderBottom: "1px solid var(--shell-divider)",
+                          display: "block",
+                          textDecoration: "none",
+                          color: "var(--shell-fg)",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.2rem" }}>
+                          {!n.read ? <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4f46e5" }} /> : null}
+                          <div style={{ fontWeight: 600, fontSize: "0.86rem" }}>{n.title}</div>
+                        </div>
+                        {n.body ? (
+                          <div style={{ fontSize: "0.78rem", color: "var(--shell-muted)" }}>{n.body}</div>
+                        ) : null}
+                        <div style={{ fontSize: "0.7rem", color: "var(--shell-faint)", marginTop: "0.3rem" }}>
+                          {timeAgo(Math.floor(new Date(n.created_at).getTime() / 1000))}
+                        </div>
+                      </a>
+                    ))}
+                  </section>
                 ))
               )
             ) : error ? (
@@ -381,7 +519,16 @@ export function NotificationsBell() {
             )}
           </div>
 
-          <footer style={{ padding: "0.65rem 1rem", borderTop: "1px solid var(--shell-border)" }}>
+          <footer
+            style={{
+              padding: "0.65rem 1rem",
+              borderTop: "1px solid var(--shell-border)",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "0.6rem",
+            }}
+          >
             <a
               href="/stats"
               style={{
@@ -393,9 +540,87 @@ export function NotificationsBell() {
             >
               See full stats →
             </a>
+            {personalItems ? (
+              <a
+                href="/settings/notifications"
+                style={{
+                  fontSize: "0.78rem",
+                  color: "var(--shell-muted)",
+                  textDecoration: "none",
+                }}
+              >
+                Settings
+              </a>
+            ) : null}
           </footer>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function EmptyPersonalState() {
+  return (
+    <div
+      style={{
+        padding: "1.6rem 1rem 1.4rem",
+        textAlign: "center" as const,
+        color: "var(--shell-muted)",
+      }}
+    >
+      <svg
+        viewBox="0 0 64 64"
+        width="64"
+        height="64"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{ opacity: 0.55, marginBottom: "0.7rem" }}
+        aria-hidden="true"
+      >
+        <path d="M48 26a16 16 0 10-32 0c0 18-7 24-7 24h46s-7-6-7-24" />
+        <path d="M27 56a5 5 0 0010 0" />
+        <circle cx="32" cy="26" r="3" />
+      </svg>
+      <div style={{ fontSize: "0.92rem", fontWeight: 600, color: "var(--shell-fg)", marginBottom: "0.3rem" }}>
+        No activity yet
+      </div>
+      <div style={{ fontSize: "0.78rem", lineHeight: 1.5, marginBottom: "0.9rem" }}>
+        Share your creator profile to start receiving tips, sales, and subscription
+        notifications in real time.
+      </div>
+      <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center", flexWrap: "wrap" }}>
+        <a
+          href="/creator/profile"
+          style={{
+            background: "var(--shell-link)",
+            color: "#fff",
+            padding: "0.45rem 0.9rem",
+            borderRadius: 8,
+            textDecoration: "none",
+            fontSize: "0.78rem",
+            fontWeight: 600,
+          }}
+        >
+          Set up profile
+        </a>
+        <a
+          href="/settings/notifications"
+          style={{
+            border: "1px solid var(--shell-border)",
+            color: "var(--shell-fg)",
+            padding: "0.45rem 0.9rem",
+            borderRadius: 8,
+            textDecoration: "none",
+            fontSize: "0.78rem",
+            fontWeight: 600,
+          }}
+        >
+          Email settings
+        </a>
+      </div>
     </div>
   );
 }

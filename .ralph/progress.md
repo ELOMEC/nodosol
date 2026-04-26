@@ -81,7 +81,9 @@
 
   - Mladen ops: `supabase functions deploy verify-email --no-verify-jwt` (reuses RESEND_API_KEY / EMAIL_FROM_ADDRESS / APP_URL secrets already set for send-notification-email). Migration 020 already applied per Sprint F1 ops.
 
-- [ ] Notification feed polish u NotificationsBell — group by day (Today/Yesterday/Earlier), filter chips (All/Sales/Subscriptions/Auctions/Tips), empty state ilustracija sa "No activity yet — share your profile to start receiving tips" CTA, mark-all-read confirm toast. Verifikacija: `tsc --noEmit`, vizuelno smoke.
+- [x] Notification feed polish u NotificationsBell — group by day (Today/Yesterday/Earlier), filter chips (All/Sales/Subscriptions/Auctions/Tips), empty state ilustracija sa "No activity yet — share your profile to start receiving tips" CTA, mark-all-read confirm toast. Verifikacija: `tsc --noEmit`, vizuelno smoke.
+  - `web/components/NotificationsBell.tsx`: added FilterKey enum + 5 chips (All/Tips/Sales/Subs/Auctions) wired through `TYPE_TO_CATEGORY` covering all 17 webhook decoder types. `bucketByDay()` partitions personal feed into Today/Yesterday/Earlier with sticky-style headers. `EmptyPersonalState` SVG bell illustration + dual CTA ("Set up profile" → /creator/profile, "Email settings" → /settings/notifications). Mark-all-read effect now `toast.info`s the count (single vs plural copy) so the silent flip is visible. Footer adds "Settings" link in personal-feed mode. `useToast` from ToastProvider falls back to no-op outside a provider so any existing layout still works.
+  - `cd web && ./node_modules/.bin/tsc --noEmit` clean.
 
 - [ ] Unsubscribe link u email footer — signed token pattern. GET `/u?t=<hmac>` Edge Function gasi `email_types` ili specifičan tip. Token sadrži `wallet:type:expiry`. Update `send-notification-email` da renderuje unsubscribe link u footer-u. Verifikacija: tsc.
 
