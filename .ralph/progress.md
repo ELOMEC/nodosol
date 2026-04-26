@@ -17,7 +17,8 @@
 - [x] Web komponenta `web/components/WaitlistForm.tsx` — kontrolisani form sa email + opcionim role select-om (creator/buyer/issuer/investor), poziva `${SUPABASE_URL}/functions/v1/waitlist-signup`, prikazuje success state sa "You're #N on the list". Stil: dark theme `var(--shell-*)`. Verifikacija: `cd web && ./node_modules/.bin/tsc --noEmit`.
   - Created `web/components/WaitlistForm.tsx`: client component with email + optional role select, posts to `${SUPABASE_URL}/functions/v1/waitlist-signup` via `getSupabaseUrl()`, idle/submitting/success/error states, success renders "You're #N on the list". Used landing-page dark palette (per globals.css note "Public dark pages keep their own colours") instead of `--shell-*` since landing surface defaults to light tokens. Verified with `cd web && ./node_modules/.bin/tsc --noEmit` (clean).
 
-- [ ] Wire WaitlistForm u landing-u `web/app/page.tsx` — sekcija "Get early access" iznad/ispod telemetry strip-a, sa kratkim copy-em o launch plan-u. Verifikacija: `tsc --noEmit` + `npm run lint` u `web/`.
+- [x] Wire WaitlistForm u landing-u `web/app/page.tsx` — sekcija "Get early access" iznad/ispod telemetry strip-a, sa kratkim copy-em o launch plan-u. Verifikacija: `tsc --noEmit` + `npm run lint` u `web/`.
+  - Imported `WaitlistForm` in `web/app/page.tsx` and added a "Get early access" card section directly below the telemetry strip with copy about audit-gated mainnet launch + role-routed beta invites, source tagged `landing`. Verified with `tsc --noEmit` (clean) and `npm run lint` (only a pre-existing ChatPanel warning, unrelated).
 
 ### Bucket B: Admin panel (minimal)
 

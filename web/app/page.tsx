@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { WaitlistForm } from "@/components/WaitlistForm";
+
 import { LandingProviders } from "./LandingProviders";
 import { TelemetryStrip } from "./TelemetryStrip";
 
@@ -139,6 +141,27 @@ export default function HomePage() {
         <LandingProviders>
           <TelemetryStrip />
         </LandingProviders>
+      </section>
+
+      <section style={{ marginBottom: "4rem" }}>
+        <div
+          style={{
+            background: "#0f0f0f",
+            border: "1px solid #1a1a1a",
+            borderRadius: 12,
+            padding: "1.75rem 1.75rem 1.6rem",
+          }}
+        >
+          <h2 style={{ fontSize: "0.88rem", letterSpacing: 1, textTransform: "uppercase", color: "#9a9a9a", fontWeight: 600, marginBottom: "0.75rem" }}>
+            Get early access
+          </h2>
+          <p style={{ fontSize: "0.95rem", color: "#b5b5b5", lineHeight: 1.6, marginBottom: "1.25rem", maxWidth: 640 }}>
+            Mainnet launch is gated on audit close. Drop your email and we&apos;ll
+            ping you before issuer onboarding opens — pick a role so we can route
+            the right beta invite.
+          </p>
+          <WaitlistForm source="landing" />
+        </div>
       </section>
 
       <section style={{ marginBottom: "4rem" }}>
