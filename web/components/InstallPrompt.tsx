@@ -63,14 +63,24 @@ export function InstallPrompt() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [iosHint, setIosHint] = useState(false);
 
-  // Register the service worker once per session (idempotent on the browser side).
+  // Register the service worker once per session (idempotent on the
+  // browser side). Defer to idle so it doesn't compete with first paint
+  // — Lighthouse penalises any JS that runs in the LCP critical path.
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (!("serviceWorker" in navigator)) return;
-    // Don't block render — fire and forget.
-    navigator.serviceWorker.register("/sw.js").catch((err) => {
-      console.warn("sw register failed", err);
-    });
+    const register = () => {
+      navigator.serviceWorker.register("/sw.js").catch((err) => {
+        console.warn("sw register failed", err);
+      });
+    };
+    type IdleScheduler = (cb: () => void, opts?: { timeout?: number }) => number;
+    const ric = (window as Window & { requestIdleCallback?: IdleScheduler }).requestIdleCallback;
+    if (typeof ric === "function") {
+      ric(register, { timeout: 4000 });
+    } else {
+      window.setTimeout(register, 1500);
+    }
   }, []);
 
   useEffect(() => {

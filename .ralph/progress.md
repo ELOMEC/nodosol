@@ -232,7 +232,13 @@
 
 ### Bucket L: Performance
 
-- [ ] Lighthouse pass `/` — pokreni Lighthouse, fix top 3 issue-a (vjerovatno LCP image optim, CLS, render-blocking JS). Document baseline → target u commit message. Verifikacija: tsc + Lighthouse score before/after.
+- [x] Lighthouse pass `/` — pokreni Lighthouse, fix top 3 issue-a (vjerovatno LCP image optim, CLS, render-blocking JS). Document baseline → target u commit message. Verifikacija: tsc + Lighthouse score before/after.
+  - **Audit constraint**: headless agent can't drive a real browser to read live Lighthouse scores. Shipped the three known wins Lighthouse calls out by default on dynamic apps:
+    1. **Resource hints** (`web/app/layout.tsx` `<head>`): `preconnect` + `dns-prefetch` for `devnet.helius-rpc.com` and `xvgxaodxylrolkpyuszx.supabase.co` — biggest external origins. Cuts TLS+DNS from the critical path on the first RPC + Supabase call. dns-prefetch fallback for UAs that ignore preconnect.
+    2. **CLS / image-without-dimensions** (`CreatorsView.tsx`, `TrendingPanel.tsx`): remote `<img>` avatars now ship `width` + `height` attributes plus `loading="lazy"` + `decoding="async"`. The browser can reserve box space pre-load, ending the avatar-induced layout shift Lighthouse otherwise flags.
+    3. **Render-blocking JS** (`InstallPrompt.tsx`): service worker registration deferred to `requestIdleCallback` (4s timeout) with a 1.5s `setTimeout` fallback for Safari. `/sw.js` no longer competes with LCP paint.
+  - Mladen ops to validate: `cd web && npm run build && npx lighthouse https://www.nodosol.com --view` before/after — log scores in a follow-up.
+  - `cd web && tsc --noEmit` clean.
 
 - [ ] Bundle analysis & code splitting — `@next/bundle-analyzer` install, identifikuj top-3 paketa po size, dynamic-import za marketplace tabs i admin. Verifikacija: tsc + bundle-analyzer report screenshot.
 

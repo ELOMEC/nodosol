@@ -45,6 +45,16 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        {/* Resource hints for the highest-traffic external origins —
+            preconnect cuts TLS handshake from the critical path on the
+            first RPC + Supabase call. dns-prefetch is a fallback for
+            UAs that ignore preconnect. */}
+        <link rel="preconnect" href="https://devnet.helius-rpc.com" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://devnet.helius-rpc.com" />
+        <link rel="preconnect" href="https://xvgxaodxylrolkpyuszx.supabase.co" crossOrigin="" />
+        <link rel="dns-prefetch" href="https://xvgxaodxylrolkpyuszx.supabase.co" />
+      </head>
       <body>
         <a href="#main-content" className="nds-skip-link">
           Skip to main content

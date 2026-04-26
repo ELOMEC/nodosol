@@ -311,7 +311,15 @@ function CreatorRow({ c }: { c: CreatorEntry }) {
       <Link href={href} style={ROW_LINK}>
         {c.avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={c.avatarUrl} alt="" style={AVATAR} />
+          <img
+            src={c.avatarUrl}
+            alt=""
+            width={24}
+            height={24}
+            loading="lazy"
+            decoding="async"
+            style={AVATAR}
+          />
         ) : (
           <span style={AVATAR_INITIALS}>{initials}</span>
         )}

@@ -210,7 +210,15 @@ function CreatorCard({ row }: { row: CreatorProfileRow }) {
             // Allow remote avatars; <img> is fine since we don't yet
             // have the next/image remote pattern wired for arbitrary hosts.
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={row.avatar_url} alt="" style={AVATAR_IMG} />
+            <img
+              src={row.avatar_url}
+              alt=""
+              width={44}
+              height={44}
+              loading="lazy"
+              decoding="async"
+              style={AVATAR_IMG}
+            />
           ) : (
             <div style={AVATAR_FALLBACK}>{initials}</div>
           )}
