@@ -255,7 +255,12 @@
 
 ### Bucket M: Quality
 
-- [ ] Error boundary + error logging — `web/app/error.tsx` (Next 15 root error boundary) + `web/app/global-error.tsx` (root layout fail fallback). Friendly "Something broke" UI sa Report button. Migracija `023_error_logs.sql` (`error_logs (id, wallet, route, message, stack, ua, created_at) RLS service-role only`). `/api/log-error` Next.js route handler insert via service-role. Verifikacija: tsc + SQL syntax.
+- [x] Error boundary + error logging — `web/app/error.tsx` (Next 15 root error boundary) + `web/app/global-error.tsx` (root layout fail fallback). Friendly "Something broke" UI sa Report button. Migracija `023_error_logs.sql` (`error_logs (id, wallet, route, message, stack, ua, created_at) RLS service-role only`). `/api/log-error` Next.js route handler insert via service-role. Verifikacija: tsc + SQL syntax.
+  - `supabase/023_error_logs.sql`: `error_logs` table (id/wallet/route/message/stack/digest/user_agent/client_ip/created_at) with `recent_idx` + `wallet_idx`. RLS deny-all for select + insert (anon + authenticated); service-role bypasses for the `/api/log-error` insert path. Stack traces can leak PII so reads stay closed.
+  - `web/app/api/log-error/route.ts`: POST handler that pulls service-role from env, clamps each field at 8000 chars, captures `cf-connecting-ip` / `x-forwarded-for` + UA header, inserts via service-role client. Returns `{ok:true}` on success, `503 {ok:false, reason:"no service key"}` in dev when the env var is missing (so local dev doesn't break with a hard failure).
+  - `web/app/error.tsx`: existing friendly error UI extended with a "Report" button — `report()` POSTs `{message, stack, digest, route}` to `/api/log-error` and toggles label idle → sending → ok/err so the user sees confirmation. Disabled after first click to prevent double-submit. Existing Retry / Home buttons preserved.
+  - `web/app/global-error.tsx` (new): Next 15 root-layout boundary (renders its own `<html>` + `<body>` because the layout itself failed). Self-styled inline so it works even if globals.css is the crash source. Shows the digest reference + a "Reload app" button.
+  - `cd web && tsc --noEmit` clean. Mladen ops: apply migration 023 in Supabase SQL editor; verify `SUPABASE_SERVICE_ROLE_KEY` env var on Vercel (already used by other route handlers).
 
 - [ ] Playwright E2E: tip flow — `web/e2e/tip.spec.ts`. Mock wallet (use `@solana/wallet-adapter-mock` ili stub `window.solana`). Navigate `/c/[handle]`, click Tip $5, verify tx submitted (mocked Confirm). Verifikacija: `npx playwright test`.
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function GlobalError({
   error,
@@ -10,9 +10,32 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [reported, setReported] = useState<"idle" | "sending" | "ok" | "err">("idle");
+
   useEffect(() => {
     console.error("GlobalError", error);
   }, [error]);
+
+  async function report() {
+    if (reported !== "idle") return;
+    setReported("sending");
+    try {
+      const route = typeof window !== "undefined" ? window.location.pathname + window.location.search : null;
+      const res = await fetch("/api/log-error", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          message: error.message,
+          stack: error.stack,
+          digest: error.digest,
+          route,
+        }),
+      });
+      setReported(res.ok ? "ok" : "err");
+    } catch {
+      setReported("err");
+    }
+  }
 
   return (
     <main
@@ -57,13 +80,30 @@ export default function GlobalError({
           </div>
         ) : null}
 
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
           <button onClick={() => reset()} style={primaryBtn}>
             Retry
           </button>
           <Link href="/" style={secondaryBtn}>
             Home
           </Link>
+          <button
+            onClick={() => void report()}
+            disabled={reported !== "idle"}
+            style={{
+              ...secondaryBtn,
+              opacity: reported === "sending" ? 0.6 : 1,
+              cursor: reported === "idle" ? "pointer" : "default",
+            }}
+          >
+            {reported === "idle"
+              ? "Report"
+              : reported === "sending"
+                ? "Reporting…"
+                : reported === "ok"
+                  ? "Reported ✓"
+                  : "Report failed"}
+          </button>
         </div>
       </div>
     </main>
