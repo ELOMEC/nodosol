@@ -14,14 +14,6 @@ Pop top unchecked item. Implement it. Run typecheck (`cd web && npm run typechec
 ## Tasks
 
 ### Notifications activation (paired with Mladen ops)
-- [ ] Email delivery integration via Resend
-  - Add `resend` npm dep to `web/`
-  - New Edge Function `supabase/functions/send-notification-email/` — triggered by Postgres trigger on `notifications` insert (or pg_net hook)
-  - Templated HTML for: tip received, ticket sold, OTC accepted, auction settled, subscription charged
-  - Check `notification_preferences.email_enabled` before sending
-  - Doc: `docs/EMAIL_SETUP.md` with env vars Mladen needs (`RESEND_API_KEY`, `EMAIL_FROM_ADDRESS`)
-  - Migration 018 if needed for trigger
-
 - [ ] Notification UI polish
   - Group notifications by day in NotificationsBell dropdown
   - Add filter chips: All / Sales / Subscriptions / Auctions
@@ -104,4 +96,8 @@ Pop top unchecked item. Implement it. Run typecheck (`cd web && npm run typechec
 
 ## Done
 
-(Ralph moves completed items here with date)
+### 2026-04-26
+- [x] Email delivery integration via Resend — `de44f4d`
+  - `supabase/functions/send-notification-email/index.ts` (Resend dispatcher, prefs-gated, type-filtered)
+  - `supabase/019_send_notification_email_cron.sql` (pg_cron every minute)
+  - `docs/EMAIL_SETUP.md` (Mladen ops checklist)
