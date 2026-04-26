@@ -53,6 +53,115 @@
 - [x] `docs/MAINNET_ENV.md` — novi dokument koji lista sve env varove koji trebaju mainnet vrijednost (RPC URLs, USDC mint, treasury, program IDs, Helius webhook URL, Supabase project, Privy app ID). Tablica: var | dev value | mainnet value | who sets. Verifikacija: dokument exists.
   - Created `docs/MAINNET_ENV.md` with 9 sections (RPC, SPL tokens, program IDs, treasury/cranker, Supabase, Edge Function secrets, web public config, demo-vars-must-be-unset, cutover checklist). Grouped by surface (web/scripts/edge:*) with columns var | where | dev value | mainnet value | who sets. Cross-referenced §8.1/8.2/8.3/8.4 of `mainnet-deploy-plan.md`. Inventory built by grepping `process.env.` and `Deno.env.get` across `web/`, `scripts/`, `supabase/functions/` plus the 9 hard-coded `PROGRAM_ID = new PublicKey(...)` constants. Doc-only change; no code touched.
 
+### Bucket E: Email delivery (paired with Mladen ops)
+
+- [x] Resend email dispatch worker — Edge Function `supabase/functions/send-notification-email/` čita pending `notifications` (email_eligible + no email_sent_at), join sa `notification_preferences` (verified email + type allowlist), šalje preko Resend API, stamp-uje `email_sent_at`. Migracija `019_send_notification_email_cron.sql` schedule-uje pg_cron svaku minutu. Doc `docs/EMAIL_SETUP.md` sa Mladen ops checklistom (Resend signup, DNS verify, secrets, deploy, test).
+  - Commit `de44f4d`. 3 fajla: `supabase/functions/send-notification-email/index.ts` (276 LoC, idempotent batch=50, prefs-gated, type-filtered, dark-theme HTML template), `supabase/019_send_notification_email_cron.sql` (`* * * * *` cron, mirrors charge-due pattern), `docs/EMAIL_SETUP.md` (5-step Mladen setup + troubleshooting + future iterations note). Migration 019 applied in Supabase by Mladen 2026-04-26.
+
+## Sprint 2 — post-fundraise polish (2026-04-26 onwards)
+
+> Naredni sprint nakon što su Bucket A-E završeni. Prioritet: closure of email loop, then growth (discovery + trust signals), then creator/buyer tools, then UX polish.
+
+### Bucket F: Notification UX closure
+
+- [ ] Notification settings page `/settings/notifications` — web/app/settings/notifications/{page.tsx,layout.tsx,SettingsView.tsx}. Sekcije: email address (set/change with verify CTA), per-type toggles (tip_received, ticket_sold, subscription_charged, otc_accepted, auction_settled_seller, listing_sold, ticket_resale_sold, bid_revealed). Save preko service-role JWT (chat-jwt pattern). Treba migracija `020_email_verification.sql` ako kolone nisu spremne (dodati `email_verification_token text`, `email_verification_sent_at timestamptz`). Verifikacija: `tsc --noEmit`.
+
+- [ ] Email verification flow — Edge Function `supabase/functions/verify-email/index.ts`: prima `{wallet, email, sig}` i šalje verify email sa signed token (HMAC, 24h TTL). GET `/verify-email?token=...` u web ruti (`/verify`) postavlja `email_verified_at = now()`. Upsert preko service-role. Verifikacija: tsc, deno smoke.
+
+- [ ] Notification feed polish u NotificationsBell — group by day (Today/Yesterday/Earlier), filter chips (All/Sales/Subscriptions/Auctions/Tips), empty state ilustracija sa "No activity yet — share your profile to start receiving tips" CTA, mark-all-read confirm toast. Verifikacija: `tsc --noEmit`, vizuelno smoke.
+
+- [ ] Unsubscribe link u email footer — signed token pattern. GET `/u?t=<hmac>` Edge Function gasi `email_types` ili specifičan tip. Token sadrži `wallet:type:expiry`. Update `send-notification-email` da renderuje unsubscribe link u footer-u. Verifikacija: tsc.
+
+### Bucket G: Discovery & growth
+
+- [ ] Creator discovery `/creators` page — `web/app/creators/{page.tsx,CreatorsView.tsx}`. Paginated 20/page index `creator_profiles` table (Supabase REST, no RLS issue jer je profile public). Search by handle/display_name (ILIKE), sort by `total_tips_received_lamports` desc / `created_at` desc. Card grid (avatar, handle, bio snippet, on-chain tip count badge, subscribe count). Empty state: "Be the first creator on Nodosol" sa link na `/creator/profile`. Wire link iz landing nav + `/marketplace` sidebar. Verifikacija: tsc.
+
+- [ ] Trending widget na landing — `web/components/TrendingPanel.tsx`. 3 sekcije: "Top creators this week" (`getProgramAccounts` na tip_jar, sort by stat slot za nedjeljnu aktivnost), "Live auctions ending soon" (top 3 by reveal_end_at, fetch from auctions program), "Recent ticket sales" (last 5 events sa sold count > 0). Cache 60s preko `unstable_cache` ili `revalidate: 60` na server component. Insert iznad telemetry strip-a u `web/app/page.tsx`. Verifikacija: tsc.
+
+- [ ] Trust signals na landing hero — `web/app/page.tsx` hero refresh: dva badge-a iznad CTA, "Audit pending — OtterSec" (placeholder, stat hardcoded sad, kasnije wire na real status), "Squads 2-of-3 multisig" sa link na `docs/SECURITY_RUNBOOK.md` na GitHub-u. GitHub stars counter (`fetch https://api.github.com/repos/ELOMEC/nodosol`, cache 1h). Re-order: trust signals iznad fold-a, ispod naslova. Verifikacija: tsc + manual hero render.
+
+- [ ] SEO baseline — `web/app/sitemap.ts` (Next 15 sitemap convention; lista svih statičkih ruta + dinamička iz creator_profiles + active auctions/events), `web/app/robots.ts` (allow all + sitemap link), OG meta tagovi na `/c/[handle]`, `/marketplace/events/v/[address]`, `/marketplace/auctions/[address]` (dynamic title + description + image preko `generateMetadata`). Verifikacija: tsc, fetch sitemap.xml na localu.
+
+### Bucket H: Creator tools
+
+- [ ] Creator analytics dashboard `/creator/analytics` — `web/app/creator/analytics/{page.tsx,AnalyticsView.tsx}`. Aggregate from `getProgramAccounts(tip_jar)` filtrirano na CreatorProfile owner==wallet, sort by stat slot. Revenue chart 30d (line, recharts), top 10 tippers (sort by total), conversion stats (visitors u Vercel Analytics ako je dostupan, inače skip). CSV export (`Blob` + download anchor). Cache u `localStorage` 5min ključ `analytics:<wallet>`. Verifikacija: tsc.
+
+- [ ] OG image generator `/c/[handle]/og.png` — `web/app/c/[handle]/og.png/route.tsx` koristi `@vercel/og` (nije dep yet — dodati u `web/package.json`). Renders 1200×630 PNG: avatar (fetched), handle, display name, bio snippet, on-chain tip stats badge, QR za profile URL. Update `generateMetadata` u `web/app/c/[handle]/page.tsx` da postavi `openGraph.images` + `twitter.card='summary_large_image'`. Verifikacija: tsc, fetch png na localu.
+
+- [ ] Subscriber list page `/creator/subscribers` — `web/app/creator/subscribers/{page.tsx,SubscribersView.tsx}`. Fetch sve `Subscription` accounts gdje plan.creator==wallet (kroz `getProgramAccounts(subscription)` + filter), grupiše po planu, prikaže subscriber wallet, status, total paid, next charge. Reuse styling iz `/creator/events/[id]`. Verifikacija: tsc.
+
+- [ ] Creator earnings CSV export — wire u `/creator/analytics` ili poseban dugme na `/creator`. Aggregate tip + subscription + event ticket revenue, format `date,type,amount_usdc,from_wallet,signature`. Verifikacija: tsc, manual download check.
+
+### Bucket I: Buyer tools
+
+- [ ] Purchase history `/account/history` — `web/app/account/history/{page.tsx,HistoryView.tsx}`. Fetch po wallet-u: tickets owned (cNFT search via Helius DAS), subscriptions active (Subscription accounts where subscriber==wallet), OTC deals (OtcDeal accounts as buyer ili seller), auction wins (Auction accounts where highest_bidder==wallet). Group by type, sort recent. Verifikacija: tsc.
+
+- [ ] Wishlist (saved items) — migracija `021_wishlist.sql` (`wishlist (wallet_pubkey, item_type, item_id, created_at) RLS by jwt sub`). Heart icon u marketplace cards, toggle add/remove. `/account/wishlist` ruta sa saved items grid. Verifikacija: tsc + SQL syntax.
+
+### Bucket J: Marketplace polish
+
+- [ ] Empty states across 5 marketplace verticals — audit `/marketplace/{events,auctions,rentals,resale,properties}` views, dodati `EmptyState` komponentu (illustration + headline + CTA). Komponenta nova: `web/components/EmptyState.tsx`. CTA varijante per vertical: "Be the first to list", "Start an auction", itd. Verifikacija: tsc.
+
+- [ ] Filter persistence via URL params — `web/lib/useSearchParamsState.ts` helper hook (sync state ↔ `useSearchParams`). Wire u 5 marketplace views da search/sort/filters zive u URL-u (deep-linkable + shareable). Verifikacija: tsc + manual URL share test.
+
+- [ ] Price alerts — migracija `022_price_alerts.sql` (`price_alerts (wallet, query, max_price_usdc, created_at) RLS`). Edge Function `price-alert-check` (cron 15min) — match alerts protiv aktivnih listinga, insert notifications kad hit. UI: "Alert me when…" dugme u marketplace search bar. Verifikacija: tsc + SQL.
+
+### Bucket K: UX polish
+
+- [ ] Onboarding tour (first-visit) — `web/components/OnboardingTour.tsx` 4-step overlay (Connect wallet → Fund USDC → Browse marketplace → Done). `localStorage` flag `nodosol_tour_completed`. Skip + "Don't show again". Trigger na `/` i `/marketplace` first visit. Verifikacija: tsc.
+
+- [ ] PWA manifest + install prompt — `web/public/manifest.json` (icons koristi postojeći logo, theme_color, display standalone). `web/public/sw.js` minimal (offline cache shell). `web/components/InstallPrompt.tsx` deferred prompt pattern + iOS Safari "Add to Home Screen" hint banner. `<link rel="manifest">` u `web/app/layout.tsx`. Verifikacija: tsc + Lighthouse PWA audit.
+
+- [ ] i18n scaffold (SR + EN) — `next-intl` install, `web/messages/{en.json,sr.json}` sa top 80 stringova (landing + marketplace nav + buy/sell CTA labels). Locale toggle u header desno od ConnectButton. Default EN, persist u `localStorage`. Wrap `web/app/layout.tsx` u `NextIntlClientProvider`. Verifikacija: tsc + manual locale switch.
+
+- [ ] Mobile responsive audit — top 5 ruta (`/`, `/marketplace`, `/marketplace/events`, `/c/[handle]`, `/creator`). Fix overflow-x, font-size na <360px, touch target sizes na CTA dugmadima (min 44×44). Verifikacija: tsc + manual viewport sweep 320–768px.
+
+- [ ] Accessibility baseline — semantic HTML pass (h1/h2 hierarchy, landmark roles), `alt` na svim slikama, focus-visible outlines, aria-labels na icon-only buttons (notification bell, theme toggle, search). axe DevTools check na `/` i `/marketplace`. Verifikacija: tsc + axe report u commit message.
+
+### Bucket L: Performance
+
+- [ ] Lighthouse pass `/` — pokreni Lighthouse, fix top 3 issue-a (vjerovatno LCP image optim, CLS, render-blocking JS). Document baseline → target u commit message. Verifikacija: tsc + Lighthouse score before/after.
+
+- [ ] Bundle analysis & code splitting — `@next/bundle-analyzer` install, identifikuj top-3 paketa po size, dynamic-import za marketplace tabs i admin. Verifikacija: tsc + bundle-analyzer report screenshot.
+
+- [ ] Image optimization audit — sve `<img>` tagove u `web/components/` i `web/app/` migrate na `next/image` sa eksplicitnim `width/height`. `web/next.config.ts` dodaj `images.remotePatterns` za Supabase storage + Helius CDN. Verifikacija: tsc + grep `<img ` count before/after.
+
+### Bucket M: Quality
+
+- [ ] Error boundary + error logging — `web/app/error.tsx` (Next 15 root error boundary) + `web/app/global-error.tsx` (root layout fail fallback). Friendly "Something broke" UI sa Report button. Migracija `023_error_logs.sql` (`error_logs (id, wallet, route, message, stack, ua, created_at) RLS service-role only`). `/api/log-error` Next.js route handler insert via service-role. Verifikacija: tsc + SQL syntax.
+
+- [ ] Playwright E2E: tip flow — `web/e2e/tip.spec.ts`. Mock wallet (use `@solana/wallet-adapter-mock` ili stub `window.solana`). Navigate `/c/[handle]`, click Tip $5, verify tx submitted (mocked Confirm). Verifikacija: `npx playwright test`.
+
+- [ ] Playwright E2E: ticket purchase — `web/e2e/ticket.spec.ts`. Navigate event detail, select tier, click Buy, verify Blink action triggered. Verifikacija: playwright test.
+
+### Bucket N: Security ops
+
+- [ ] Cloudflare Turnstile env wire-up doc — `docs/TURNSTILE_SETUP.md`. Step-by-step (CF dashboard → site key + secret key → Vercel env → Supabase function secret → redeploy `post-chat-message`). Reference TurnstileWidget već u `web/components/`. Doc-only. Verifikacija: doc exists.
+
+- [ ] CSP headers — `web/next.config.ts` dodaj `headers()` async funkciju sa `Content-Security-Policy` (default-src 'self', script-src 'self' 'unsafe-inline' Privy + Vercel insights, connect-src Solana RPC + Supabase + Helius, img-src * data:). Test sa CSP report-only prvo, ako čisto onda enforce. Verifikacija: tsc + browser console CSP report.
+
+- [ ] `/security` disclosure page — `web/app/security/{page.tsx,SecurityView.tsx}`. Statički sadržaj: security_txt summary, audit status, multisig info, contact email, responsible disclosure policy. Verifikacija: tsc.
+
+- [ ] Rate limiting on remaining unprotected endpoints — audit `supabase/functions/*` za one koji nemaju `security_events` rate-limit gate. Konkretno proveri: `verify-email` (kad ga napravimo), `send-notification-email` (server-only, OK), `admin-events` (već ima). Verifikacija: grep + smoke.
+
+### Bucket O: Documentation
+
+- [ ] `docs/CREATOR_GUIDE.md` — kako se postavlja handle, kako se prima tip, kako se kreira plan/event, kako se withdraw revenue. Korak po korak sa screenshot placeholder-ima (Markdown image refs `[creator-handle.png]`). Verifikacija: doc exists.
+
+- [ ] `docs/BUYER_GUIDE.md` — kako se kupuje ticket, attend event, OTC trade, subscribe na rental. Verifikacija: doc exists.
+
+- [ ] `docs/INTEGRATIONS_GUIDE.md` — za partner devs. Blink endpoints reference, on-chain events za webhooks, Helius webhook payload primjer. Verifikacija: doc exists.
+
+- [ ] FAQ page `/faq` — `web/app/faq/page.tsx`. Top 12 pitanja sa accordion UI: "What is Nodosol?", "Do I need crypto knowledge?", "Is it audited?", "What chains?", "How do tips work?", itd. Verifikacija: tsc.
+
+- [ ] Update `docs/STATE_AUDIT.md` — refresh sa svime sto smo shipped od 2026-04-26. Verifikacija: doc updated.
+
+### Bucket P: Programs (code only — Mladen deploys via Squads)
+
+- [ ] Auction reminder ix — NE, ovo je off-chain. Skip. Pravi task: webhook decoder za `auctions.commit_bid` da emituje `bid_committed` row za auction creator (već postoji decoder, ali dodaj reminder cron 24h prije reveal_end_at). Migracija nije potrebna; novi Edge Function `auction-reminders` cron 1h frequency, čita aktivne aukcije gdje reveal_end_at unutar 24-25h prozora, insertuje `auction_ending_soon` notifikaciju za bidders. Verifikacija: deno smoke + tsc.
+
+- [ ] Marketplace bulk listing UX — `web/app/marketplace/list/page.tsx` form: select N RWA assets, set price each, single submit batches transactions sequentially. Reuse `simulateAndSend` helper. Verifikacija: tsc.
+
 ## Backlog
 
 (taskovi koji nisu prioritet ovog sprint-a — ralph ne dira osim ako ga eksplicitno premestiš gore)
@@ -61,8 +170,13 @@
 - rights.nodosol.com Task 7 (rights-gateway Edge Function)
 - Mobile (Expo) Privy integracija — sad samo deep-link wrapper
 - Eventbrite cross-list integracija (event_tickets ↔ Eventbrite API)
-- Email delivery: Resend integration + email-dispatch worker
 - Audit firm follow-up automation (kad pošaljemo emails)
+- Confidential Transfers via Arcium (čeka public release Jun 2026)
+- Custom domains za creators (long-term, post-mainnet)
+- Per-creator branded email templates (post-MVP)
+- Daily digest mode za email notifikacije
+- Compressed NFT optimizations (concurrent merkle tree resize)
+- Admin role hierarchy (super-admin / moderator / read-only)
 
 ## Done log
 
