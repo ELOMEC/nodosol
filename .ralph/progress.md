@@ -8,7 +8,8 @@
 
 ### Bucket A: Email waitlist + landing polish
 
-- [ ] Supabase migration `018_waitlist.sql` — tabela `waitlist` (id uuid pk, email citext unique, source text, referrer text, role text nullable, wallet_pubkey text nullable, created_at timestamptz default now()). RLS: anon SELECT none, anon INSERT allowed (rate-limited by Edge Function), service-role unrestricted. Verifikacija: `psql --dry-run` ili samo provjeri SQL syntax u editoru, pomoć: postojeća migracija `016_creator_profiles.sql` ima sličan pattern.
+- [x] Supabase migration `018_waitlist.sql` — tabela `waitlist` (id uuid pk, email citext unique, source text, referrer text, role text nullable, wallet_pubkey text nullable, created_at timestamptz default now()). RLS: anon SELECT none, anon INSERT allowed (rate-limited by Edge Function), service-role unrestricted. Verifikacija: `psql --dry-run` ili samo provjeri SQL syntax u editoru, pomoć: postojeća migracija `016_creator_profiles.sql` ima sličan pattern.
+  - Created `supabase/018_waitlist.sql`: citext email unique, role enum check, indexes on created_at/role/source, RLS enabled with anon+authenticated INSERT policies and no SELECT policy (service role bypasses). Visual SQL syntax check (psql requires live server for full parse).
 
 - [ ] Edge Function `supabase/functions/waitlist-signup/index.ts` — POST `{email, source?, role?}`, validira email regex, rate-limita po IP (10/h koristi `security_events` patterne), insertuje preko service-role klijenta, vraća `{ok: true, position?: number}`. CORS open. Verifikacija: deno syntax check ako ima `deno`, inače smoke check fajla na valid TS.
 
