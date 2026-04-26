@@ -81,7 +81,7 @@ This is a future task — not blocking the in-app notifications pipeline.
 | `auctions.commit_bid` | `bid_committed` (bidder) | no |
 | `auctions.reveal_bid` | `bid_revealed` (bidder) | no |
 | `auctions.settle_auction` | `auction_settled_seller` (largest recipient) | yes |
-| `event_tickets.buy_tier_ticket` | `ticket_bought` (buyer) | no |
+| `event_tickets.buy_tier_ticket` | `ticket_bought` (buyer) + `ticket_sold` (creator via RPC fetch) | creator=yes |
 | `event_tickets.buy_ticket_resale` | `resale_bought` + `resale_sold` (seller via transfer) | seller=yes |
 
 ### Creator-side enrichment via RPC fetch
@@ -102,9 +102,10 @@ which naturally bounds memory.
 Coverage so far:
 - `tip_jar.send_tip` — fetch `CreatorProfile.owner` (offset 8..40)
   → emit `tip_received` for the creator wallet.
+- `event_tickets.buy_tier_ticket` — fetch `Event.creator` (offset 8..40)
+  → emit `ticket_sold` for the creator wallet.
 
 Pending (separate tasks):
-- `event_tickets.buy_tier_ticket` — fetch `Event.creator` → `ticket_sold`.
 - `subscription.charge` — fetch `SubscriptionPlan.creator` → `subscription_revenue`.
 
 Set `RPC_URL` as a function secret to point at Helius (or any RPC).

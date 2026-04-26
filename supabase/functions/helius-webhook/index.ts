@@ -252,33 +252,34 @@ type IxDecoder = (
 ) => NotificationRow[] | Promise<NotificationRow[]>;
 
 // In-invocation cache for on-chain account fetches done from decoders
-// (e.g. CreatorProfile.owner lookup for tip_received rows). Helius can
-// deliver bursts of txs touching the same creator profile, so caching
-// for ~5 minutes keeps the function from re-fetching each time. The
-// Edge Function process is recycled by Supabase between cold starts,
-// so this Map is per-instance and naturally bounded.
+// (e.g. CreatorProfile.owner / Event.creator lookups). Helius can deliver
+// bursts of txs touching the same parent PDA, so caching for ~5 minutes
+// keeps the function from re-fetching each time. The Edge Function
+// process is recycled by Supabase between cold starts, so this Map is
+// per-instance and naturally bounded. Cache key includes `offset` so the
+// same PDA can be read at multiple field offsets without collision.
 const ACCOUNT_FETCH_CACHE_TTL_MS = 5 * 60 * 1000;
-const creatorOwnerCache = new Map<string, { owner: string | null; expiresAt: number }>();
+const pdaPubkeyCache = new Map<string, { pubkey: string | null; expiresAt: number }>();
 
 /**
- * Fetches a tip_jar `CreatorProfile` PDA via JSON-RPC and returns the
- * `owner` Pubkey (the creator's wallet) as base58. Cached per-PDA for
- * `ACCOUNT_FETCH_CACHE_TTL_MS`. Returns null on missing account, decode
- * failure, or RPC error — caller treats null as "skip creator-side row".
+ * Fetches an Anchor account at `pda` via JSON-RPC and returns the 32-byte
+ * Pubkey field at `offset` as base58. Cached per (pda, offset) for
+ * `ACCOUNT_FETCH_CACHE_TTL_MS`. Returns null on missing account, short
+ * data, or RPC error — caller treats null as "skip creator-side row".
  *
- * Account layout (from programs/tip_jar/src/state.rs):
- *   bytes 0..8   = Anchor discriminator
- *   bytes 8..40  = owner: Pubkey  ← what we read
- *   bytes 40..72 = mint: Pubkey
+ * Common offsets (Anchor discriminator is bytes 0..8):
+ *   tip_jar `CreatorProfile.owner`   → offset 8  (programs/tip_jar/src/state.rs)
+ *   event_tickets `Event.creator`    → offset 8  (programs/event_tickets/src/state.rs)
  */
-async function fetchCreatorOwner(creatorProfilePda: string): Promise<string | null> {
+async function fetchPdaPubkeyAt(pda: string, offset: number): Promise<string | null> {
+  const cacheKey = `${pda}:${offset}`;
   const now = Date.now();
-  const cached = creatorOwnerCache.get(creatorProfilePda);
+  const cached = pdaPubkeyCache.get(cacheKey);
   if (cached && cached.expiresAt > now) {
-    return cached.owner;
+    return cached.pubkey;
   }
   const rpcUrl = Deno.env.get("RPC_URL") ?? "https://api.devnet.solana.com";
-  let owner: string | null = null;
+  let pubkey: string | null = null;
   try {
     const resp = await fetch(rpcUrl, {
       method: "POST",
@@ -287,7 +288,7 @@ async function fetchCreatorOwner(creatorProfilePda: string): Promise<string | nu
         jsonrpc: "2.0",
         id: 1,
         method: "getAccountInfo",
-        params: [creatorProfilePda, { encoding: "base64", commitment: "confirmed" }],
+        params: [pda, { encoding: "base64", commitment: "confirmed" }],
       }),
     });
     const json = await resp.json();
@@ -295,15 +296,15 @@ async function fetchCreatorOwner(creatorProfilePda: string): Promise<string | nu
     const b64 = Array.isArray(dataField) ? dataField[0] : null;
     if (b64) {
       const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-      if (bytes.length >= 40) {
-        owner = bs58.encode(bytes.slice(8, 40));
+      if (bytes.length >= offset + 32) {
+        pubkey = bs58.encode(bytes.slice(offset, offset + 32));
       }
     }
   } catch (e) {
-    console.error("fetchCreatorOwner failed", creatorProfilePda, e);
+    console.error("fetchPdaPubkeyAt failed", pda, offset, e);
   }
-  creatorOwnerCache.set(creatorProfilePda, { owner, expiresAt: now + ACCOUNT_FETCH_CACHE_TTL_MS });
-  return owner;
+  pdaPubkeyCache.set(cacheKey, { pubkey, expiresAt: now + ACCOUNT_FETCH_CACHE_TTL_MS });
+  return pubkey;
 }
 
 // Account positions per Anchor IX struct. Keep in sync with
@@ -332,7 +333,7 @@ const DECODERS: Record<string, IxDecoder> = {
       },
     ];
     if (creatorProfile) {
-      const creator = await fetchCreatorOwner(creatorProfile);
+      const creator = await fetchPdaPubkeyAt(creatorProfile, 8);
       if (creator && creator !== donor) {
         rows.push({
           wallet_pubkey: creator,
@@ -535,15 +536,17 @@ const DECODERS: Record<string, IxDecoder> = {
   },
 
   // event_tickets.buy_tier_ticket: [buyer (signer), event (PDA), tier (PDA), ...]
-  // Ticket revenue lands in the event's vault PDA, not the creator's wallet,
-  // so we can only emit a buyer-side row here. Creator-side notification
-  // needs an RPC fetch of Event.creator (TODO).
-  "event_tickets.buy_tier_ticket": (tx, ix, transfers) => {
+  // Ticket revenue lands in the event's vault PDA (token-transfer recipient
+  // is the vault, not the creator wallet). To emit a creator-side row we
+  // resolve event.creator via a one-shot getAccountInfo RPC, cached for
+  // ~5 minutes per PDA inside this invocation (see fetchPdaPubkeyAt).
+  "event_tickets.buy_tier_ticket": async (tx, ix, transfers) => {
     const buyer = ix.accounts[0];
     const eventPda = ix.accounts[1];
+    const tierPda = ix.accounts[2];
     const buyerOutflow = buyer ? outflowFrom(transfers, buyer) : 0;
     if (!buyer) return [];
-    return [
+    const rows: NotificationRow[] = [
       {
         wallet_pubkey: buyer,
         type: "ticket_bought",
@@ -555,6 +558,28 @@ const DECODERS: Record<string, IxDecoder> = {
         email_eligible: false,
       },
     ];
+    if (eventPda) {
+      const creator = await fetchPdaPubkeyAt(eventPda, 8);
+      if (creator && creator !== buyer) {
+        rows.push({
+          wallet_pubkey: creator,
+          type: "ticket_sold",
+          payload: {
+            signature: tx.signature,
+            event: eventPda,
+            tier: tierPda,
+            amount: buyerOutflow,
+            buyer,
+          },
+          href: "/creator",
+          title: buyerOutflow > 0 ? `Ticket sold: ${buyerOutflow} USDC` : "Ticket sold",
+          body: null,
+          signature: tx.signature,
+          email_eligible: true,
+        });
+      }
+    }
+    return rows;
   },
 
   // event_tickets.buy_ticket_resale: [buyer (signer), seller, ...]
