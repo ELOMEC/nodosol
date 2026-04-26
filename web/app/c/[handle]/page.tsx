@@ -16,11 +16,32 @@ export async function generateMetadata({
       description: "This handle is not registered on Nodosol.",
     };
   }
-  const title = `${profile.display_name ?? profile.handle} — nodosol`;
+  const display = profile.display_name ?? profile.handle;
+  const title = `${display} — nodosol`;
   const description =
     profile.bio ??
-    `${profile.display_name ?? profile.handle} on Nodosol — tip in USDC, subscribe, attend events.`;
-  return { title, description };
+    `${display} on Nodosol — tip in USDC, subscribe, attend events.`;
+  const url = `/c/${profile.handle}`;
+  const ogImage = profile.banner_url || profile.avatar_url || undefined;
+  return {
+    title,
+    description,
+    alternates: { canonical: url },
+    openGraph: {
+      title,
+      description,
+      url,
+      type: "profile",
+      siteName: "nodosol",
+      images: ogImage ? [{ url: ogImage }] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ogImage ? [ogImage] : undefined,
+    },
+  };
 }
 
 export default async function CreatorPublicProfilePage({
