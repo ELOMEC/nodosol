@@ -14,6 +14,7 @@ import {
 import { USDC_UNIT } from "@/lib/constants";
 import { fetchRentalMetadataBatch, RentalMetadata } from "@/lib/rentalMetadata";
 import { subscriptionProgram } from "@/lib/subscription";
+import { EmptyState } from "@/components/EmptyState";
 
 type PropertyKind = "auction" | "rental";
 
@@ -241,12 +242,15 @@ export function PropertiesView() {
       {state.kind === "ready" && (
         visible.length === 0 ? (
           <Card>
-            <Centered>
-              <div style={{ fontWeight: 600, marginBottom: "0.3rem" }}>No matches</div>
-              <div style={{ fontSize: "0.82rem", color: "#6b7280" }}>
-                Try clearing the search, or widen the filter.
-              </div>
-            </Centered>
+            <EmptyState
+              icon="properties"
+              title="No matching properties"
+              description="Try clearing the search or widening the filter — properties show auctions + rentals together."
+              actions={[
+                { label: "Tokenize a property", href: "/marketplace/tokenize", variant: "primary" },
+                { label: "List a rental", href: "/marketplace/rentals/new", variant: "secondary" },
+              ]}
+            />
           </Card>
         ) : (
           <div

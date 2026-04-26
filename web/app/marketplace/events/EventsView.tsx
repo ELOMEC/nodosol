@@ -18,6 +18,7 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { EmptyState } from "@/components/EmptyState";
 import { MarketSearchBar } from "@/components/MarketSearchBar";
 
 import { getUsdcMint, USDC_UNIT } from "@/lib/constants";
@@ -533,12 +534,15 @@ export function EventsView() {
       ) : tab === "browse" ? (
         pub.length === 0 ? (
           <CenteredCard>
-            <div style={{ fontSize: "1rem", color: "var(--shell-fg)", fontWeight: 600, marginBottom: "0.35rem" }}>
-              No events on sale yet
-            </div>
-            <div style={{ fontSize: "0.88rem", color: "var(--shell-muted)" }}>
-              Be the first — click <strong>Create event</strong> above.
-            </div>
+            <EmptyState
+              icon="events"
+              title="No events on sale yet"
+              description="Be the first to ship a ticketed event on Nodosol — Token-2022 cNFT tickets with venue maps, signed QR check-in, and royalty-routed resale."
+              actions={[
+                { label: "Create event", href: "/creator/events/new", variant: "primary" },
+                { label: "Tour the marketplace", href: "/marketplace", variant: "secondary" },
+              ]}
+            />
           </CenteredCard>
         ) : (
           <>
@@ -566,8 +570,12 @@ export function EventsView() {
             />
             {visiblePub.length === 0 ? (
               <CenteredCard>
-                <div style={{ fontSize: "1rem", fontWeight: 600, marginBottom: "0.35rem" }}>No matches</div>
-                <div style={{ fontSize: "0.88rem", color: "var(--shell-muted)" }}>Try clearing the search or widening the price range.</div>
+                <EmptyState
+                  icon="search"
+                  title="No matches"
+                  description="Try clearing the search or widening the price range."
+                  compact
+                />
               </CenteredCard>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1rem" }}>

@@ -9,6 +9,7 @@ import { PublicKey } from "@solana/web3.js";
 import { USDC_UNIT } from "@/lib/constants";
 import { subscriptionProgram } from "@/lib/subscription";
 import { fetchRentalMetadataBatch, RentalMetadata } from "@/lib/rentalMetadata";
+import { EmptyState } from "@/components/EmptyState";
 import { MarketSearchBar } from "@/components/MarketSearchBar";
 
 type RentalPlan = {
@@ -227,29 +228,23 @@ export function RentalsView() {
       {state.kind === "ready" && (
         visible.length === 0 ? (
           <Card>
-            <Centered>
-              <div style={{ fontWeight: 600, marginBottom: "0.3rem" }}>No rentals yet</div>
-              <div style={{ fontSize: "0.82rem", color: "#6b7280", marginBottom: "0.9rem" }}>
-                {filter === "mine" ? "You haven't listed anything." : "Nothing to show."}
-              </div>
-              {filter !== "active" ? (
-                <button
-                  onClick={() => setFilter("active")}
-                  style={{
-                    background: "var(--shell-card, #fff)",
-                    border: "1px solid var(--shell-border, #e5e7eb)",
-                    color: "#4338ca",
-                    padding: "0.5rem 0.95rem",
-                    borderRadius: 8,
-                    fontSize: "0.82rem",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  Show active rentals
-                </button>
-              ) : null}
-            </Centered>
+            <EmptyState
+              icon="rentals"
+              title={filter === "mine" ? "You haven't listed any rentals" : "No rentals yet"}
+              description={
+                filter === "mine"
+                  ? "List a property, coworking space, or experience and start collecting recurring USDC."
+                  : "Be the first to list a rental — discoverable by everyone in the marketplace."
+              }
+              actions={[
+                ...(filter === "mine"
+                  ? [{ label: "List a rental", href: "/marketplace/rentals/new", variant: "primary" as const }]
+                  : []),
+                ...(filter !== "active"
+                  ? [{ label: "Show active rentals", onClick: () => setFilter("active"), variant: "secondary" as const }]
+                  : []),
+              ]}
+            />
           </Card>
         ) : (
           <div style={{ marginTop: "1rem", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "0.85rem" }}>

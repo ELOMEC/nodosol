@@ -19,6 +19,7 @@ import {
   OnChainResaleListing,
 } from "@/lib/ticketResale";
 import { explainSolanaError } from "@/lib/solanaErrors";
+import { EmptyState } from "@/components/EmptyState";
 import { useToast } from "@/components/ToastProvider";
 import { MarketSearchBar } from "@/components/MarketSearchBar";
 
@@ -401,16 +402,21 @@ export function ResaleView() {
           {visible.length === 0 ? (
             <div style={{ marginTop: "1rem" }}>
               <Card>
-                <Centered>
-                  <div style={{ fontWeight: 600, marginBottom: "0.3rem" }}>No listings yet</div>
-                  <div style={{ fontSize: "0.82rem", color: "#6b7280" }}>
-                    Hold a ticket?{" "}
-                    <Link href="/marketplace/tickets" style={{ color: "#4f46e5", fontWeight: 600 }}>
-                      Open My tickets
-                    </Link>{" "}
-                    and use &quot;List for resale&quot; on the detail page.
-                  </div>
-                </Centered>
+                <EmptyState
+                  icon="resale"
+                  title="No resale listings yet"
+                  description={
+                    <>
+                      Hold a ticket? Open it from <strong>My tickets</strong> and tap
+                      &ldquo;List for resale&rdquo; — atomic on-chain swap with optional
+                      private-price commit/reveal.
+                    </>
+                  }
+                  actions={[
+                    { label: "Open My tickets", href: "/marketplace/tickets", variant: "primary" },
+                    { label: "Browse events", href: "/marketplace/events", variant: "secondary" },
+                  ]}
+                />
               </Card>
             </div>
           ) : (

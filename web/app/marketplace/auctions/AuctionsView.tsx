@@ -10,6 +10,7 @@ import {
   fetchAllAuctions,
   OnChainAuction,
 } from "@/lib/auctions";
+import { EmptyState } from "@/components/EmptyState";
 import { MarketSearchBar } from "@/components/MarketSearchBar";
 
 type State =
@@ -184,33 +185,29 @@ export function AuctionsView() {
       {state.kind === "ready" && (
         visible.length === 0 ? (
           <Card>
-            <Centered>
-              <div style={{ fontWeight: 600, marginBottom: "0.35rem" }}>No auctions</div>
-              <div style={{ fontSize: "0.82rem", color: "#6b7280", marginBottom: "0.9rem" }}>
-                {filter === "live"
-                  ? "Nothing live right now."
+            <EmptyState
+              icon="auctions"
+              title={
+                filter === "live"
+                  ? "No live auctions right now"
                   : filter === "mine"
-                  ? "You haven't created any auctions yet."
-                  : "No results for this filter."}
-              </div>
-              {filter !== "live" ? (
-                <button
-                  onClick={() => setFilter("live")}
-                  style={{
-                    background: "var(--shell-card, #fff)",
-                    border: "1px solid var(--shell-border, #e5e7eb)",
-                    color: "#4338ca",
-                    padding: "0.5rem 0.95rem",
-                    borderRadius: 8,
-                    fontSize: "0.82rem",
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  Show live auctions
-                </button>
-              ) : null}
-            </Centered>
+                  ? "You haven't started any auctions"
+                  : "No auctions match this filter"
+              }
+              description={
+                filter === "mine"
+                  ? "Create your first sealed-bid auction — buyers commit a bid hash, then reveal in the second phase."
+                  : "Sealed-bid auctions appear here once a seller posts one."
+              }
+              actions={[
+                ...(filter === "mine"
+                  ? [{ label: "Start an auction", href: "/marketplace/auctions/new", variant: "primary" as const }]
+                  : []),
+                ...(filter !== "live"
+                  ? [{ label: "Show live auctions", onClick: () => setFilter("live"), variant: "secondary" as const }]
+                  : []),
+              ]}
+            />
           </Card>
         ) : (
           <div style={{ marginTop: "1rem", display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: "0.85rem" }}>

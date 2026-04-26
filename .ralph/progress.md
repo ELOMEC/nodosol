@@ -172,7 +172,14 @@
 
 ### Bucket J: Marketplace polish
 
-- [ ] Empty states across 5 marketplace verticals — audit `/marketplace/{events,auctions,rentals,resale,properties}` views, dodati `EmptyState` komponentu (illustration + headline + CTA). Komponenta nova: `web/components/EmptyState.tsx`. CTA varijante per vertical: "Be the first to list", "Start an auction", itd. Verifikacija: tsc.
+- [x] Empty states across 5 marketplace verticals — audit `/marketplace/{events,auctions,rentals,resale,properties}` views, dodati `EmptyState` komponentu (illustration + headline + CTA). Komponenta nova: `web/components/EmptyState.tsx`. CTA varijante per vertical: "Be the first to list", "Start an auction", itd. Verifikacija: tsc.
+  - `web/components/EmptyState.tsx` (new): shared primitive — inline SVG icon (events / auctions / rentals / properties / resale / search / default variants), title, optional description, 0–2 CTAs (each `Link` href or `onClick` button, primary/secondary). `compact` flag drops the SVG for inline use inside cards.
+  - `EventsView.tsx`: replaced both empty paths — no-events ("Be the first to ship a ticketed event…" with Create event + Tour marketplace CTAs) and search-misses (compact `search` icon, no CTA noise).
+  - `AuctionsView.tsx`: filter-aware copy — "No live auctions right now" / "You haven't started any auctions" / "No auctions match this filter". Mine variant adds "Start an auction" → `/marketplace/auctions/new` CTA. Show-live-auctions secondary action when not on live filter.
+  - `RentalsView.tsx`: mine vs browse split — "List a rental" CTA on mine variant pointing to `/marketplace/rentals/new`. Show-active fallback when filter≠active.
+  - `PropertiesView.tsx`: aggregated auctions+rentals page gets a "no matching properties" headline with "Tokenize a property" + "List a rental" CTAs.
+  - `ResaleView.tsx`: "No resale listings yet" with Open-My-tickets primary + Browse-events secondary; copy explains the atomic on-chain swap with private commit/reveal.
+  - `cd web && tsc --noEmit` clean. All 5 views still render through their existing `Card` wrappers; `EmptyState` slots inside without disturbing surrounding filter chips / search bars.
 
 - [ ] Filter persistence via URL params — `web/lib/useSearchParamsState.ts` helper hook (sync state ↔ `useSearchParams`). Wire u 5 marketplace views da search/sort/filters zive u URL-u (deep-linkable + shareable). Verifikacija: tsc + manual URL share test.
 
