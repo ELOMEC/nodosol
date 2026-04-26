@@ -154,7 +154,12 @@
 
 ### Bucket I: Buyer tools
 
-- [ ] Purchase history `/account/history` — `web/app/account/history/{page.tsx,HistoryView.tsx}`. Fetch po wallet-u: tickets owned (cNFT search via Helius DAS), subscriptions active (Subscription accounts where subscriber==wallet), OTC deals (OtcDeal accounts as buyer ili seller), auction wins (Auction accounts where highest_bidder==wallet). Group by type, sort recent. Verifikacija: tsc.
+- [x] Purchase history `/account/history` — `web/app/account/history/{page.tsx,HistoryView.tsx}`. Fetch po wallet-u: tickets owned (cNFT search via Helius DAS), subscriptions active (Subscription accounts where subscriber==wallet), OTC deals (OtcDeal accounts as buyer ili seller), auction wins (Auction accounts where highest_bidder==wallet). Group by type, sort recent. Verifikacija: tsc.
+  - `web/app/account/layout.tsx` (new): SolanaProviders wrapper for the new `/account` route tree.
+  - `web/app/account/history/page.tsx`: server shell, `MarketplaceShell active="portfolio"` (closest existing nav highlight; `/account/*` will get its own once the bucket grows).
+  - `web/app/account/history/HistoryView.tsx`: 5 parallel reads on connect — `subscription.subscription.all` (memcmp offset 40 = subscriber field), `otc_deals.deal.all` ×2 (memcmp offset 8 = seller, offset 40 = buyer), `auctions.auction.all` (memcmp offset 169 = highest_bidder — derived in a comment block from the Anchor field layout), and `getAssetsByOwner` via Helius DAS for cNFT tickets. Per-source failures isolated (Helius failure surfaced as section note).
+  - 4 sections with sticky empty states: Tickets (asset name + symbol + short id), Subscriptions (plan + status + charges + total paid + started), OTC deals (buy/sell side merged into one table sorted by updated_at), Auction wins (linked to `/marketplace/auctions/<pda>` with seller + winning bid + status + reveal end). Status pulled from Anchor enum object key, lowercased.
+  - `cd web && tsc --noEmit` clean.
 
 - [ ] Wishlist (saved items) — migracija `021_wishlist.sql` (`wishlist (wallet_pubkey, item_type, item_id, created_at) RLS by jwt sub`). Heart icon u marketplace cards, toggle add/remove. `/account/wishlist` ruta sa saved items grid. Verifikacija: tsc + SQL syntax.
 
