@@ -288,6 +288,149 @@ this as the launch-blocker list; anything unchecked means NO-GO.
 - [ ] Phase A success metrics hit (section 4)
 - [ ] Foundation network primed for warm intros
 
+## 8. Identified gaps & supplemental pre-deploy checklist
+
+Review pass on 2026-04-26 against current repo state surfaced gaps in
+section 7 that need concrete sub-steps before they can be checked off.
+Section 7 stays as the high-level Go/No-Go board; this section is the
+operational worksheet for the four highest-risk transitions: env-var
+split, treasury rotation, Squads mainnet setup, RPC migration.
+
+### 8.0 Drift fixes vs. section 7
+
+- [ ] Update section 7 "Migrations 001–012 applied" to **001–018**
+  (project is at `supabase/018_waitlist.sql` as of 2026-04-26)
+- [ ] Update section 7 Edge Functions list to **all 7**:
+  `post-chat-message`, `issue-chat-jwt`, `gc-tier-seats`, `charge-due`,
+  `helius-webhook`, `admin-events`, `waitlist-signup`
+- [ ] Section 7 says "9 programs deployed" but 2.1 audit scope only lists
+  5 + section 7 says 7 High-priority. Reconcile: 7 High = `subscription`,
+  `event_tickets`, `rwa_registry`, `rwa_mint`, `marketplace`, `otc_deals`,
+  `auctions`. `tip_jar` = Medium, `events` = deprecate-or-Low. Lock the
+  audit scope here.
+
+### 8.1 Env-var split (Vercel preview/devnet vs. production/mainnet)
+
+Today every env var lives in a single Vercel project tied to devnet.
+Mainnet flip requires a parallel set with cold values.
+
+- [ ] Create separate Vercel **production** environment scope (or new
+  project entirely) — preview/dev keeps devnet, production gets mainnet
+- [ ] Audit `web/.env.example` + `web/lib/*` + `scripts/.env.example`
+  for every `NEXT_PUBLIC_*` and server-only var; produce
+  `docs/MAINNET_ENV.md` table (var | dev value | mainnet value | who sets)
+  — tracked as a separate task in `.ralph/progress.md` Bucket D
+- [ ] Hard-code-scan: `grep -rn "devnet\|mock-USDC\|Gh9ZwEmdLJ8" web/ scripts/`
+  — every hit either becomes env-var-driven or a `process.env.NEXT_PUBLIC_NETWORK`
+  guard
+- [ ] Mainnet-only vars to provision (non-exhaustive — finalize in MAINNET_ENV.md):
+  - `SOLANA_RPC_URL` → Helius mainnet dedicated node URL
+  - `NEXT_PUBLIC_APP_URL` → `https://nodosol.com` (drop preview subdomain)
+  - `NEXT_PUBLIC_USDC_MINT` → `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`
+  - `NEXT_PUBLIC_ADMIN_WALLETS` → mainnet admin wallets (different keypairs
+    than devnet, since devnet admin keys may have leaked into demo seeders)
+  - 9 program IDs (`NEXT_PUBLIC_*_PROGRAM_ID` or central constants file)
+  - `NEXT_PUBLIC_DEMO_*` → unset on mainnet (demo data is devnet-only)
+  - Supabase: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`,
+    plus server-side `SUPABASE_SERVICE_ROLE_KEY` and Edge Function secrets
+  - Edge Function env: `RPC_URL` (helius-webhook), `JWT_SIGNING_KEY`
+    (issue-chat-jwt — rotate, do NOT reuse devnet secret),
+    `ADMIN_WALLETS` (admin-events server-side allowlist),
+    `HELIUS_WEBHOOK_SECRET` (if/when added)
+  - Cranker funding: keypair + min SOL balance for `charge-due`
+- [ ] Decide: single Supabase project with `network` column, or fresh
+  mainnet Supabase project. Recommend fresh project — cleaner RLS, no
+  devnet noise in `security_events`, simpler GDPR posture
+- [ ] Scripts (`scripts/`) need `--cluster mainnet-beta` parity check —
+  every `clusterApiUrl` / `Connection(...)` constructor reads from env
+
+### 8.2 Treasury rotation ceremony
+
+Section 2.4 + 7 say "treasury keypair held in multisig" but the actual
+ceremony is undefined.
+
+- [ ] Generate `treasury-keypair.json` mainnet equivalent on an
+  air-gapped machine (live USB, no network); print pubkey, never the
+  private key
+- [ ] Create the treasury USDC ATA via a one-shot tx signed offline,
+  broadcast from an online machine
+- [ ] Transfer the treasury keypair file into the Squads multisig as a
+  custodied asset (or destroy after ATA is created and rely on the ATA
+  owner being a multisig-controlled wallet — preferred, simpler)
+- [ ] **Preferred path:** treasury-ATA owner = Squads vault PDA, not a
+  raw keypair. Then there is no private key to leak. Confirm
+  `update_treasury` accepts a vault PDA on every program (it should —
+  it just stores a pubkey)
+- [ ] Run init-time assertion: `treasury_owner != upgrade_authority` on
+  all 9 programs (lesson from 2026-04-22/23 duplicate-mut bug)
+- [ ] Document monthly sweep procedure: multisig proposal →
+  vault-to-cold-wallet transfer → on-chain receipt logged in ops journal
+- [ ] Define backup: if Squads vault PDA is the owner, no key backup
+  needed; if raw keypair, store encrypted shards via Shamir 2-of-3 in
+  separate physical locations (not the same as multisig signers)
+
+### 8.3 Squads mainnet setup ceremony
+
+Section 2.2 + 7 say "Squads 2-of-3" but signer identity, threshold
+rationale, and rotation policy are undefined.
+
+- [ ] Pick 3 signers and document them (in a private doc, not this repo):
+  Mladen primary + 2 trusted parties (recommend: 1 technical co-founder
+  candidate, 1 legal/advisor with cold storage). Reasoning: 2-of-3
+  survives one lost/compromised key, blocks single-actor compromise
+- [ ] Generate 3 fresh hardware-wallet-backed signer keypairs (Ledger
+  preferred — derivation path documented per signer)
+- [ ] Create Squads vault on mainnet via [v3 UI](https://squads.so);
+  capture vault address + multisig PDA
+- [ ] Test the multisig flow on mainnet with a $1 USDC transfer BEFORE
+  any program upgrade authority is transferred — full propose/approve/execute
+  cycle from each signer device
+- [ ] Transfer upgrade authority for each of the 9 programs to the vault
+  PDA via `solana program set-upgrade-authority` — record tx sig per program
+- [ ] Transfer Config PDA `authority` for each program via
+  `update_authority` instruction — record tx sig per program
+- [ ] Verify `solana program show <PROGRAM_ID>` for all 9 programs
+  returns the multisig PDA as upgrade authority
+- [ ] Document rotation procedure: how to swap a compromised signer
+  (Squads "Settings → Members" requires multisig-approved tx)
+- [ ] Test the panic button workflow end-to-end on mainnet: admin panel
+  generates `update_pause(true)` payload → paste into Squads → 2 signers
+  approve → execute → verify each Config PDA has `paused: true`
+
+### 8.4 RPC migration (devnet defaults → mainnet Helius)
+
+Section 5.1 names Helius but cutover is not sequenced.
+
+- [ ] Provision Helius mainnet dedicated node — confirm
+  `getProgramAccounts` is enabled on the plan (required by marketplace
+  grid `Listing.all()` until indexer ships)
+- [ ] Generate fresh Helius API key for mainnet (do NOT reuse devnet key)
+- [ ] Create mainnet Helius webhook pointing at production
+  `helius-webhook` Edge Function URL — capture webhook ID + signing
+  secret; store secret in mainnet Supabase Edge Function env
+- [ ] Configure webhook to watch all 9 mainnet program IDs (the IDs from
+  step 8.3 — devnet IDs in section 1 will NOT match)
+- [ ] Provision fallback RPC (Triton or QuickNode) — wire health-check
+  + auto-fallback in `web/lib/connection.ts` (or wherever Connection is
+  constructed); circuit-breaker on consecutive 5xx
+- [ ] Audit every default RPC URL in code: `grep -rn "api.devnet.solana.com\|clusterApiUrl" web/ scripts/ supabase/functions/`
+  — every default must come from env, with an explicit failure (not a
+  silent devnet fall-through) if the env var is unset on production
+- [ ] Set `RPC_URL` env on mainnet Supabase Edge Function project
+  (`helius-webhook` decoder lookups in `fetchPdaPubkeyAt` default to
+  `clusterApiUrl("devnet")` if unset — this MUST be set on mainnet or
+  the creator-side enrichment silently breaks)
+- [ ] Rate-limit budgeting: estimate sustained `getSignaturesForAddress`
+  load from admin volume widget × 9 programs × admin polling cadence;
+  confirm Helius plan tier has headroom or add server-side caching
+
+### 8.5 Cutover dress rehearsal
+
+- [ ] Run a full "fake mainnet" rehearsal on devnet using fresh program
+  IDs, fresh treasury, fresh Squads test multisig, fresh Vercel
+  preview-prod environment — measure how long the actual cutover takes,
+  identify missed steps. Section 7 cannot go green until this passes.
+
 ---
 
-Maintainer: Mladen · Status: living · Last update: 2026-04-23
+Maintainer: Mladen · Status: living · Last update: 2026-04-26

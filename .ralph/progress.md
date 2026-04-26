@@ -47,7 +47,8 @@
 
 ### Bucket D: Mainnet readiness paper-work
 
-- [ ] `docs/mainnet-deploy-plan.md` review — pročitaj postojeći plan, identifikuj rupice (env-var split, treasury rotation, Squads mainnet setup, RPC migration). Dodaj checklist na kraj sa konkretnim pre-deploy tačkama. Verifikacija: dokument bude ažuriran, bez code change-a.
+- [x] `docs/mainnet-deploy-plan.md` review — pročitaj postojeći plan, identifikuj rupice (env-var split, treasury rotation, Squads mainnet setup, RPC migration). Dodaj checklist na kraj sa konkretnim pre-deploy tačkama. Verifikacija: dokument bude ažuriran, bez code change-a.
+  - Appended Section 8 "Identified gaps & supplemental pre-deploy checklist" to `docs/mainnet-deploy-plan.md`: 8.0 drift fixes (migrations 001–018 vs doc's 001–012, 7 Edge Functions vs 3, audit-scope reconciliation), 8.1 env-var split (Vercel scope, MAINNET_ENV.md table, hard-code grep, full mainnet var inventory incl. `NEXT_PUBLIC_ADMIN_WALLETS` + Edge Function `RPC_URL`/`JWT_SIGNING_KEY`/`ADMIN_WALLETS`), 8.2 treasury rotation ceremony (preferred Squads vault PDA path + assertion + sweep), 8.3 Squads mainnet ceremony (3 signers, Ledger, $1 USDC test, panic-button dress rehearsal), 8.4 RPC migration (Helius key, webhook secret, fallback RPC, `RPC_URL` Edge Function env warning), 8.5 cutover dress rehearsal. Updated "Last update" to 2026-04-26. Doc-only change, no code touched.
 
 - [ ] `docs/MAINNET_ENV.md` — novi dokument koji lista sve env varove koji trebaju mainnet vrijednost (RPC URLs, USDC mint, treasury, program IDs, Helius webhook URL, Supabase project, Privy app ID). Tablica: var | dev value | mainnet value | who sets. Verifikacija: dokument exists.
 
