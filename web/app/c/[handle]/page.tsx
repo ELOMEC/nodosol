@@ -22,7 +22,10 @@ export async function generateMetadata({
     profile.bio ??
     `${display} on Nodosol — tip in USDC, subscribe, attend events.`;
   const url = `/c/${profile.handle}`;
-  const ogImage = profile.banner_url || profile.avatar_url || undefined;
+  // og:image + twitter:image are produced by the file-based
+  // opengraph-image.tsx route in this directory — Next composes those
+  // tags automatically. Don't add an explicit `images` here or the
+  // static avatar/banner override the dynamic card.
   return {
     title,
     description,
@@ -33,13 +36,11 @@ export async function generateMetadata({
       url,
       type: "profile",
       siteName: "nodosol",
-      images: ogImage ? [{ url: ogImage }] : undefined,
     },
     twitter: {
       card: "summary_large_image",
       title,
       description,
-      images: ogImage ? [ogImage] : undefined,
     },
   };
 }
