@@ -17,6 +17,7 @@ import {
   fetchPrefs,
   isValidEmail,
   parseEmailTypes,
+  requestVerifyEmail,
   serializeEmailTypes,
   upsertPrefs,
 } from "@/lib/notificationPrefs";
@@ -34,6 +35,7 @@ export function SettingsView() {
   const [email, setEmail] = useState("");
   const [enabledTypes, setEnabledTypes] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
+  const [verifyBusy, setVerifyBusy] = useState(false);
 
   const ensureJwt = useCallback(async (): Promise<string> => {
     if (!wallet || !signMessage) {
@@ -116,6 +118,46 @@ export function SettingsView() {
     toast.info(turnOn ? `Enabled all ${label}` : `Disabled all ${label}`);
   };
 
+  async function sendVerify() {
+    if (!wallet || !signMessage) {
+      toast.error("Connect a wallet that supports message signing.");
+      return;
+    }
+    const target = email.trim().toLowerCase();
+    if (!isValidEmail(target)) {
+      toast.error("Save a valid email first.");
+      return;
+    }
+    setVerifyBusy(true);
+    try {
+      const timestamp = Date.now();
+      const message = `nodosol-verify-email:v1:${wallet}:${target}:${timestamp}`;
+      const sigBytes = await signMessage(new TextEncoder().encode(message));
+      const result = await requestVerifyEmail({
+        wallet,
+        email: target,
+        message,
+        signatureBase58: bs58.encode(sigBytes),
+      });
+      if (!result.ok) {
+        toast.error(result.error);
+        return;
+      }
+      if (result.alreadyVerified) {
+        toast.success("This email is already verified");
+      } else {
+        toast.success("Verification email sent — check your inbox");
+      }
+      // Refresh so we pick up the new email_verification_sent_at stamp.
+      await load();
+    } catch (err) {
+      console.error(err);
+      toast.error(err instanceof Error ? err.message : "Verification request failed");
+    } finally {
+      setVerifyBusy(false);
+    }
+  }
+
   async function save() {
     if (!wallet) return;
     if (hasEmail && !emailValid) {
@@ -195,9 +237,10 @@ export function SettingsView() {
                     <button
                       type="button"
                       style={LINK_BTN}
-                      onClick={() => toast.info("Verify flow ships in F2 — coming this sprint")}
+                      onClick={() => void sendVerify()}
+                      disabled={verifyBusy}
                     >
-                      Send verification email
+                      {verifyBusy ? "Sending…" : "Send verification email"}
                     </button>
                   </>
                 )

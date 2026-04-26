@@ -1,4 +1,8 @@
-import { createAuthedSupabaseClient } from "./supabase";
+import {
+  createAuthedSupabaseClient,
+  getSupabaseAnonKey,
+  getSupabaseUrl,
+} from "./supabase";
 
 /**
  * Per-wallet email + notification-type preferences.
@@ -161,4 +165,64 @@ export async function upsertPrefs(
 export function isValidEmail(value: string): boolean {
   if (value.length === 0 || value.length > 254) return false;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+export type VerifyEmailRequest = {
+  wallet: string;
+  email: string;
+  message: string;
+  signatureBase58: string;
+};
+
+export type VerifyEmailResult =
+  | { ok: true; alreadyVerified?: boolean }
+  | { ok: false; error: string; status: number };
+
+/**
+ * Calls the verify-email Edge Function (POST). The wallet has already
+ * signed the `nodosol-verify-email:v1:<wallet>:<email>:<timestampMs>`
+ * challenge; we just relay the signed payload. The Edge Function
+ * decides rate limit + sends the email — we never see the token.
+ */
+export async function requestVerifyEmail(
+  params: VerifyEmailRequest
+): Promise<VerifyEmailResult> {
+  try {
+    const resp = await fetch(
+      `${getSupabaseUrl()}/functions/v1/verify-email`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          apikey: getSupabaseAnonKey(),
+          authorization: `Bearer ${getSupabaseAnonKey()}`,
+        },
+        body: JSON.stringify({
+          wallet: params.wallet,
+          email: params.email,
+          message: params.message,
+          signature: params.signatureBase58,
+        }),
+      }
+    );
+    const json = (await resp.json().catch(() => ({}))) as {
+      ok?: boolean;
+      alreadyVerified?: boolean;
+      error?: string;
+    };
+    if (resp.ok && json?.ok) {
+      return { ok: true, alreadyVerified: json.alreadyVerified === true };
+    }
+    return {
+      ok: false,
+      status: resp.status,
+      error: json?.error ?? `Verification request failed (HTTP ${resp.status})`,
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      status: 0,
+      error: err instanceof Error ? err.message : "Network error",
+    };
+  }
 }
