@@ -22,7 +22,8 @@
 
 ### Bucket B: Admin panel (minimal)
 
-- [ ] Web ruta `/admin` sa wallet-pubkey allowlist gate-om — `web/app/admin/{page.tsx,AdminView.tsx,layout.tsx}`. Allowlist u env varu `NEXT_PUBLIC_ADMIN_WALLETS` (comma-separated). Ako wallet nije na listi → 403 redirect na `/`. SolanaProviders wrapper iz drugih ruta. Verifikacija: `tsc --noEmit`.
+- [x] Web ruta `/admin` sa wallet-pubkey allowlist gate-om — `web/app/admin/{page.tsx,AdminView.tsx,layout.tsx}`. Allowlist u env varu `NEXT_PUBLIC_ADMIN_WALLETS` (comma-separated). Ako wallet nije na listi → 403 redirect na `/`. SolanaProviders wrapper iz drugih ruta. Verifikacija: `tsc --noEmit`.
+  - Added allowlist gate inside `web/app/admin/AdminView.tsx`: parses `NEXT_PUBLIC_ADMIN_WALLETS` (comma-separated) at module load into a `Set`, derives `gate ∈ {connect, forbidden, ok}` from `useWallet()`, redirects forbidden viewers via `router.replace("/")`, skips RPC `reload()` until `ok`. Empty/unset env → no wallets pass (safe default). `connect` state shows a centered "Admin access" card with `WalletMultiButton`. Page/layout/providers untouched (SolanaProviders already wired). Documented the env var in `web/.env.example`. Verified with `cd web && ./node_modules/.bin/tsc --noEmit` (clean).
 
 - [ ] Admin volume widget — fetch `getSignaturesForAddress` za 9 programa sa limit=100, agregira po danu/sedmici/mjesecu, prikazuje grid sa per-program tx count + delta vs prethodna 24h. Reuse `web/components/NotificationsBell.tsx` pattern za batch fetch. Verifikacija: `tsc --noEmit`.
 

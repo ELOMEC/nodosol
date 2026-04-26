@@ -9,7 +9,8 @@ import {
   Transaction,
   TransactionInstruction,
 } from "@solana/web3.js";
-import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { USDC_UNIT } from "@/lib/constants";
 import {
@@ -23,6 +24,13 @@ import { simulateAndSend } from "@/lib/tx";
 import { explainSolanaError } from "@/lib/solanaErrors";
 import { useToast } from "@/components/ToastProvider";
 
+const ADMIN_ALLOWLIST: ReadonlySet<string> = new Set(
+  (process.env.NEXT_PUBLIC_ADMIN_WALLETS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+);
+
 type FetchState =
   | { kind: "idle" }
   | { kind: "loading" }
@@ -33,6 +41,19 @@ export function AdminView() {
   const { connection } = useConnection();
   const wallet = useWallet();
   const { publicKey, connected } = wallet;
+  const router = useRouter();
+
+  const viewerKey = publicKey?.toBase58() ?? null;
+  const gate: "connect" | "forbidden" | "ok" = useMemo(() => {
+    if (!connected || !viewerKey) return "connect";
+    return ADMIN_ALLOWLIST.has(viewerKey) ? "ok" : "forbidden";
+  }, [connected, viewerKey]);
+
+  useEffect(() => {
+    if (gate === "forbidden") {
+      router.replace("/");
+    }
+  }, [gate, router]);
 
   const [state, setState] = useState<FetchState>({ kind: "idle" });
   const [busyKey, setBusyKey] = useState<string | null>(null);
@@ -141,8 +162,9 @@ export function AdminView() {
   }, [connection, wallet]);
 
   useEffect(() => {
+    if (gate !== "ok") return;
     void reload();
-  }, [reload]);
+  }, [reload, gate]);
 
   async function runAdminTx(
     descriptorKey: string,
@@ -218,6 +240,33 @@ export function AdminView() {
       return { ix };
     });
     setEditAuthority(null);
+  }
+
+  if (gate === "connect") {
+    return (
+      <CenteredCard>
+        <div style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--shell-fg)", marginBottom: "0.4rem" }}>
+          Admin access
+        </div>
+        <p style={{ marginBottom: "1.1rem" }}>
+          Connect a wallet on the admin allowlist to continue.
+        </p>
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <WalletMultiButton />
+        </div>
+      </CenteredCard>
+    );
+  }
+
+  if (gate === "forbidden") {
+    return (
+      <CenteredCard>
+        <div style={{ fontSize: "1.05rem", fontWeight: 600, color: "var(--shell-fg)", marginBottom: "0.4rem" }}>
+          403 — Forbidden
+        </div>
+        <p>This wallet is not on the admin allowlist. Redirecting…</p>
+      </CenteredCard>
+    );
   }
 
   return (
