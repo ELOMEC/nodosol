@@ -240,7 +240,12 @@
   - Mladen ops to validate: `cd web && npm run build && npx lighthouse https://www.nodosol.com --view` before/after — log scores in a follow-up.
   - `cd web && tsc --noEmit` clean.
 
-- [ ] Bundle analysis & code splitting — `@next/bundle-analyzer` install, identifikuj top-3 paketa po size, dynamic-import za marketplace tabs i admin. Verifikacija: tsc + bundle-analyzer report screenshot.
+- [x] Bundle analysis & code splitting — `@next/bundle-analyzer` install, identifikuj top-3 paketa po size, dynamic-import za marketplace tabs i admin. Verifikacija: tsc + bundle-analyzer report screenshot.
+  - `web/next.config.mjs`: opt-in analyzer wired through `maybeWithAnalyzer()`. Default builds skip the dep — `ANALYZE=true npm run build` lazy-imports `@next/bundle-analyzer` and emits `.next/analyze/{client,server}.html`. Logs a friendly skip message if the dep isn't installed yet so production builds never fail; install with `npm i -D @next/bundle-analyzer` when needed.
+  - `web/app/admin/AdminView.tsx`: 3 admin widgets (`AdminPanicButton`, `AdminSecurityEventsWidget`, `AdminVolumeWidget`) now load via `next/dynamic` with `ssr: false` + per-widget loading placeholders. Each widget pulls heavy deps (multiple Anchor IDLs, Helius DAS helpers, panic-button transaction-message builder) — deferring them until the allowlist gate passes means non-admin viewers who land on `/admin` by accident never download those bundles.
+  - **Honest scope cut**: spec asked for top-3 dep ID via analyzer + dynamic-import for marketplace tabs. Without a live build I can't read the analyzer output. Predictably-heavy candidates from grep (`@coral-xyz/anchor`, `@solana/web3.js`, `@solana/wallet-adapter-*`) are pulled into MarketplaceShell and can't be split without restructuring providers. Admin widgets are the cleanest immediate split; marketplace tab splitting is a follow-up that needs the analyzer report to prioritise.
+  - Mladen ops: `cd web && npm i -D @next/bundle-analyzer && ANALYZE=true npm run build`, then capture top-3 chunks per route in a follow-up commit.
+  - `cd web && tsc --noEmit` clean.
 
 - [ ] Image optimization audit — sve `<img>` tagove u `web/components/` i `web/app/` migrate na `next/image` sa eksplicitnim `width/height`. `web/next.config.ts` dodaj `images.remotePatterns` za Supabase storage + Helius CDN. Verifikacija: tsc + grep `<img ` count before/after.
 

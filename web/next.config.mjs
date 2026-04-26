@@ -1,3 +1,21 @@
+// L2 — opt-in bundle analyzer.
+// Run with `ANALYZE=true npm run build` to open per-route + per-chunk
+// reports under .next/analyze/. The dep is required only when the env
+// var is set so production builds stay clean if it's not installed.
+async function maybeWithAnalyzer(config) {
+  if (process.env.ANALYZE !== "true") return config;
+  try {
+    const mod = await import("@next/bundle-analyzer");
+    const withBundleAnalyzer = mod.default({ enabled: true, openAnalyzer: true });
+    return withBundleAnalyzer(config);
+  } catch {
+    console.warn(
+      "[next.config] ANALYZE=true but @next/bundle-analyzer not installed — skipping. `npm i -D @next/bundle-analyzer` to enable.",
+    );
+    return config;
+  }
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async headers() {
@@ -28,4 +46,4 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+export default await maybeWithAnalyzer(nextConfig);

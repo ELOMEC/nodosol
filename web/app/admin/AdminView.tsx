@@ -20,12 +20,45 @@ import {
   configPdaFor,
   loadProgram,
 } from "@/lib/admin";
+import dynamic from "next/dynamic";
+
 import { simulateAndSend } from "@/lib/tx";
 import { explainSolanaError } from "@/lib/solanaErrors";
-import { AdminPanicButton } from "@/components/AdminPanicButton";
-import { AdminSecurityEventsWidget } from "@/components/AdminSecurityEventsWidget";
-import { AdminVolumeWidget } from "@/components/AdminVolumeWidget";
 import { useToast } from "@/components/ToastProvider";
+
+// L2 code-splitting — admin widgets pull heavy IDLs + Helius DAS / RPC
+// helpers each. Defer their JS until the admin allowlist gate has
+// passed, so non-admin visitors who land here by accident never load
+// them. ssr:false because all three rely on `useWallet()`.
+const AdminPanicButton = dynamic(
+  () => import("@/components/AdminPanicButton").then((m) => m.AdminPanicButton),
+  { ssr: false, loading: () => <WidgetPlaceholder label="Panic button" /> },
+);
+const AdminSecurityEventsWidget = dynamic(
+  () => import("@/components/AdminSecurityEventsWidget").then((m) => m.AdminSecurityEventsWidget),
+  { ssr: false, loading: () => <WidgetPlaceholder label="Security events" /> },
+);
+const AdminVolumeWidget = dynamic(
+  () => import("@/components/AdminVolumeWidget").then((m) => m.AdminVolumeWidget),
+  { ssr: false, loading: () => <WidgetPlaceholder label="Program volume" /> },
+);
+
+function WidgetPlaceholder({ label }: { label: string }) {
+  return (
+    <div
+      style={{
+        padding: "1rem",
+        border: "1px dashed var(--shell-border)",
+        borderRadius: 10,
+        color: "var(--shell-muted)",
+        fontSize: "0.85rem",
+        marginBottom: "1rem",
+      }}
+    >
+      Loading {label}…
+    </div>
+  );
+}
 
 const ADMIN_ALLOWLIST: ReadonlySet<string> = new Set(
   (process.env.NEXT_PUBLIC_ADMIN_WALLETS ?? "")
