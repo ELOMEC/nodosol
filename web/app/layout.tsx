@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
+import { InstallPrompt } from "@/components/InstallPrompt";
+
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -11,6 +13,12 @@ export const metadata: Metadata = {
   },
   description:
     "Tokenize real-world assets, sell event tickets, rent out property, and take creator payments on Solana. Licenced RWA issuer framework, Token-2022 rails, confidential-ready architecture.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    title: "Nodosol",
+    statusBarStyle: "black-translucent",
+  },
   openGraph: {
     title: "nodosol — Solana super-app for compliant RWA + creator payments",
     description:
@@ -37,7 +45,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <InstallPrompt />
+      </body>
     </html>
   );
 }
