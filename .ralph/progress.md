@@ -139,7 +139,12 @@
   - `web/app/c/[handle]/page.tsx`: removed the manual `openGraph.images` / `twitter.images` from `generateMetadata`. Next composes those automatically from `opengraph-image.tsx`; manual entries here would override the dynamic card with a flat banner_url/avatar_url. Comment in the file documents the reason.
   - `cd web && tsc --noEmit` clean. Image route resolves on Vercel Edge so cold-start is under the cache threshold; CDN caches by URL.
 
-- [ ] Subscriber list page `/creator/subscribers` — `web/app/creator/subscribers/{page.tsx,SubscribersView.tsx}`. Fetch sve `Subscription` accounts gdje plan.creator==wallet (kroz `getProgramAccounts(subscription)` + filter), grupiše po planu, prikaže subscriber wallet, status, total paid, next charge. Reuse styling iz `/creator/events/[id]`. Verifikacija: tsc.
+- [x] Subscriber list page `/creator/subscribers` — `web/app/creator/subscribers/{page.tsx,SubscribersView.tsx}`. Fetch sve `Subscription` accounts gdje plan.creator==wallet (kroz `getProgramAccounts(subscription)` + filter), grupiše po planu, prikaže subscriber wallet, status, total paid, next charge. Reuse styling iz `/creator/events/[id]`. Verifikacija: tsc.
+  - `web/app/creator/subscribers/page.tsx`: server shell, `MarketplaceShell active="creator-plans"` so the Subscriptions sidebar entry highlights.
+  - `web/app/creator/subscribers/SubscribersView.tsx`: connected wallet → 1 RPC for owned plans (`subscriptionPlan.all([{memcmp:{offset:8, bytes:wallet}}])` — Anchor 8-byte discriminator + 32-byte creator at offset 8), then `subscription.all()` once filtered in-memory by the plan addresses we just fetched (cheaper than N memcmps). Sorted by total_paid desc per plan.
+  - PlanCard groups: header with plan #N + Active/Paused badge + price/period/subscriber-count/collected line, then a per-plan table with subscriber, status pill (active/cancelled/expired/unknown), charges, total paid USDC, next charge date, started date. `humanizePeriod` collapses `period_seconds` into y/mo/w/d/h.
+  - Empty states: "No plans yet" links to `/creator/plans`; per-plan "No subscribers on this plan yet."
+  - `cd web && tsc --noEmit` clean.
 
 - [ ] Creator earnings CSV export — wire u `/creator/analytics` ili poseban dugme na `/creator`. Aggregate tip + subscription + event ticket revenue, format `date,type,amount_usdc,from_wallet,signature`. Verifikacija: tsc, manual download check.
 
