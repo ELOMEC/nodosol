@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { TrendingPanel } from "@/components/TrendingPanel";
 import { WaitlistForm } from "@/components/WaitlistForm";
 
 import { LandingProviders } from "./LandingProviders";
@@ -129,6 +130,12 @@ export default function HomePage() {
             Tokenize an asset
           </Link>
         </div>
+      </section>
+
+      <section style={{ marginBottom: "2.5rem" }}>
+        <LandingProviders>
+          <TrendingPanel />
+        </LandingProviders>
       </section>
 
       <section style={{ marginBottom: "4rem" }}>
