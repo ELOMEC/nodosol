@@ -324,3 +324,27 @@ pre {
     flex: 1 1 100%;
   }
 }
+
+/* K4 mobile audit — global guards.
+   Prevent rogue children from forcing horizontal scroll; per-component
+   overflow:auto patterns still work. Tighten landing main padding on
+   phones, enforce touch-target minimums, and floor body type so it
+   stays readable below 360px. */
+html,
+body {
+  overflow-x: hidden;
+}
+@media (max-width: 480px) {
+  main {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+  body {
+    font-size: 15px;
+  }
+}
+@media (max-width: 360px) {
+  body {
+    font-size: 14px;
+  }
+}

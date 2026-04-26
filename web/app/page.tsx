@@ -18,6 +18,8 @@ export default function HomePage() {
           alignItems: "center",
           justifyContent: "space-between",
           marginBottom: "4rem",
+          gap: "0.85rem",
+          flexWrap: "wrap",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
@@ -38,7 +40,7 @@ export default function HomePage() {
           </span>
           <span style={{ fontSize: "1.1rem", fontWeight: 600, letterSpacing: "-0.015em" }}>nodosol</span>
         </div>
-        <div style={{ display: "flex", gap: "0.6rem", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
           <Link href="/marketplace" style={navLinkStyle()}>
             Marketplace
           </Link>
@@ -110,11 +112,14 @@ export default function HomePage() {
             style={{
               background: "#7b9cff",
               color: "#0a0a0a",
-              padding: "0.75rem 1.35rem",
+              padding: "0.85rem 1.4rem",
               borderRadius: 8,
               fontSize: "0.92rem",
               fontWeight: 600,
               textDecoration: "none",
+              minHeight: 44,
+              display: "inline-flex",
+              alignItems: "center",
             }}
           >
             Explore the marketplace
@@ -125,11 +130,14 @@ export default function HomePage() {
               background: "transparent",
               border: "1px solid #333",
               color: "#e8e8e8",
-              padding: "0.75rem 1.35rem",
+              padding: "0.85rem 1.4rem",
               borderRadius: 8,
               fontSize: "0.92rem",
               fontWeight: 600,
               textDecoration: "none",
+              minHeight: 44,
+              display: "inline-flex",
+              alignItems: "center",
             }}
           >
             Tokenize an asset
@@ -269,10 +277,13 @@ function FeatureCard({ label, href, hint }: { label: string; href: string; hint:
 
 function navLinkStyle(): React.CSSProperties {
   return {
-    padding: "0.5rem 0.85rem",
+    padding: "0.55rem 0.85rem",
     borderRadius: 7,
     color: "#e8e8e8",
     textDecoration: "none",
     fontSize: "0.88rem",
+    minHeight: 36,
+    display: "inline-flex",
+    alignItems: "center",
   };
 }
