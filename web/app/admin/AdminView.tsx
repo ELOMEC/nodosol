@@ -22,6 +22,7 @@ import {
 } from "@/lib/admin";
 import { simulateAndSend } from "@/lib/tx";
 import { explainSolanaError } from "@/lib/solanaErrors";
+import { AdminSecurityEventsWidget } from "@/components/AdminSecurityEventsWidget";
 import { AdminVolumeWidget } from "@/components/AdminVolumeWidget";
 import { useToast } from "@/components/ToastProvider";
 
@@ -285,6 +286,8 @@ export function AdminView() {
       </header>
 
       <AdminVolumeWidget />
+
+      <AdminSecurityEventsWidget />
 
       {state.kind === "loading" || state.kind === "idle" ? (
         <CenteredCard>Loading configs…</CenteredCard>
