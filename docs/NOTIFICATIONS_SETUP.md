@@ -73,7 +73,7 @@ This is a future task — not blocking the in-app notifications pipeline.
 | IX | Notifications emitted | Email-eligible |
 |---|---|---|
 | `tip_jar.send_tip` | `tip_sent` (donor) + `tip_received` (creator via RPC fetch) | creator=yes |
-| `subscription.charge` | `subscription_charged` (subscriber) | yes |
+| `subscription.charge` | `subscription_charged` (subscriber) + `subscription_revenue` (creator via RPC fetch) | both=yes |
 | `subscription.expire` | `subscription_expired` (cranker) | yes |
 | `marketplace.buy_listing` | `listing_bought` (buyer) + `listing_sold` (seller via transfer) | seller=yes |
 | `otc_deals.propose_deal` | `otc_proposed` (counterparty) | yes |
@@ -104,9 +104,8 @@ Coverage so far:
   → emit `tip_received` for the creator wallet.
 - `event_tickets.buy_tier_ticket` — fetch `Event.creator` (offset 8..40)
   → emit `ticket_sold` for the creator wallet.
-
-Pending (separate tasks):
-- `subscription.charge` — fetch `SubscriptionPlan.creator` → `subscription_revenue`.
+- `subscription.charge` — fetch `SubscriptionPlan.creator` (offset 8..40)
+  → emit `subscription_revenue` for the creator wallet.
 
 Set `RPC_URL` as a function secret to point at Helius (or any RPC).
 Defaults to `https://api.devnet.solana.com` when unset.

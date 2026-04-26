@@ -268,8 +268,9 @@ const pdaPubkeyCache = new Map<string, { pubkey: string | null; expiresAt: numbe
  * data, or RPC error — caller treats null as "skip creator-side row".
  *
  * Common offsets (Anchor discriminator is bytes 0..8):
- *   tip_jar `CreatorProfile.owner`   → offset 8  (programs/tip_jar/src/state.rs)
- *   event_tickets `Event.creator`    → offset 8  (programs/event_tickets/src/state.rs)
+ *   tip_jar `CreatorProfile.owner`        → offset 8  (programs/tip_jar/src/state.rs)
+ *   event_tickets `Event.creator`         → offset 8  (programs/event_tickets/src/state.rs)
+ *   subscription `SubscriptionPlan.creator` → offset 8 (programs/subscription/src/state.rs)
  */
 async function fetchPdaPubkeyAt(pda: string, offset: number): Promise<string | null> {
   const cacheKey = `${pda}:${offset}`;
@@ -350,11 +351,15 @@ const DECODERS: Record<string, IxDecoder> = {
     return rows;
   },
 
-  // subscription.charge: [cranker (signer), plan, subscription, subscriber_token_account, vault, mint, treasury, config, token_program]
+  // subscription.charge: [cranker (signer), plan, subscription, subscriber_token_account, vault, config, treasury, mint, token_program]
   // Subscriber == owner of subscriber_token_account; we approximate via the
   // first non-PDA, non-cranker account that experienced an outflow.
-  "subscription.charge": (tx, ix, transfers) => {
-    const subscriberTokenAcct = ix.accounts[3];
+  // Creator revenue lands in the plan's vault PDA (token-transfer recipient
+  // is the vault, not the creator wallet). To emit a creator-side row we
+  // resolve plan.creator via a one-shot getAccountInfo RPC, cached per
+  // (pda, offset) inside this invocation (see fetchPdaPubkeyAt).
+  "subscription.charge": async (tx, ix, transfers) => {
+    const planPda = ix.accounts[1];
     // Find the wallet that lost funds (subscriber).
     const subscriber = (transfers ?? []).find(
       (t) => t.fromUserAccount && t.fromUserAccount !== tx.feePayer
@@ -365,13 +370,28 @@ const DECODERS: Record<string, IxDecoder> = {
       rows.push({
         wallet_pubkey: subscriber,
         type: "subscription_charged",
-        payload: { amount, signature: tx.signature, plan: ix.accounts[1] },
+        payload: { amount, signature: tx.signature, plan: planPda },
         href: "/marketplace/rentals/my",
         title: amount > 0 ? `Subscription charged: ${amount} USDC` : "Subscription charged",
         body: null,
         signature: tx.signature,
         email_eligible: true,
       });
+    }
+    if (planPda) {
+      const creator = await fetchPdaPubkeyAt(planPda, 8);
+      if (creator && creator !== subscriber) {
+        rows.push({
+          wallet_pubkey: creator,
+          type: "subscription_revenue",
+          payload: { amount, signature: tx.signature, plan: planPda, subscriber },
+          href: "/creator",
+          title: amount > 0 ? `Subscription revenue: ${amount} USDC` : "Subscription revenue",
+          body: null,
+          signature: tx.signature,
+          email_eligible: true,
+        });
+      }
     }
     return rows;
   },
