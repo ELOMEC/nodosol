@@ -33,7 +33,9 @@ export function MarketplaceShell({
     | "admin"
     | "admin-issuers"
     | "chat"
-    | "search";
+    | "search"
+    | "settings"
+    | "settings-notifications";
   children: ReactNode;
 }) {
   const nav: NavItem[] = [
@@ -55,6 +57,9 @@ export function MarketplaceShell({
     { href: "/creator/plans", label: "Subscriptions", icon: IconRepeat(), active: active === "creator-plans" },
     { href: "/creator/events", label: "Events", icon: IconTicket(), active: active === "creator-events" },
     { href: "/creator/venues", label: "Venue layouts", icon: IconGrid(), active: active === "creator-venues" },
+  ];
+  const settingsNav: NavItem[] = [
+    { href: "/settings/notifications", label: "Notifications", icon: IconBell(), active: active === "settings-notifications" },
   ];
   const adminNav: NavItem[] = [
     { href: "/admin", label: "Programs", icon: IconShield(), active: active === "admin" },
@@ -159,6 +164,16 @@ export function MarketplaceShell({
           ))}
         </nav>
 
+        <SectionLabel>Settings</SectionLabel>
+        <nav style={{ display: "flex", flexDirection: "column", gap: "0.125rem", marginBottom: "1.5rem" }}>
+          {settingsNav.map((item) => (
+            <Link key={item.href} href={item.href} style={navLinkStyle(item.active)}>
+              <span style={{ width: 18, height: 18, display: "inline-flex", alignItems: "center" }}>{item.icon}</span>
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+
         <SectionLabel>Creator tools</SectionLabel>
         <nav style={{ display: "flex", flexDirection: "column", gap: "0.125rem" }}>
           <Link href="/" style={navLinkStyle(false)}>
@@ -200,6 +215,7 @@ export function MarketplaceShell({
           creatorNav={creatorNav}
           adminNav={adminNav}
           communityNav={communityNav}
+          settingsNav={settingsNav}
         />
         <main className="nds-shell-main">{children}</main>
       </div>
@@ -212,11 +228,13 @@ function Topbar({
   creatorNav,
   adminNav,
   communityNav,
+  settingsNav,
 }: {
   nav: NavItem[];
   creatorNav: NavItem[];
   adminNav: NavItem[];
   communityNav: NavItem[];
+  settingsNav: NavItem[];
 }) {
   return (
     <header className="nds-topbar">
@@ -253,8 +271,17 @@ function Topbar({
             ))}
           </nav>
           <SectionLabel>Community</SectionLabel>
-          <nav style={{ display: "flex", flexDirection: "column", gap: "0.125rem" }}>
+          <nav style={{ display: "flex", flexDirection: "column", gap: "0.125rem", marginBottom: "1rem" }}>
             {communityNav.map((item) => (
+              <Link key={item.href} href={item.href} style={navLinkStyle(item.active)}>
+                <span style={{ width: 18, height: 18, display: "inline-flex", alignItems: "center" }}>{item.icon}</span>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+          <SectionLabel>Settings</SectionLabel>
+          <nav style={{ display: "flex", flexDirection: "column", gap: "0.125rem" }}>
+            {settingsNav.map((item) => (
               <Link key={item.href} href={item.href} style={navLinkStyle(item.active)}>
                 <span style={{ width: 18, height: 18, display: "inline-flex", alignItems: "center" }}>{item.icon}</span>
                 {item.label}
