@@ -11,8 +11,9 @@ import { TelemetryStrip } from "./TelemetryStrip";
 
 export default function HomePage() {
   return (
-    <main style={{ maxWidth: 1120, margin: "0 auto", padding: "3.5rem 1.5rem 5rem" }}>
+    <main id="main-content" style={{ maxWidth: 1120, margin: "0 auto", padding: "3.5rem 1.5rem 5rem" }}>
       <nav
+        aria-label="Primary"
         style={{
           display: "flex",
           alignItems: "center",

@@ -325,6 +325,55 @@ pre {
   }
 }
 
+/* K5 a11y baseline — focus visibility + skip link.
+   Browser default `focus` outlines are inconsistent across UA stylesheets;
+   :focus-visible only fires on keyboard navigation so the ring doesn't
+   show up after a mouse click and feel noisy. */
+*:focus-visible {
+  outline: 2px solid #7b9cff;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid #7b9cff;
+  outline-offset: 2px;
+}
+
+/* Skip-to-content link: only paints when keyboard-focused. */
+.nds-skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: #7b9cff;
+  color: #0a0a0a;
+  font-weight: 600;
+  padding: 0.65rem 1rem;
+  border-radius: 0 0 8px 0;
+  z-index: 99999;
+}
+.nds-skip-link:focus,
+.nds-skip-link:focus-visible {
+  left: 0;
+}
+
+/* Visually hidden helper for sr-only labels. */
+.nds-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* K4 mobile audit — global guards.
    Prevent rogue children from forcing horizontal scroll; per-component
    overflow:auto patterns still work. Tighten landing main padding on

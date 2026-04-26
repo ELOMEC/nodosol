@@ -46,6 +46,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
+        <a href="#main-content" className="nds-skip-link">
+          Skip to main content
+        </a>
         {children}
         <InstallPrompt />
       </body>

@@ -233,7 +233,7 @@ export function MarketplaceShell({
           settingsNav={settingsNav}
           discoveryNav={discoveryNav}
         />
-        <main className="nds-shell-main">{children}</main>
+        <main id="main-content" className="nds-shell-main">{children}</main>
       </div>
     </div>
   );
