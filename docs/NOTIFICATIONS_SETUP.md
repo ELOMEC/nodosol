@@ -65,12 +65,40 @@ The schema reserves `email_eligible` + `email_sent_at` columns and `notification
 
 This is a future task — not blocking the in-app notifications pipeline.
 
-## Per-program decoder TODO
+## Per-program decoders (shipped 2026-04-26)
 
-`helius-webhook/index.ts` currently emits generic `tip_received` / `token_inflow` / `token_outflow` rows from token-transfer side-effects. To get program-specific titles ("Auction settled — you won", "OTC deal accepted"), extend `decodeTx()`:
+`helius-webhook/index.ts` now dispatches by Anchor IX discriminator
+(sha256("global:" + ix_name).slice(0, 8)). 12 IXes have specific decoders:
 
-- Match on `programs` set + IX discriminator (first 8 bytes of `data` base58-decoded)
-- Read accounts[] positions from the IDL — e.g. `subscription.charge` has subscription PDA at index 2, subscriber inferred from PDA seeds
-- Emit one row per affected wallet with `email_eligible: true` for high-signal events (tip, auction win, OTC accept)
+| IX | Notifications emitted | Email-eligible |
+|---|---|---|
+| `tip_jar.send_tip` | `tip_sent` (donor) | no |
+| `subscription.charge` | `subscription_charged` (subscriber) | yes |
+| `subscription.expire` | `subscription_expired` (cranker) | yes |
+| `marketplace.buy_listing` | `listing_bought` (buyer) + `listing_sold` (seller via transfer) | seller=yes |
+| `otc_deals.propose_deal` | `otc_proposed` (counterparty) | yes |
+| `otc_deals.accept_deal` | `otc_accepted_self` (buyer) + `otc_accepted` (seller via transfer) | seller=yes |
+| `auctions.commit_bid` | `bid_committed` (bidder) | no |
+| `auctions.reveal_bid` | `bid_revealed` (bidder) | no |
+| `auctions.settle_auction` | `auction_settled_seller` (largest recipient) | yes |
+| `event_tickets.buy_tier_ticket` | `ticket_bought` (buyer) | no |
+| `event_tickets.buy_ticket_resale` | `resale_bought` + `resale_sold` (seller via transfer) | seller=yes |
 
-Pattern: keep the generic fallback so unrecognized IXes still produce *something* visible. Iterate decoders as we have time.
+### Known limitations (next iteration)
+
+For programs where revenue lands in a vault PDA (tip_jar, subscription,
+events.buy_ticket, event_tickets.buy_tier_ticket), the creator wallet
+isn't reachable from token-transfer recipients alone — the
+`creator_profile` / `event` / `plan` PDA owns the vault, and the
+creator wallet is in a PDA field. To emit creator-side rows on those
+flows, the Edge Function needs a one-shot RPC fetch of the parent PDA.
+That's a follow-up; current behaviour: creators see updated stats on
+their dashboard via the existing on-chain refresh, just no push
+notification for tips/ticket-sales.
+
+### Generic fallback
+
+For unrecognized IXes inside known Nodosol programs, the function
+falls back to `genericTransferRows()` which only emits to wallets
+that are signers in the tx (filters out vault/treasury PDAs that
+shouldn't receive personal notifications).

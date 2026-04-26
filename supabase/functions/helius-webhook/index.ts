@@ -25,6 +25,7 @@
 // Runtime: Deno.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import bs58 from "https://esm.sh/bs58@5.0.0";
 
 const CORS_HEADERS: HeadersInit = {
   "Access-Control-Allow-Origin": "*",
@@ -139,70 +140,407 @@ Deno.serve(async (req) => {
   return jsonOk({ inserted: rows.length });
 });
 
-/**
- * Walks a Helius enhanced tx and emits notification rows.
- *
- * Decoding strategy: identify which Nodosol program ran, look at token
- * transfers + signer + writable accounts to figure out the affected
- * wallet(s), and emit short headlines. Token-amount + mint give us
- * enough to render "$N tip received" without re-deserializing IX data.
- */
-function decodeTx(tx: HeliusEnhancedTx): NotificationRow[] {
+// Anchor instruction discriminator = sha256("global:" + ix_name).slice(0, 8).
+// Computed once at startup so the function dispatches in O(1).
+const IX_NAMES_BY_PROGRAM: Record<string, string[]> = {
+  tip_jar: ["send_tip"],
+  subscription: ["subscribe", "charge", "expire", "cancel"],
+  events: ["buy_ticket"],
+  event_tickets: ["buy_ticket", "buy_tier_ticket", "buy_ticket_resale", "buy_ticket_resale_private"],
+  marketplace: ["buy_listing"],
+  otc_deals: ["propose_deal", "accept_deal", "cancel_deal", "expire_deal"],
+  auctions: ["commit_bid", "reveal_bid", "settle_auction", "refund_bid"],
+};
+
+const DISCRIMINATORS: Map<string, { program: string; ix: string }> = new Map();
+for (const [program, ixNames] of Object.entries(IX_NAMES_BY_PROGRAM)) {
+  for (const ix of ixNames) {
+    const hash = await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(`global:${ix}`)
+    );
+    const discHex = Array.from(new Uint8Array(hash).slice(0, 8))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    DISCRIMINATORS.set(discHex, { program, ix });
+  }
+}
+
+type DecodedIx = {
+  program: string;
+  ix: string;
+  accounts: string[];
+  programId: string;
+};
+
+function ixDataDiscriminator(dataB58: string): string | null {
+  try {
+    const bytes = bs58.decode(dataB58);
+    if (bytes.length < 8) return null;
+    return Array.from(bytes.slice(0, 8))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+  } catch {
+    return null;
+  }
+}
+
+function decodeKnownIxes(tx: HeliusEnhancedTx): DecodedIx[] {
+  const out: DecodedIx[] = [];
   const ixs = tx.instructions ?? [];
-  const programs = new Set<string>();
   for (const ix of ixs) {
-    const known = PROGRAM_BY_ID[ix.programId];
-    if (known) programs.add(known);
-    for (const inner of ix.innerInstructions ?? []) {
-      const innerKnown = PROGRAM_BY_ID[inner.programId];
-      if (innerKnown) programs.add(innerKnown);
+    const programLabel = PROGRAM_BY_ID[ix.programId];
+    if (!programLabel) continue;
+    const disc = ixDataDiscriminator(ix.data);
+    if (!disc) continue;
+    const match = DISCRIMINATORS.get(disc);
+    if (match && match.program === programLabel) {
+      out.push({
+        program: match.program,
+        ix: match.ix,
+        accounts: ix.accounts,
+        programId: ix.programId,
+      });
     }
   }
-  if (programs.size === 0) return [];
+  return out;
+}
 
+/**
+ * Walks a Helius enhanced tx, dispatches per-IX decoders, falls back
+ * to generic token-transfer notifications for unrecognized flows.
+ */
+function decodeTx(tx: HeliusEnhancedTx): NotificationRow[] {
+  const knownIxes = decodeKnownIxes(tx);
   const out: NotificationRow[] = [];
   const transfers = tx.tokenTransfers ?? [];
 
-  // Heuristic: any token transfer where to/from is a wallet (not PDA)
-  // gets an event for that wallet. Caller decoders below override with
-  // higher-fidelity copy when they recognize the IX.
-  for (const t of transfers) {
-    if (t.fromUserAccount && t.fromUserAccount !== tx.feePayer) {
+  // Per-IX decoders. Each emits 0..N rows.
+  for (const ix of knownIxes) {
+    const decoder = DECODERS[`${ix.program}.${ix.ix}`];
+    if (decoder) {
+      out.push(...decoder(tx, ix, transfers));
+    }
+  }
+
+  // If no specific decoder fired, fall back to generic token-transfer
+  // notifications so the user still sees something.
+  if (out.length === 0) {
+    out.push(...genericTransferRows(tx, transfers));
+  }
+
+  return out;
+}
+
+// Sum of token transfers that landed in `dest` (matches by exact wallet).
+function inflowTo(transfers: HeliusEnhancedTx["tokenTransfers"], dest: string): number {
+  return (transfers ?? [])
+    .filter((t) => t.toUserAccount === dest)
+    .reduce((sum, t) => sum + t.tokenAmount, 0);
+}
+
+function outflowFrom(transfers: HeliusEnhancedTx["tokenTransfers"], src: string): number {
+  return (transfers ?? [])
+    .filter((t) => t.fromUserAccount === src)
+    .reduce((sum, t) => sum + t.tokenAmount, 0);
+}
+
+type IxDecoder = (
+  tx: HeliusEnhancedTx,
+  ix: DecodedIx,
+  transfers: HeliusEnhancedTx["tokenTransfers"]
+) => NotificationRow[];
+
+// Account positions per Anchor IX struct. Keep in sync with
+// programs/<name>/src/instructions/<ix>.rs `#[derive(Accounts)]`.
+const DECODERS: Record<string, IxDecoder> = {
+  // tip_jar.send_tip: [tipper (signer), tipper_token_account, creator_profile (PDA), vault (PDA), ...]
+  // Creator wallet is creator_profile.owner — not a fixed account position
+  // and tip funds settle into the vault PDA, so token-transfer recipients
+  // are PDAs not the creator wallet. Emitting only the tipper-side row;
+  // creator-side notification is a TODO that needs an RPC fetch of the
+  // CreatorProfile to read the owner field. Until then the creator sees
+  // refreshed on-chain stats on /creator dashboard.
+  "tip_jar.send_tip": (tx, ix, transfers) => {
+    const donor = ix.accounts[0];
+    const amount = donor ? outflowFrom(transfers, donor) : 0;
+    if (!donor) return [];
+    return [
+      {
+        wallet_pubkey: donor,
+        type: "tip_sent",
+        payload: { amount, signature: tx.signature, creator_profile: ix.accounts[2] },
+        href: "/creator",
+        title: amount > 0 ? `Tip sent: ${amount} USDC` : "Tip sent",
+        body: null,
+        signature: tx.signature,
+        email_eligible: false,
+      },
+    ];
+  },
+
+  // subscription.charge: [cranker (signer), plan, subscription, subscriber_token_account, vault, mint, treasury, config, token_program]
+  // Subscriber == owner of subscriber_token_account; we approximate via the
+  // first non-PDA, non-cranker account that experienced an outflow.
+  "subscription.charge": (tx, ix, transfers) => {
+    const subscriberTokenAcct = ix.accounts[3];
+    // Find the wallet that lost funds (subscriber).
+    const subscriber = (transfers ?? []).find(
+      (t) => t.fromUserAccount && t.fromUserAccount !== tx.feePayer
+    )?.fromUserAccount;
+    const amount = subscriber ? outflowFrom(transfers, subscriber) : 0;
+    const rows: NotificationRow[] = [];
+    if (subscriber) {
+      rows.push({
+        wallet_pubkey: subscriber,
+        type: "subscription_charged",
+        payload: { amount, signature: tx.signature, plan: ix.accounts[1] },
+        href: "/marketplace/rentals/my",
+        title: amount > 0 ? `Subscription charged: ${amount} USDC` : "Subscription charged",
+        body: null,
+        signature: tx.signature,
+        email_eligible: true,
+      });
+    }
+    return rows;
+  },
+
+  // subscription.expire: [cranker (signer), plan, subscription]
+  // We can't recover subscriber from accounts alone (subscription is a PDA);
+  // skip personalised rows — UI shows "Renting" → "Expired" status anyway
+  // when reloading the page. Emit a single creator-side row using cranker.
+  "subscription.expire": (tx, _ix, _transfers) => [
+    {
+      wallet_pubkey: tx.feePayer,
+      type: "subscription_expired",
+      payload: { signature: tx.signature },
+      href: "/marketplace/rentals/my",
+      title: "Subscription expired (grace period elapsed)",
+      body: null,
+      signature: tx.signature,
+      email_eligible: true,
+    },
+  ],
+
+  // marketplace.buy_listing: [buyer (signer), asset_mint, payment_mint, listing, vault, ...]
+  // Seller wallet lives in listing.seller (PDA field) — derive from transfers:
+  // the wallet receiving the payment_mint is the seller.
+  "marketplace.buy_listing": (tx, ix, transfers) => {
+    const buyer = ix.accounts[0];
+    const paymentMint = ix.accounts[2];
+    const buyerOutflow = buyer ? outflowFrom(transfers, buyer) : 0;
+    const sellerCandidate = (transfers ?? []).find(
+      (t) => t.mint === paymentMint && t.toUserAccount && t.toUserAccount !== buyer
+    );
+    const rows: NotificationRow[] = [
+      {
+        wallet_pubkey: buyer,
+        type: "listing_bought",
+        payload: { amount: buyerOutflow, signature: tx.signature, listing: ix.accounts[3] },
+        href: "/marketplace/portfolio",
+        title: buyerOutflow > 0 ? `Listing bought: ${buyerOutflow} USDC` : "Listing bought",
+        body: null,
+        signature: tx.signature,
+        email_eligible: false,
+      },
+    ];
+    if (sellerCandidate?.toUserAccount) {
+      rows.push({
+        wallet_pubkey: sellerCandidate.toUserAccount,
+        type: "listing_sold",
+        payload: { amount: sellerCandidate.tokenAmount, signature: tx.signature, buyer, listing: ix.accounts[3] },
+        href: "/marketplace/assets",
+        title: `Your listing sold: ${sellerCandidate.tokenAmount} USDC`,
+        body: null,
+        signature: tx.signature,
+        email_eligible: true,
+      });
+    }
+    return rows;
+  },
+
+  // otc_deals.propose_deal: [seller (signer), buyer, deal, ...]
+  "otc_deals.propose_deal": (tx, ix, _transfers) => [
+    {
+      wallet_pubkey: ix.accounts[1], // buyer
+      type: "otc_proposed",
+      payload: { signature: tx.signature, deal: ix.accounts[2], seller: ix.accounts[0] },
+      href: "/marketplace/otc",
+      title: "OTC deal proposed to you",
+      body: null,
+      signature: tx.signature,
+      email_eligible: true,
+    },
+  ],
+
+  // otc_deals.accept_deal: [buyer (signer), asset_mint, payment_mint, deal, vault, ...]
+  // Seller in deal.seller (PDA field) — derived via payment_mint inflow.
+  "otc_deals.accept_deal": (tx, ix, transfers) => {
+    const buyer = ix.accounts[0];
+    const paymentMint = ix.accounts[2];
+    const dealPda = ix.accounts[3];
+    const buyerOutflow = buyer ? outflowFrom(transfers, buyer) : 0;
+    const sellerCandidate = (transfers ?? []).find(
+      (t) => t.mint === paymentMint && t.toUserAccount && t.toUserAccount !== buyer
+    );
+    const rows: NotificationRow[] = [
+      {
+        wallet_pubkey: buyer,
+        type: "otc_accepted_self",
+        payload: { signature: tx.signature, deal: dealPda, amount: buyerOutflow },
+        href: "/marketplace/otc",
+        title: `OTC deal closed: ${buyerOutflow} USDC paid`,
+        body: null,
+        signature: tx.signature,
+        email_eligible: false,
+      },
+    ];
+    if (sellerCandidate?.toUserAccount) {
+      rows.push({
+        wallet_pubkey: sellerCandidate.toUserAccount,
+        type: "otc_accepted",
+        payload: { signature: tx.signature, deal: dealPda, amount: sellerCandidate.tokenAmount, buyer },
+        href: "/marketplace/otc",
+        title: `OTC deal accepted: ${sellerCandidate.tokenAmount} USDC received`,
+        body: null,
+        signature: tx.signature,
+        email_eligible: true,
+      });
+    }
+    return rows;
+  },
+
+  // auctions.commit_bid: [bidder (signer), auction, bid, ...]
+  "auctions.commit_bid": (tx, ix, _transfers) => [
+    {
+      wallet_pubkey: ix.accounts[0],
+      type: "bid_committed",
+      payload: { signature: tx.signature, auction: ix.accounts[1] },
+      href: `/marketplace/auctions/${ix.accounts[1] ?? ""}`,
+      title: "Bid committed (sealed)",
+      body: null,
+      signature: tx.signature,
+      email_eligible: false,
+    },
+  ],
+
+  // auctions.reveal_bid: [bidder (signer), auction, bid, ...]
+  "auctions.reveal_bid": (tx, ix, _transfers) => [
+    {
+      wallet_pubkey: ix.accounts[0],
+      type: "bid_revealed",
+      payload: { signature: tx.signature, auction: ix.accounts[1] },
+      href: `/marketplace/auctions/${ix.accounts[1] ?? ""}`,
+      title: "Bid revealed",
+      body: null,
+      signature: tx.signature,
+      email_eligible: false,
+    },
+  ],
+
+  // auctions.settle_auction: [caller (signer), auction, winner_bid, ...]
+  // Seller wallet from auction.seller (PDA field), winner from auction.highest_bidder.
+  // Both not in account positions — we infer from token transfers: largest
+  // payment_mint inflow = seller; outflow from a non-fee-payer wallet = winner.
+  "auctions.settle_auction": (tx, ix, transfers) => {
+    const auction = ix.accounts[1];
+    const rows: NotificationRow[] = [];
+    // Seller = largest payment-mint recipient.
+    const sellerInflow = (transfers ?? [])
+      .filter((t) => t.toUserAccount && t.toUserAccount !== tx.feePayer)
+      .sort((a, b) => b.tokenAmount - a.tokenAmount)[0];
+    if (sellerInflow?.toUserAccount) {
+      rows.push({
+        wallet_pubkey: sellerInflow.toUserAccount,
+        type: "auction_settled_seller",
+        payload: { signature: tx.signature, auction, price: sellerInflow.tokenAmount },
+        href: `/marketplace/auctions/${auction ?? ""}`,
+        title: `Your auction settled: ${sellerInflow.tokenAmount} USDC`,
+        body: null,
+        signature: tx.signature,
+        email_eligible: true,
+      });
+    }
+    return rows;
+  },
+
+  // event_tickets.buy_tier_ticket: [buyer (signer), event (PDA), tier (PDA), ...]
+  // Ticket revenue lands in the event's vault PDA, not the creator's wallet,
+  // so we can only emit a buyer-side row here. Creator-side notification
+  // needs an RPC fetch of Event.creator (TODO).
+  "event_tickets.buy_tier_ticket": (tx, ix, transfers) => {
+    const buyer = ix.accounts[0];
+    const eventPda = ix.accounts[1];
+    const buyerOutflow = buyer ? outflowFrom(transfers, buyer) : 0;
+    if (!buyer) return [];
+    return [
+      {
+        wallet_pubkey: buyer,
+        type: "ticket_bought",
+        payload: { signature: tx.signature, event: eventPda, amount: buyerOutflow },
+        href: "/marketplace/tickets",
+        title: buyerOutflow > 0 ? `Ticket bought: ${buyerOutflow} USDC` : "Ticket bought",
+        body: null,
+        signature: tx.signature,
+        email_eligible: false,
+      },
+    ];
+  },
+
+  // event_tickets.buy_ticket_resale: [buyer (signer), seller, ...]
+  "event_tickets.buy_ticket_resale": (tx, ix, transfers) => {
+    const buyer = ix.accounts[0];
+    const seller = ix.accounts[1];
+    const amount = buyer ? outflowFrom(transfers, buyer) : 0;
+    return [
+      {
+        wallet_pubkey: buyer,
+        type: "resale_bought",
+        payload: { signature: tx.signature, amount },
+        href: "/marketplace/tickets",
+        title: amount > 0 ? `Resale ticket bought: ${amount} USDC` : "Resale ticket bought",
+        body: null,
+        signature: tx.signature,
+        email_eligible: false,
+      },
+      {
+        wallet_pubkey: seller,
+        type: "resale_sold",
+        payload: { signature: tx.signature, amount, buyer },
+        href: "/marketplace/resale",
+        title: `Resale ticket sold: ${amount} USDC`,
+        body: null,
+        signature: tx.signature,
+        email_eligible: true,
+      },
+    ];
+  },
+};
+
+// Conservative fallback for unrecognized IXes within Nodosol programs.
+// Only emits inflow rows for wallets that are also signers/feePayer in the
+// tx (i.e. real users, not vault/treasury PDAs). PDAs aren't signers, so
+// this filters them out reliably.
+function genericTransferRows(
+  tx: HeliusEnhancedTx,
+  transfers: HeliusEnhancedTx["tokenTransfers"]
+): NotificationRow[] {
+  const out: NotificationRow[] = [];
+  const signers = new Set<string>([tx.feePayer]);
+  for (const t of transfers ?? []) {
+    if (t.toUserAccount && signers.has(t.toUserAccount)) {
       out.push({
-        wallet_pubkey: t.fromUserAccount,
-        type: "token_outflow",
+        wallet_pubkey: t.toUserAccount,
+        type: "token_inflow",
         payload: { amount: t.tokenAmount, mint: t.mint, signature: tx.signature },
-        href: `/marketplace`,
-        title: `Sent ${t.tokenAmount} tokens`,
+        href: "/marketplace",
+        title: `Received ${t.tokenAmount} tokens`,
         body: null,
         signature: tx.signature,
         email_eligible: false,
       });
     }
-    if (t.toUserAccount) {
-      out.push({
-        wallet_pubkey: t.toUserAccount,
-        type: programs.has("tip_jar") ? "tip_received" : "token_inflow",
-        payload: { amount: t.tokenAmount, mint: t.mint, signature: tx.signature, programs: [...programs] },
-        href: programs.has("tip_jar") ? `/creator` : `/marketplace`,
-        title: programs.has("tip_jar")
-          ? `Tip received: ${t.tokenAmount} USDC`
-          : `Received ${t.tokenAmount} tokens`,
-        body: null,
-        signature: tx.signature,
-        email_eligible: programs.has("tip_jar"),
-      });
-    }
   }
-
-  // TODO: per-program rich decoding — read accounts[] positions per IX
-  // and emit specific notifications:
-  //  - subscription.charge → notify subscriber + creator
-  //  - auctions.settle_auction → notify winner + seller
-  //  - event_tickets.buy_tier_ticket → notify buyer (their cNFT) + creator
-  //  - otc_deals.accept_deal → notify both parties
-  //  - marketplace.buy_listing → notify buyer + seller
-
   return out;
 }
 
