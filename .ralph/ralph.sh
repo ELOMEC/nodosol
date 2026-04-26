@@ -133,41 +133,9 @@ while [ $ITER -lt $MAX_ITER ]; do
     ITER=$((ITER+1))
     log "--- Iteration $ITER/$MAX_ITER (cost so far: \$$CURRENT_COST) ---"
 
-    PROMPT=$(cat <<'EOF'
-Read .ralph/feature-spec.md and .ralph/progress.md and CLAUDE.md.
-
-Pick the FIRST task in progress.md marked with "- [ ]".
-
-Implement it completely, following CLAUDE.md conventions.
-
-Verification step (run whichever applies to this task — if none apply, skip):
-- Anchor/Rust: `cargo build` and `anchor test` if test exists for this module
-- Next.js/TypeScript: `pnpm tsc --noEmit` (or `npm run typecheck`) and relevant unit tests
-- Laravel/PHP: `php artisan test` for affected suites
-- Python: `pytest` of relevant module
-If no automated test fits, do a smoke check (compile / type check / lint) and document what you verified.
-
-If verification passes:
-  1. Mark the task as "- [x]" in .ralph/progress.md
-  2. Add a 1-2 line note indented under the task: what was done + key files changed
-  3. git add ALL changed files INCLUDING .ralph/progress.md
-  4. git commit with message: "ralph: <short task description>"
-  5. End the session
-
-If verification fails after 2 honest fix attempts:
-  1. Do NOT mark the task as done
-  2. Add "  - [BLOCKED] <reason with file refs + error excerpt>" indented under the task
-  3. git add + git commit with message: "ralph: blocked - <reason>"
-  4. End the session
-
-Hard rules:
-- Touch ONLY the one task you're working on. Do not edit other tasks.
-- Do not end the session before the task is either committed as done or committed as blocked.
-- You are already on a dedicated work branch. Do not create new branches.
-- Do not push to remote.
-- If you find that the task is unclear or depends on something not yet built, mark it [BLOCKED] with a clear note instead of guessing.
-EOF
-)
+    # Prompt is in .ralph/prompt.txt — separate file avoids macOS bash 3.2
+    # heredoc parsing bugs around apostrophes and special chars.
+    PROMPT=$(cat "$RALPH_DIR/prompt.txt")
 
     # Run Claude Code headless
     OUTPUT_JSON=$("$CLAUDE_BIN" -p "$PROMPT" \
