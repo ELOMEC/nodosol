@@ -72,7 +72,7 @@ This is a future task — not blocking the in-app notifications pipeline.
 
 | IX | Notifications emitted | Email-eligible |
 |---|---|---|
-| `tip_jar.send_tip` | `tip_sent` (donor) | no |
+| `tip_jar.send_tip` | `tip_sent` (donor) + `tip_received` (creator via RPC fetch) | creator=yes |
 | `subscription.charge` | `subscription_charged` (subscriber) | yes |
 | `subscription.expire` | `subscription_expired` (cranker) | yes |
 | `marketplace.buy_listing` | `listing_bought` (buyer) + `listing_sold` (seller via transfer) | seller=yes |
@@ -84,17 +84,31 @@ This is a future task — not blocking the in-app notifications pipeline.
 | `event_tickets.buy_tier_ticket` | `ticket_bought` (buyer) | no |
 | `event_tickets.buy_ticket_resale` | `resale_bought` + `resale_sold` (seller via transfer) | seller=yes |
 
-### Known limitations (next iteration)
+### Creator-side enrichment via RPC fetch
 
-For programs where revenue lands in a vault PDA (tip_jar, subscription,
-events.buy_ticket, event_tickets.buy_tier_ticket), the creator wallet
-isn't reachable from token-transfer recipients alone — the
-`creator_profile` / `event` / `plan` PDA owns the vault, and the
-creator wallet is in a PDA field. To emit creator-side rows on those
-flows, the Edge Function needs a one-shot RPC fetch of the parent PDA.
-That's a follow-up; current behaviour: creators see updated stats on
-their dashboard via the existing on-chain refresh, just no push
-notification for tips/ticket-sales.
+For programs where revenue lands in a vault PDA, the creator wallet
+isn't reachable from token-transfer recipients alone — the parent PDA
+(`creator_profile` / `event` / `plan`) owns the vault and stores the
+creator wallet in a PDA field. The Edge Function does a one-shot
+`getAccountInfo` RPC for the parent PDA, slices the creator pubkey
+out of the account bytes, and emits a creator-side row.
+
+Resolved values are cached for ~5 minutes inside the invocation
+(`creatorOwnerCache` Map) so a burst of webhook hits touching the same
+creator doesn't fan out into N RPC calls. Cache scope is per Edge
+Function instance — Supabase recycles instances between cold starts,
+which naturally bounds memory.
+
+Coverage so far:
+- `tip_jar.send_tip` — fetch `CreatorProfile.owner` (offset 8..40)
+  → emit `tip_received` for the creator wallet.
+
+Pending (separate tasks):
+- `event_tickets.buy_tier_ticket` — fetch `Event.creator` → `ticket_sold`.
+- `subscription.charge` — fetch `SubscriptionPlan.creator` → `subscription_revenue`.
+
+Set `RPC_URL` as a function secret to point at Helius (or any RPC).
+Defaults to `https://api.devnet.solana.com` when unset.
 
 ### Generic fallback
 

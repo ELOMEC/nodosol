@@ -36,7 +36,8 @@
 
 ### Bucket C: Notification creator-side enrichment
 
-- [ ] `helius-webhook` decoderi — RPC fetch `CreatorProfile.owner` za `tip_jar.send_tip` da emituje `tip_received` row za creator wallet. Cache ~5 min unutar invocation. Update test (manual: send fake Helius payload ili pokreni script). Verifikacija: deno-style fajl smoke check + dokumentacija u `docs/NOTIFICATIONS_SETUP.md`.
+- [x] `helius-webhook` decoderi — RPC fetch `CreatorProfile.owner` za `tip_jar.send_tip` da emituje `tip_received` row za creator wallet. Cache ~5 min unutar invocation. Update test (manual: send fake Helius payload ili pokreni script). Verifikacija: deno-style fajl smoke check + dokumentacija u `docs/NOTIFICATIONS_SETUP.md`.
+  - In `supabase/functions/helius-webhook/index.ts`: added `fetchCreatorOwner(pda)` that does a JSON-RPC `getAccountInfo` against `RPC_URL` (defaults to devnet), slices `CreatorProfile.owner` from bytes 8..40 (layout per `programs/tip_jar/src/state.rs`), and caches results in a module-level `Map` for 5 min per-instance. Made `IxDecoder` and `decodeTx` async so the `tip_jar.send_tip` decoder can await the lookup; emits a new `tip_received` (email_eligible) row for the creator wallet alongside the existing `tip_sent` row, skipping when donor==creator or RPC fails. Updated `docs/NOTIFICATIONS_SETUP.md` decoder table + replaced the "Known limitations" section with a "Creator-side enrichment via RPC fetch" section. Smoke-checked with `tsc --noResolve` against the file: same 9 expected Deno/https-import errors as before, no new errors. Web `tsc --noEmit` still clean.
 
 - [ ] `helius-webhook` decoderi — RPC fetch `Event.creator` za `event_tickets.buy_tier_ticket` da emituje `ticket_sold` row. Verifikacija: ista kao iznad.
 

@@ -120,7 +120,7 @@ Deno.serve(async (req) => {
 
   const rows: NotificationRow[] = [];
   for (const tx of txs) {
-    const decoded = decodeTx(tx);
+    const decoded = await decodeTx(tx);
     rows.push(...decoded);
   }
 
@@ -210,7 +210,7 @@ function decodeKnownIxes(tx: HeliusEnhancedTx): DecodedIx[] {
  * Walks a Helius enhanced tx, dispatches per-IX decoders, falls back
  * to generic token-transfer notifications for unrecognized flows.
  */
-function decodeTx(tx: HeliusEnhancedTx): NotificationRow[] {
+async function decodeTx(tx: HeliusEnhancedTx): Promise<NotificationRow[]> {
   const knownIxes = decodeKnownIxes(tx);
   const out: NotificationRow[] = [];
   const transfers = tx.tokenTransfers ?? [];
@@ -219,7 +219,7 @@ function decodeTx(tx: HeliusEnhancedTx): NotificationRow[] {
   for (const ix of knownIxes) {
     const decoder = DECODERS[`${ix.program}.${ix.ix}`];
     if (decoder) {
-      out.push(...decoder(tx, ix, transfers));
+      out.push(...(await decoder(tx, ix, transfers)));
     }
   }
 
@@ -249,27 +249,81 @@ type IxDecoder = (
   tx: HeliusEnhancedTx,
   ix: DecodedIx,
   transfers: HeliusEnhancedTx["tokenTransfers"]
-) => NotificationRow[];
+) => NotificationRow[] | Promise<NotificationRow[]>;
+
+// In-invocation cache for on-chain account fetches done from decoders
+// (e.g. CreatorProfile.owner lookup for tip_received rows). Helius can
+// deliver bursts of txs touching the same creator profile, so caching
+// for ~5 minutes keeps the function from re-fetching each time. The
+// Edge Function process is recycled by Supabase between cold starts,
+// so this Map is per-instance and naturally bounded.
+const ACCOUNT_FETCH_CACHE_TTL_MS = 5 * 60 * 1000;
+const creatorOwnerCache = new Map<string, { owner: string | null; expiresAt: number }>();
+
+/**
+ * Fetches a tip_jar `CreatorProfile` PDA via JSON-RPC and returns the
+ * `owner` Pubkey (the creator's wallet) as base58. Cached per-PDA for
+ * `ACCOUNT_FETCH_CACHE_TTL_MS`. Returns null on missing account, decode
+ * failure, or RPC error — caller treats null as "skip creator-side row".
+ *
+ * Account layout (from programs/tip_jar/src/state.rs):
+ *   bytes 0..8   = Anchor discriminator
+ *   bytes 8..40  = owner: Pubkey  ← what we read
+ *   bytes 40..72 = mint: Pubkey
+ */
+async function fetchCreatorOwner(creatorProfilePda: string): Promise<string | null> {
+  const now = Date.now();
+  const cached = creatorOwnerCache.get(creatorProfilePda);
+  if (cached && cached.expiresAt > now) {
+    return cached.owner;
+  }
+  const rpcUrl = Deno.env.get("RPC_URL") ?? "https://api.devnet.solana.com";
+  let owner: string | null = null;
+  try {
+    const resp = await fetch(rpcUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "getAccountInfo",
+        params: [creatorProfilePda, { encoding: "base64", commitment: "confirmed" }],
+      }),
+    });
+    const json = await resp.json();
+    const dataField = json?.result?.value?.data;
+    const b64 = Array.isArray(dataField) ? dataField[0] : null;
+    if (b64) {
+      const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+      if (bytes.length >= 40) {
+        owner = bs58.encode(bytes.slice(8, 40));
+      }
+    }
+  } catch (e) {
+    console.error("fetchCreatorOwner failed", creatorProfilePda, e);
+  }
+  creatorOwnerCache.set(creatorProfilePda, { owner, expiresAt: now + ACCOUNT_FETCH_CACHE_TTL_MS });
+  return owner;
+}
 
 // Account positions per Anchor IX struct. Keep in sync with
 // programs/<name>/src/instructions/<ix>.rs `#[derive(Accounts)]`.
 const DECODERS: Record<string, IxDecoder> = {
   // tip_jar.send_tip: [tipper (signer), tipper_token_account, creator_profile (PDA), vault (PDA), ...]
-  // Creator wallet is creator_profile.owner — not a fixed account position
-  // and tip funds settle into the vault PDA, so token-transfer recipients
-  // are PDAs not the creator wallet. Emitting only the tipper-side row;
-  // creator-side notification is a TODO that needs an RPC fetch of the
-  // CreatorProfile to read the owner field. Until then the creator sees
-  // refreshed on-chain stats on /creator dashboard.
-  "tip_jar.send_tip": (tx, ix, transfers) => {
+  // Tip funds settle into the vault PDA so token-transfer recipients are
+  // PDAs, not the creator wallet. To emit a creator-side row we resolve
+  // creator_profile.owner via a one-shot getAccountInfo RPC, cached for
+  // ~5 minutes per PDA inside this invocation (see fetchCreatorOwner).
+  "tip_jar.send_tip": async (tx, ix, transfers) => {
     const donor = ix.accounts[0];
+    const creatorProfile = ix.accounts[2];
     const amount = donor ? outflowFrom(transfers, donor) : 0;
     if (!donor) return [];
-    return [
+    const rows: NotificationRow[] = [
       {
         wallet_pubkey: donor,
         type: "tip_sent",
-        payload: { amount, signature: tx.signature, creator_profile: ix.accounts[2] },
+        payload: { amount, signature: tx.signature, creator_profile: creatorProfile },
         href: "/creator",
         title: amount > 0 ? `Tip sent: ${amount} USDC` : "Tip sent",
         body: null,
@@ -277,6 +331,22 @@ const DECODERS: Record<string, IxDecoder> = {
         email_eligible: false,
       },
     ];
+    if (creatorProfile) {
+      const creator = await fetchCreatorOwner(creatorProfile);
+      if (creator && creator !== donor) {
+        rows.push({
+          wallet_pubkey: creator,
+          type: "tip_received",
+          payload: { amount, signature: tx.signature, creator_profile: creatorProfile, donor },
+          href: "/creator",
+          title: amount > 0 ? `Tip received: ${amount} USDC` : "Tip received",
+          body: null,
+          signature: tx.signature,
+          email_eligible: true,
+        });
+      }
+    }
+    return rows;
   },
 
   // subscription.charge: [cranker (signer), plan, subscription, subscriber_token_account, vault, mint, treasury, config, token_program]
