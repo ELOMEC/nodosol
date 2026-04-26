@@ -17,10 +17,13 @@
 //        RESEND_API_KEY (https://resend.com/api-keys)
 //        EMAIL_FROM_ADDRESS (e.g. "Nodosol <notifications@nodosol.com>")
 //        APP_URL (e.g. "https://www.nodosol.com")
+//        UNSUBSCRIBE_TOKEN_SECRET (random hex; same secret as the
+//          unsubscribe-email Edge Function)
 //   4. Migration 019 schedules pg_cron to hit this every minute.
 //
 // Runtime: Deno.
 
+import { create as createJwt } from "https://deno.land/x/djwt@v3.0.2/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const CORS_HEADERS: HeadersInit = {
@@ -62,6 +65,7 @@ Deno.serve(async (req) => {
   const appUrl = Deno.env.get("APP_URL") ?? "https://www.nodosol.com";
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const unsubSecret = Deno.env.get("UNSUBSCRIBE_TOKEN_SECRET");
 
   if (!resendKey || !emailFrom || !supabaseUrl || !serviceKey) {
     console.error("send-notification-email misconfigured", {
@@ -71,6 +75,22 @@ Deno.serve(async (req) => {
       hasKey: !!serviceKey,
     });
     return jsonError("Server misconfigured", 500);
+  }
+  // Unsub secret is optional — emails still ship without footer links if
+  // it's not configured (logs a warning so ops notice).
+  let unsubKey: CryptoKey | null = null;
+  if (unsubSecret) {
+    unsubKey = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(unsubSecret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign", "verify"],
+    );
+  } else {
+    console.warn(
+      "UNSUBSCRIBE_TOKEN_SECRET not set — emails will lack one-click unsubscribe links.",
+    );
   }
 
   const supabase = createClient(supabaseUrl, serviceKey, {
@@ -132,7 +152,16 @@ Deno.serve(async (req) => {
       continue;
     }
 
-    const tmpl = renderEmail(row, appUrl);
+    let unsubLinks: UnsubLinks | null = null;
+    if (unsubKey) {
+      try {
+        unsubLinks = await buildUnsubLinks(unsubKey, appUrl, row.wallet_pubkey, row.type);
+      } catch (err) {
+        console.warn("buildUnsubLinks failed; sending without footer links", err);
+      }
+    }
+
+    const tmpl = renderEmail(row, appUrl, unsubLinks);
     const ok = await sendResend({
       apiKey: resendKey,
       from: emailFrom,
@@ -140,6 +169,7 @@ Deno.serve(async (req) => {
       subject: tmpl.subject,
       html: tmpl.html,
       text: tmpl.text,
+      listUnsubscribe: unsubLinks?.allUrl,
     });
 
     if (ok) {
@@ -170,21 +200,32 @@ async function sendResend(opts: {
   subject: string;
   html: string;
   text: string;
+  listUnsubscribe?: string | null;
 }): Promise<boolean> {
   try {
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${opts.apiKey}`,
+      "Content-Type": "application/json",
+    };
+    const body: Record<string, unknown> = {
+      from: opts.from,
+      to: opts.to,
+      subject: opts.subject,
+      html: opts.html,
+      text: opts.text,
+    };
+    // RFC 8058 List-Unsubscribe header for one-click unsubscribe support
+    // in Gmail / Apple Mail / Outlook.
+    if (opts.listUnsubscribe) {
+      body.headers = {
+        "List-Unsubscribe": `<${opts.listUnsubscribe}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      };
+    }
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${opts.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: opts.from,
-        to: opts.to,
-        subject: opts.subject,
-        html: opts.html,
-        text: opts.text,
-      }),
+      headers,
+      body: JSON.stringify(body),
     });
     if (!res.ok) {
       const err = await res.text();
@@ -198,12 +239,50 @@ async function sendResend(opts: {
   }
 }
 
+type UnsubLinks = {
+  /** Removes only the current notification's type. */
+  typeUrl: string;
+  /** Removes all notification types (kill-switch). */
+  allUrl: string;
+};
+
+const UNSUB_TTL_SECONDS = 180 * 24 * 60 * 60; // 180 days — long enough for forgotten inboxes.
+
+async function buildUnsubLinks(
+  key: CryptoKey,
+  appUrl: string,
+  wallet: string,
+  type: string,
+): Promise<UnsubLinks> {
+  const exp = Math.floor(Date.now() / 1000) + UNSUB_TTL_SECONDS;
+  const [typeTok, allTok] = await Promise.all([
+    createJwt({ alg: "HS256", typ: "JWT" }, { w: wallet, t: type, exp }, key),
+    createJwt({ alg: "HS256", typ: "JWT" }, { w: wallet, t: "*", exp }, key),
+  ]);
+  return {
+    typeUrl: `${appUrl}/u?t=${encodeURIComponent(typeTok)}`,
+    allUrl: `${appUrl}/u?t=${encodeURIComponent(allTok)}`,
+  };
+}
+
 type Rendered = { subject: string; html: string; text: string };
 
-function renderEmail(row: NotificationRow, appUrl: string): Rendered {
+function renderEmail(
+  row: NotificationRow,
+  appUrl: string,
+  unsubLinks: UnsubLinks | null,
+): Rendered {
   const link = row.href ? `${appUrl}${row.href.startsWith("/") ? row.href : `/${row.href}`}` : appUrl;
   const subject = `[Nodosol] ${row.title}`;
   const bodyLine = row.body ?? "";
+
+  const footerHtml = unsubLinks
+    ? `You're receiving this because email notifications are enabled for ${escapeHtml(shortenWallet(row.wallet_pubkey))}.<br/>
+          <a href="${escapeAttr(`${appUrl}/settings/notifications`)}" style="color:#7c8694;">Manage preferences</a> ·
+          <a href="${escapeAttr(unsubLinks.typeUrl)}" style="color:#7c8694;">Unsubscribe from ${escapeHtml(row.type)}</a> ·
+          <a href="${escapeAttr(unsubLinks.allUrl)}" style="color:#7c8694;">Unsubscribe from all</a>`
+    : `You're receiving this because email notifications are enabled for ${escapeHtml(shortenWallet(row.wallet_pubkey))}.<br/>
+          <a href="${escapeAttr(`${appUrl}/settings/notifications`)}" style="color:#7c8694;">Manage preferences</a>`;
 
   const html = `<!doctype html>
 <html>
@@ -221,8 +300,7 @@ function renderEmail(row: NotificationRow, appUrl: string): Rendered {
           <a href="${escapeAttr(link)}" style="display:inline-block;background:#7c5cff;color:#fff;text-decoration:none;font-weight:600;font-size:14px;padding:11px 20px;border-radius:8px;">Open in Nodosol</a>
         </td></tr>
         <tr><td style="padding:18px 28px;border-top:1px solid #1f242d;font-size:12px;color:#7c8694;">
-          You're receiving this because email notifications are enabled for ${escapeHtml(shortenWallet(row.wallet_pubkey))}.<br/>
-          <a href="${escapeAttr(`${appUrl}/settings/notifications`)}" style="color:#7c8694;">Manage preferences</a>
+          ${footerHtml}
         </td></tr>
       </table>
     </td></tr>
@@ -230,16 +308,19 @@ function renderEmail(row: NotificationRow, appUrl: string): Rendered {
 </body>
 </html>`;
 
-  const text = [
+  const textLines: string[] = [
     row.title,
     bodyLine,
     "",
     `Open: ${link}`,
     "",
     `Manage preferences: ${appUrl}/settings/notifications`,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  ];
+  if (unsubLinks) {
+    textLines.push(`Unsubscribe from ${row.type}: ${unsubLinks.typeUrl}`);
+    textLines.push(`Unsubscribe from all: ${unsubLinks.allUrl}`);
+  }
+  const text = textLines.filter(Boolean).join("\n");
 
   return { subject, html, text };
 }

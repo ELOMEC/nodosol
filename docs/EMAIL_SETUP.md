@@ -39,14 +39,18 @@ A user only receives email if **all** of the following are true:
 supabase secrets set RESEND_API_KEY=re_xxx_yyyy
 supabase secrets set EMAIL_FROM_ADDRESS="Nodosol <notifications@nodosol.com>"
 supabase secrets set APP_URL=https://www.nodosol.com
+# F4 unsubscribe links — same secret for signer (send-notification-email)
+# and verifier (unsubscribe-email):
+supabase secrets set UNSUBSCRIBE_TOKEN_SECRET=$(openssl rand -hex 32)
 ```
 
 `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are auto-injected by Supabase.
 
-### 3. Deploy the Edge Function
+### 3. Deploy the Edge Functions
 
 ```bash
 supabase functions deploy send-notification-email --no-verify-jwt
+supabase functions deploy unsubscribe-email --no-verify-jwt
 ```
 
 ### 4. Schedule the cron job

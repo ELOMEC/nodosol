@@ -85,7 +85,12 @@
   - `web/components/NotificationsBell.tsx`: added FilterKey enum + 5 chips (All/Tips/Sales/Subs/Auctions) wired through `TYPE_TO_CATEGORY` covering all 17 webhook decoder types. `bucketByDay()` partitions personal feed into Today/Yesterday/Earlier with sticky-style headers. `EmptyPersonalState` SVG bell illustration + dual CTA ("Set up profile" → /creator/profile, "Email settings" → /settings/notifications). Mark-all-read effect now `toast.info`s the count (single vs plural copy) so the silent flip is visible. Footer adds "Settings" link in personal-feed mode. `useToast` from ToastProvider falls back to no-op outside a provider so any existing layout still works.
   - `cd web && ./node_modules/.bin/tsc --noEmit` clean.
 
-- [ ] Unsubscribe link u email footer — signed token pattern. GET `/u?t=<hmac>` Edge Function gasi `email_types` ili specifičan tip. Token sadrži `wallet:type:expiry`. Update `send-notification-email` da renderuje unsubscribe link u footer-u. Verifikacija: tsc.
+- [x] Unsubscribe link u email footer — signed token pattern. GET `/u?t=<hmac>` Edge Function gasi `email_types` ili specifičan tip. Token sadrži `wallet:type:expiry`. Update `send-notification-email` da renderuje unsubscribe link u footer-u. Verifikacija: tsc.
+  - `supabase/functions/unsubscribe-email/index.ts`: HS256 JWT (`UNSUBSCRIBE_TOKEN_SECRET`) over `{w: wallet, t: type|"*", exp}`. djwt verifies signature + exp; rejects → security_events log `unsub_token_invalid`. Removes the type from `email_types` CSV (or wipes if `*`/`all`/legacy `*`-shorthand encountered), idempotent upsert so opt-out persists even for wallets with no row yet. Returns `{ok, scope, email}`. Logs `email_unsubscribed`.
+  - `supabase/functions/send-notification-email/index.ts`: imports `createJwt`, mints two 180-day tokens per send (`typeUrl` for the current notification type, `allUrl` kill-switch). Footer HTML now has "Unsubscribe from <type>" + "Unsubscribe from all" inline links; text body mirrors. Sets RFC 8058 `List-Unsubscribe` + `List-Unsubscribe-Post` headers via Resend's `headers` field for one-click support in Gmail/Apple Mail/Outlook. If `UNSUBSCRIBE_TOKEN_SECRET` is unset, logs warning and ships email without footer links (degraded but functional).
+  - `web/app/u/page.tsx`: server component that fetches the Edge Function GET endpoint server-side and renders success ("Unsubscribed from <scope>"), error, and missing-token states. `robots: noindex,nofollow`. Standalone dark layout (no MarketplaceShell — link is opened from inbox).
+  - `docs/EMAIL_SETUP.md`: added `UNSUBSCRIBE_TOKEN_SECRET` line + second `supabase functions deploy unsubscribe-email` step.
+  - `cd web && ./node_modules/.bin/tsc --noEmit` clean.
 
 ### Bucket G: Discovery & growth
 
