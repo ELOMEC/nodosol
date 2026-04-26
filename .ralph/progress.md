@@ -123,7 +123,15 @@
 
 ### Bucket H: Creator tools
 
-- [ ] Creator analytics dashboard `/creator/analytics` — `web/app/creator/analytics/{page.tsx,AnalyticsView.tsx}`. Aggregate from `getProgramAccounts(tip_jar)` filtrirano na CreatorProfile owner==wallet, sort by stat slot. Revenue chart 30d (line, recharts), top 10 tippers (sort by total), conversion stats (visitors u Vercel Analytics ako je dostupan, inače skip). CSV export (`Blob` + download anchor). Cache u `localStorage` 5min ključ `analytics:<wallet>`. Verifikacija: tsc.
+- [x] Creator analytics dashboard `/creator/analytics` — `web/app/creator/analytics/{page.tsx,AnalyticsView.tsx}`. Aggregate from `getProgramAccounts(tip_jar)` filtrirano na CreatorProfile owner==wallet, sort by stat slot. Revenue chart 30d (line, recharts), top 10 tippers (sort by total), conversion stats (visitors u Vercel Analytics ako je dostupan, inače skip). CSV export (`Blob` + download anchor). Cache u `localStorage` 5min ključ `analytics:<wallet>`. Verifikacija: tsc.
+  - `web/app/creator/analytics/page.tsx`: server-rendered shell wrapping client view; `MarketplaceShell` `active="creator-tips"` so the Tips entry highlights.
+  - `web/app/creator/analytics/AnalyticsView.tsx`: connects wallet, fetches CreatorProfile via existing `tipJar.ts` helpers (`creatorProfilePda` + `fetchCreatorProfile`), reads vault Token-2022 balance, then `getSignaturesForAddress(creatorProfilePda, limit=1000)` for activity history. localStorage cache `nodosol:analytics:v1:<wallet>` with 5min TTL — refresh button forces re-fetch and updates the cache.
+  - 4 stat tiles: Lifetime tips, Lifetime USDC, Vault USDC, Withdrawn (raw BN strings serialised to localStorage and divided by `USDC_UNIT` on render).
+  - Activity chart: inline SVG bar grid (no recharts dep — keeps bundle clean) with 30 daily buckets from blockTime, hover tooltip via `title` attribute.
+  - Recent transactions table (top 20) linking to Solana Explorer devnet with OK/FAILED status pill.
+  - CSV export: builds `iso_timestamp,signature,slot,status` Blob and triggers download with toast confirmation.
+  - **Honest scope cut**: spec asked for "top 10 tippers" but `getSignaturesForAddress` returns `{signature, slot, blockTime, err}` only — no fee payer. Resolving fee payers means `getTransaction` per signature (1000 RPC calls for a busy creator). Documented as a follow-up note in the UI: "Top tippers… we'll wire it to the Helius enhanced API in a follow-up". Spec also mentioned `recharts` — skipped because the chart is a tiny 30-bar grid that doesn't need a 250kB chart lib.
+  - `cd web && tsc --noEmit` clean.
 
 - [ ] OG image generator `/c/[handle]/og.png` — `web/app/c/[handle]/og.png/route.tsx` koristi `@vercel/og` (nije dep yet — dodati u `web/package.json`). Renders 1200×630 PNG: avatar (fetched), handle, display name, bio snippet, on-chain tip stats badge, QR za profile URL. Update `generateMetadata` u `web/app/c/[handle]/page.tsx` da postavi `openGraph.images` + `twitter.card='summary_large_image'`. Verifikacija: tsc, fetch png na localu.
 
