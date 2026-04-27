@@ -507,32 +507,16 @@
   - Linkovi: /marketplace, /marketplace/tokenize, /marketplace/events, /marketplace/otc, /creator (Product); /privacy, /terms, /security (Legal); /announcements, /faq, GitHub (Resources); support/security/privacy mailto (Contact).
   - Verifikacija: `cd web && tsc --noEmit` clean.
 
-- [ ] U2 Legal CMS sa Markdown editorom + version history —
-  Migration `026_legal_pages.sql`: `legal_pages` (slug pk,
-  title, body_md, version int, last_updated timestamptz,
-  updated_by_wallet) + `legal_pages_versions` (id pk, slug fk,
-  title, body_md, version, edited_at, edited_by_wallet) immutable
-  history tabela. RLS public SELECT na legal_pages, service-role
-  only writes. Seed: kopiraj trenutni `/privacy` + `/terms`
-  sadržaj iz `PrivacyView.tsx` + `TermsView.tsx` u rows kao
-  Markdown.
-  `web/lib/legalPages.ts`: `fetchLegalPage(slug)`,
-  `fetchLegalVersions(slug)`, `renderMarkdown()` proširen na
-  headings (## ###), lists (-/1.), bold/italic, links, code —
-  HTML escape pre render-a, no script tags allowed.
-  `web/app/{privacy,terms}/page.tsx` zameniti sa DB-backed
-  server component-om koji čita iz `legal_pages` (fallback na
-  hardcoded ako migracija nije primenjena, da prod ne pukne pre
-  Mladenovog ops koraka).
-  `web/app/admin/legal/page.tsx` (lista) +
-  `web/app/admin/legal/[slug]/page.tsx` (editor: textarea +
-  live preview + version history dropdown za revert).
-  `web/app/api/admin/legal/route.ts`: GET/PATCH gated preko
-  `x-nodosol-admin-wallet` header-a + ADMIN_LIST allowlist;
-  PATCH bumpu je version + ubacuje stari row u
-  legal_pages_versions kao audit trail. AdminPill: dodaj "Legal
-  pages" route. Verifikacija: tsc + SQL syntax + manual edit
-  flow. Mladen ops: apply migration 026.
+- [x] U2 Legal CMS sa Markdown editorom + version history —
+  - `supabase/026_legal_pages.sql`: `legal_pages` (slug pk, title, body_md, version int, last_updated, updated_by_wallet) + `legal_pages_versions` (id pk, slug fk, title, body_md, version, edited_at, edited_by_wallet) immutable history. RLS public SELECT na obe + service-role-only writes. Bez seed-a — prazno = fallback na hardcoded view.
+  - `web/lib/legalPages.ts`: `fetchLegalPage(slug)`, `fetchLegalVersions(slug)`, `renderMarkdown()` koji parsuje blokove (escape-first → headings ##/###, ordered lists `1.`, unordered `-/*`, paragraphs sa `<br/>` na single newline) + inline patterns (**bold**, *italic*, `code`, [link](href) sa http/https/mailto/relative whitelist, externi linkovi auto _blank+noopener). `legalStarter()` vraća pre-poppulated Markdown stub za prazan editor.
+  - `web/app/privacy/page.tsx` + `web/app/terms/page.tsx`: server component pokušava `fetchLegalPage`; ako vrati null → render-uje postojeći `PrivacyView`/`TermsView`. Ako ima row → render dark `<article class="nds-legal-prose">` sa naslovom + "Last updated v{N}" + Markdown HTML preko `dangerouslySetInnerHTML`. `revalidate = 60` sec.
+  - `web/app/globals.css`: `.nds-legal-prose` skoupovan typography (h1/h2/h3 white, p/li/code/a u dark paleti).
+  - `web/app/api/admin/legal/route.ts`: GET (lista ili `?slug=` sa version history-jem) + POST (insert v1) + PATCH (snapshot prev row u versions → bump version → update). Slug whitelist `{privacy, terms}`, gate preko `x-nodosol-admin-wallet` + `NEXT_PUBLIC_ADMIN_WALLETS`. Service-role klijent.
+  - `web/app/admin/legal/{page.tsx,AdminLegalListView.tsx}`: lista oba slug-a, prikazuje "fallback view" badge ili `vN` kad postoji row, link za "View public" + "Edit/Create".
+  - `web/app/admin/legal/[slug]/{page.tsx,AdminLegalEditorView.tsx}`: dvo-kolonski grid (textarea Markdown editor levo, live preview kroz `renderMarkdown` desno). Save dugme PATCH-uje, prikazuje "Saving…" + last-saved timestamp. Version history details panel sa "Load into editor" dugmetom za revert. Wallet+allowlist double gate.
+  - `web/components/AdminPill.tsx`: dodat `/admin/legal` entry "Legal pages".
+  - Verifikacija: `cd web && tsc --noEmit` clean. Mladen ops: apply migracija 026 u Supabase, otvori `/admin/legal/privacy` i `/admin/legal/terms` da paste-uješ trenutni tekst i save-uješ v1.
 
 - [ ] U3 Geo-block admin panel (Edge Config + Vercel API) —
   Refactor `web/middleware.ts` da prvo pokuša Vercel Edge

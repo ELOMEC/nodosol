@@ -22,6 +22,7 @@ const ROUTES: Array<{ href: string; label: string; description?: string }> = [
   { href: "/admin", label: "Programs", description: "Volume, security events, panic button" },
   { href: "/admin/issuers", label: "Issuers", description: "RWA issuer registry — approve / suspend / revoke" },
   { href: "/admin/announcements", label: "Announcements", description: "Publish news / status / release notes" },
+  { href: "/admin/legal", label: "Legal pages", description: "Edit /privacy and /terms in Markdown with version history" },
 ];
 
 export function AdminPill() {

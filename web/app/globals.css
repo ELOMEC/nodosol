@@ -228,6 +228,46 @@ pre {
   -webkit-overflow-scrolling: touch;
 }
 
+/* U2 — CMS-rendered legal pages (/privacy, /terms). The renderer
+   spits out raw <h2>/<h3>/<p>/<ul>/<ol>/<a>/<strong>/<em>/<code>;
+   this scopes typography so it reads like the original views. */
+.nds-legal-prose h1,
+.nds-legal-prose h2,
+.nds-legal-prose h3 {
+  color: #fff;
+  margin: 1.6rem 0 0.7rem;
+  line-height: 1.25;
+}
+.nds-legal-prose h2 {
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+.nds-legal-prose h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #c5cbd4;
+}
+.nds-legal-prose p {
+  margin: 0 0 1rem;
+  color: #c5cbd4;
+}
+.nds-legal-prose ul,
+.nds-legal-prose ol {
+  margin: 0 0 1rem 1.4rem;
+  color: #c5cbd4;
+}
+.nds-legal-prose li {
+  margin: 0.25rem 0;
+}
+.nds-legal-prose a {
+  color: #7b9cff;
+  text-decoration: underline;
+}
+.nds-legal-prose code {
+  background: #1a1a1a;
+  color: #e8e8e8;
+}
+
 /* Ticket/buy summary sticky sidebar should not stick on mobile (it takes
    the whole viewport and blocks scrolling otherwise). */
 @media (max-width: 900px) {
