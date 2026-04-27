@@ -37,9 +37,9 @@ const nextConfig = {
     formats: ["image/avif", "image/webp"],
   },
   async headers() {
-    // Solana Actions require CORS for wallet adapters (dial.to etc.) to
-    // fetch the Action metadata and POST the build-tx requests.
     return [
+      // Solana Actions require CORS for wallet adapters (dial.to etc.)
+      // to fetch the Action metadata and POST the build-tx requests.
       {
         source: "/api/actions/:path*",
         headers: [
@@ -58,6 +58,78 @@ const nextConfig = {
           { key: "Access-Control-Allow-Origin", value: "*" },
           { key: "Access-Control-Allow-Methods", value: "GET,OPTIONS" },
           { key: "Access-Control-Allow-Headers", value: "Content-Type" },
+        ],
+      },
+      // N2 — Security headers + CSP.
+      // CSP ships in *report-only* mode first so we can watch the
+      // browser console / Vercel logs for unexpected violations from
+      // wallet adapters, Privy, or third-party widgets without
+      // breaking flows. Flip to `Content-Security-Policy` (strip the
+      // -Report-Only suffix) once a week of report-only is clean.
+      //
+      // Connect-src includes:
+      //   - Solana RPC: api.devnet.solana.com + Helius (devnet + mainnet
+      //     domains; mainnet ones harmless on devnet).
+      //   - Supabase project + storage + edge functions.
+      //   - Resend (only used server-side, but listed for safety).
+      //   - Privy auth + Cloudflare Turnstile.
+      //   - Vercel Insights (perf RUM).
+      // Worker-src covers our /sw.js (K2 PWA service worker).
+      // Frame-src covers Privy's embedded auth iframe + Turnstile widget.
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(self), microphone=(), geolocation=(), payment=()",
+          },
+          {
+            key: "Content-Security-Policy-Report-Only",
+            value: [
+              "default-src 'self'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "frame-ancestors 'none'",
+              "object-src 'none'",
+              "img-src * data: blob:",
+              "media-src * blob:",
+              "font-src 'self' data:",
+              "style-src 'self' 'unsafe-inline'",
+              [
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+                "https://challenges.cloudflare.com",
+                "https://*.privy.io https://privy.io",
+                "https://*.vercel-insights.com https://*.vercel-scripts.com",
+                "https://va.vercel-scripts.com",
+              ].join(" "),
+              [
+                "connect-src 'self'",
+                "https://api.mainnet-beta.solana.com",
+                "https://api.devnet.solana.com",
+                "https://*.helius-rpc.com",
+                "wss://*.helius-rpc.com",
+                "https://*.supabase.co wss://*.supabase.co",
+                "https://api.resend.com",
+                "https://*.privy.io https://privy.io wss://*.privy.io",
+                "https://challenges.cloudflare.com",
+                "https://*.vercel-insights.com https://*.vercel-scripts.com",
+                "https://api.github.com",
+                "https://arweave.net https://*.arweave.net",
+                "https://ipfs.io https://*.ipfs.io",
+              ].join(" "),
+              [
+                "frame-src 'self'",
+                "https://challenges.cloudflare.com",
+                "https://*.privy.io https://privy.io",
+              ].join(" "),
+              "worker-src 'self' blob:",
+              "manifest-src 'self'",
+              "upgrade-insecure-requests",
+            ].join("; "),
+          },
         ],
       },
     ];

@@ -282,7 +282,19 @@
   - `docs/TURNSTILE_SETUP.md` (new): 5-step guide — CF dashboard site creation, `NEXT_PUBLIC_TURNSTILE_SITE_KEY` on Vercel, `TURNSTILE_SECRET_KEY` on Supabase, `post-chat-message` redeploy, and a SQL smoke check against `security_events`. Troubleshooting matrix for the three common failure modes (widget missing, every send fails, want to disable). Code-pointer table to the three files in the codebase that already implement the hook.
   - Doc-only — no code change. The `TurnstileWidget` component already gracefully skips when the site-key env is unset (existing behaviour from session 2026-04-24), so this commit unblocks Mladen-driven activation without breaking the existing graceful path.
 
-- [ ] CSP headers — `web/next.config.ts` dodaj `headers()` async funkciju sa `Content-Security-Policy` (default-src 'self', script-src 'self' 'unsafe-inline' Privy + Vercel insights, connect-src Solana RPC + Supabase + Helius, img-src * data:). Test sa CSP report-only prvo, ako čisto onda enforce. Verifikacija: tsc + browser console CSP report.
+- [x] CSP headers — `web/next.config.ts` dodaj `headers()` async funkciju sa `Content-Security-Policy` (default-src 'self', script-src 'self' 'unsafe-inline' Privy + Vercel insights, connect-src Solana RPC + Supabase + Helius, img-src * data:). Test sa CSP report-only prvo, ako čisto onda enforce. Verifikacija: tsc + browser console CSP report.
+  - `web/next.config.mjs`: extended `headers()` with a global `/:path*` rule that ships:
+    - `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=()`.
+    - `Content-Security-Policy-Report-Only` with directive coverage:
+      - `default-src 'self'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'`, `object-src 'none'`.
+      - `img-src * data: blob:` (asset metadata images come from arbitrary IPFS / Arweave / CDN hosts).
+      - `script-src 'self' 'unsafe-inline' 'unsafe-eval' challenges.cloudflare.com *.privy.io vercel-insights/scripts` (Anchor IDL deserializer needs eval; tightening to nonces is a follow-up).
+      - `connect-src` enumerates Solana RPC (mainnet+devnet+Helius), Supabase + Edge Functions (https + wss for realtime), Privy, Cloudflare Turnstile, Vercel Insights, GitHub API (G3 stars badge), Arweave + IPFS (asset metadata).
+      - `worker-src 'self' blob:` for the K2 service worker.
+      - `frame-src` allows Privy auth iframe + Turnstile widget.
+      - `upgrade-insecure-requests` future-proofs any straggler `http://` references.
+  - **Report-only mode on purpose**: spec says "test report-only first, enforce when clean". Browser console / Vercel logs will surface any unexpected violations from wallet adapters or third-party widgets we missed. Mladen flips the header name (`Content-Security-Policy-Report-Only` → `Content-Security-Policy`) after a week of clean reports — file comment documents this explicitly.
+  - `cd web && tsc --noEmit` clean.
 
 - [ ] `/security` disclosure page — `web/app/security/{page.tsx,SecurityView.tsx}`. Statički sadržaj: security_txt summary, audit status, multisig info, contact email, responsible disclosure policy. Verifikacija: tsc.
 
