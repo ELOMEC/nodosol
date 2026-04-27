@@ -436,13 +436,15 @@
     - removed the unused `IconShield` helper (was Admin-only); `IconUsers` stays since Creators discovery still uses it.
   - `cd web && tsc --noEmit` clean. `npm run lint` clean (only the two pre-existing ChatPanel + useSearchParamsState warnings, unrelated).
 
-- [ ] Remove Blinks sidebar entry — the "Creator tools → Blinks"
+- [x] Remove Blinks sidebar entry — the "Creator tools → Blinks"
   link in `MarketplaceShell.tsx` (`href="/"`) currently points at
   the landing page and offers no actual blinks UX. Drop the
   section entirely; the Blink endpoints
   (`/b/tip/...`, `/b/subscribe/...`, `/b/ticket/...`) are still
   reachable from creator profile CTAs and direct-link shares.
   Verifikacija: tsc + sidebar render check.
+  - `web/components/MarketplaceShell.tsx`: dropped the "Creator tools" `SectionLabel` + the single Blinks `<Link href="/">` row + the now-unused `IconZap` helper. Sidebar ends with the Settings section before the devnet badge — no orphaned `Creator tools` heading. Blink endpoints `/b/tip/<creator>`, `/b/subscribe/<creator>/<planId>`, `/b/ticket/<creator>/<eventId>` still ship and are still linked from `/c/<handle>` CTAs + the integrations guide.
+  - `cd web && tsc --noEmit` clean.
 
 - [ ] Sidebar scroll fix on small / tall screens —
   `MarketplaceShell.tsx` aside element currently has no

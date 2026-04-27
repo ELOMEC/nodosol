@@ -179,14 +179,6 @@ export function MarketplaceShell({
           ))}
         </nav>
 
-        <SectionLabel>Creator tools</SectionLabel>
-        <nav style={{ display: "flex", flexDirection: "column", gap: "0.125rem" }}>
-          <Link href="/" style={navLinkStyle(false)}>
-            <span style={{ width: 18, height: 18, display: "inline-flex", alignItems: "center" }}>{IconZap()}</span>
-            Blinks
-          </Link>
-        </nav>
-
         <div
           style={{
             marginTop: "auto",
@@ -444,14 +436,6 @@ function IconChart() {
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M3 3v18h18" />
       <path d="M7 14l4-4 4 4 5-5" />
-    </svg>
-  );
-}
-
-function IconZap() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
     </svg>
   );
 }
