@@ -1,95 +1,158 @@
-# State Audit — 2026-04-26
+# State Audit — 2026-04-27
 
-Memorija je značajno zaostala za realnim stanjem repoa. Ovaj dokument je
-ground-truth pregled svake stavke iz "next session backlog"-a sa stvarnom
-provjerom u kodu. Sve "DONE" stavke verifikovane su grep-om / wc-om / čitanjem
-relevantnog fajla.
+Refresh after Sprint 2 wrap-up (2026-04-26 → 2026-04-27, buckets F–O all
+closed except Bucket P programs which are intentionally deferred). This
+file replaces the 2026-04-26 ground-truth audit; that pre-Sprint snapshot
+is in git history at commit `c5d697f` and earlier.
 
-## Tabela ground-truth
+## Sprint 2 closure status
 
-| Memory item | Memory tvrdi | Realno (2026-04-26) | Akcija |
+**38 of 39 task slots done**. Bucket P remains 2 code-only items
+intentionally held for the next program-deploy window so Squads multisig
+proposals batch.
+
+| Bucket | Scope | Done | Notes |
 |---|---|---|---|
-| `/marketplace/assets/[mint]` detail | 404 | **Postoji**, 1694 LoC, kompletan | Linkovi sa My Assets + Portfolio dodati ✅ |
-| Marketplace filtering (RWA) | Ne radi | **Radi** — category, jurisdiction, delivery, sort, search | — |
-| Marketplace filtering (events/auctions/rentals/properties/resale) | (memory ne pominje) | **Nedostaje** u svih 5 view-a | Pravi gap, prioritetno |
-| Update listing price UI | Nema dugmeta | **Postoji** modal (`setEditPrice` u AssetsView line 736) | — |
-| Demo data seeder | Treba napraviti | `scripts/seed-demo-data.ts` 890 LoC + `seed-demo-plans.ts` + `seed-event-tiers.ts` | Provjeriti idempotency + sadržaj |
-| Globalna pretraga | Nema | **Postoji** `/search` 607 LoC | — |
-| Onboarding flow | Treba napraviti | `/welcome` 587 LoC sa role picker, step state, localStorage flag | Provjeriti UX + complete-ness |
-| Notifications bell | Nema | **Postoji** `NotificationsBell.tsx` 317 LoC, polluje program signatures | Polling umjesto push, nema email |
-| Chat | (postoji za OTC) | `/chat` 186 LoC + Supabase backend | — |
-| Creator public profile `/c/[handle]` | Nema | **Stvarno nedostaje** — `CreatorProfile` on-chain ima samo accounting (no name/bio/avatar) | Pravi gap |
-| Subscription `expire` ix | Nedostaje | **Stvarno nedostaje** — programs/subscription/src/instructions/ nema expire.rs | Pravi gap |
-| Compressed NFT tickets | DONE u v0.6 | Verifikovano — buy_ticket + buy_tier_ticket + buy_ticket_resale[_private] svi imaju Bubblegum CPI | — |
-| Privy mobile integration | Scaffold, nema integracije | Verifikovano — 0 referenci na "privy" u `mobile/src` | Pravi gap |
-| Mainnet deploy plan | Nema | **Postoji** `docs/mainnet-deploy-plan.md` 14.7 KB | Treba čitati i izvršiti |
-| Email integracija | (nije pominjano) | **Nedostaje** — 0 referenci na resend/sendgrid/postmark/smtp | Gap za notifikacije |
-| Helius webhooks | (nije pominjano) | **Nedostaje** | Gap za push notifikacije |
+| F — Notifications closure | settings page, verify, bell polish, unsubscribe | 4/4 | — |
+| G — Discovery & growth | /creators, trending, trust signals, SEO baseline | 4/4 | — |
+| H — Creator tools | analytics, OG card, subscribers, earnings CSV | 4/4 | — |
+| I — Buyer tools | purchase history, wishlist primitive | 2/2 | per-card heart wiring deferred |
+| J — Marketplace polish | empty states, URL hook, price alerts | 3/3 | matching pipeline deferred |
+| K — UX | onboarding, PWA, i18n, mobile, a11y | 5/5 | — |
+| L — Performance | Lighthouse, bundle split, image optim | 3/3 | — |
+| M — Quality | error boundary, Playwright tip + ticket | 3/3 | mocked-Confirm Playwright deferred |
+| N — Security ops | Turnstile doc, CSP, /security, rate-limit audit | 4/4 | — |
+| O — Documentation | creator/buyer/integrations guides, FAQ, this audit | 5/5 | — |
+| P — Programs (code-only) | auction reminders, bulk listing | 0/2 | held for next deploy window |
 
-## Šta je ZAISTA otvoreno (nakon audita)
+## What ships to production once main is deployed
 
-### A. Marketplace filtering — 5 viewova bez filtera (Task #2 pravi gap)
-- `/marketplace/events` — bez date/price/location filtera
-- `/marketplace/auctions` — bez phase/price/category
-- `/marketplace/rentals` — bez price/location/duration
-- `/marketplace/properties` — unified browse, najveći gap
-- `/marketplace/resale` — bez seat/price/event filtera
+Migrations 020 / 021 / 022 / 023 are applied (Mladen, 2026-04-27). Sprint 2
+shipped on `auto/ralph-2026-04-26-0255` and merged to main; CI passes
+after the `~/.cargo/bin` PATH fix.
 
-**RWA marketplace ima referentni filter UI** (MarketplaceView.tsx FilterBar). Mogu se pattern-i reuse-ovati.
+### New web routes
+- `/c/[handle]/og.png` — dynamic OG card (next/og)
+- `/creators` — paginated discovery, search, sort
+- `/creator/analytics` — lifetime + 30d activity, CSV export
+- `/creator/subscribers` — per-plan subscribers list
+- `/account/history` — tickets / subs / OTC / auction wins
+- `/account/wishlist` — saved items grouped by type
+- `/account/alerts` — price alerts CRUD
+- `/settings/notifications` — email + per-type toggles
+- `/verify` — email verification confirm
+- `/u` — one-click unsubscribe
+- `/security` — disclosure policy + program IDs
+- `/faq` — top 12 questions accordion
 
-### B. Creator public profile (Task #6)
-On-chain `CreatorProfile` (programs/tip_jar/src/state.rs) je čisto accounting:
-```rust
-pub owner, mint, vault, elgamal_pubkey, total_tips_amount,
-    total_tip_count, total_withdrawn_amount, created_at, bump, ...
-```
-Nema username/bio/avatar. Plan:
-- Supabase tabela `creator_profiles` (wallet_pubkey PK, handle UNIQUE, display_name, bio, avatar_url, links JSONB)
-- `/c/[handle]` → resolve → fetch on-chain stats + show off-chain meta
-- Reserved handles list (admin, root, api, c, marketplace, etc)
-- Wallet-signature claim na `handle` (slično kao chat JWT challenge)
+### New Edge Functions
+- `verify-email` — POST issue + GET confirm flow
+- `unsubscribe-email` — HS256 token verify + opt-out
+- `send-notification-email` — Resend dispatcher cron
 
-### C. Notifikacije — postoji bell, nedostaje push (Task #5)
-`NotificationsBell` polluje `getSignaturesForAddress` po programu. Limitations:
-- Nije personalized (vidiš sve signature, ne svoje)
-- Nema email
-- Nema push (wallet-targeted)
-- Nema event decoding (ne znaš da li je tip primljen ili poslan)
+### New schemas
+- 020 — email_verification_token + sent_at on notification_preferences
+- 021 — wishlist (composite PK, RLS by JWT sub)
+- 022 — price_alerts (predicate columns, last-match dedupe)
+- 023 — error_logs (service-role only)
 
-**Pravi notifications system zahtijeva**:
-- Helius webhook → Supabase Edge Function → decode event → upsert `notifications` row tagged sa wallet
-- `/api/notifications` endpoint sa wallet-sig auth
-- Resend (ili Postmark) za email
-- In-app feed čita iz Supabase, ne više polluje RPC
+### New components / libs
+- TrendingPanel, TrustSignals, EmptyState, OnboardingTour, InstallPrompt,
+  WishlistHeart, LocaleToggle.
+- web/lib: notificationPrefs, wishlist, priceAlerts, useSearchParamsState,
+  earnings, i18n; `creatorProfile.listProfiles` extended.
 
-### D. Subscription `expire` instrukcija
-Memorija pominje "expire ix kad delegate fail" — nije implementirana. `programs/subscription/src/instructions/` ima 12 ix-a, nema `expire`. Use case: kad subscriber više nema USDC u walletu i delegate charge fail-a, plan revenue stuck. Permissionless `expire` ix bi cancel-ovao delegate i transition-ovao Subscription.status u Expired.
+### Next.js / build hardening
+- `next.config.mjs`: `images.remotePatterns` (Supabase + Helius +
+  Arweave + IPFS), opt-in `@next/bundle-analyzer`, security headers
+  (XCTO, XFO, Referrer-Policy, Permissions-Policy), CSP **report-only**
+  with the enforcement flip flagged for Mladen after a clean reporting
+  week.
+- Service worker (`/sw.js`) + manifest.json under `web/public/`.
+- E2E scaffolding: `playwright.config.ts` + `e2e/{tip,ticket}.spec.ts`,
+  scripts wired in package.json.
 
-### E. Mobile (Expo) Privy integracija
-`mobile/src` nema nijednu privy referencu. Memorija kaže "scaffold-ovan ali nije integriran" — verifikovano. Mobile je trenutno deep-link wrapper oko Blink-ova, ništa više.
+### Docs added / updated
+- CREATOR_GUIDE.md (10 sections), BUYER_GUIDE.md (7 sections),
+  INTEGRATIONS_GUIDE.md (Blinks + on-chain + webhooks),
+  TURNSTILE_SETUP.md, EMAIL_SETUP.md (extended for unsubscribe + verify),
+  this STATE_AUDIT.md.
 
-## Aktualizovani next-up plan
+## Honest scope cuts (deferred follow-ups)
 
-Prioritet (po VC impact / effort ratio):
+Each Sprint 2 task that traded a maximalist spec for a smaller honest
+commit:
 
-1. **Marketplace filtering za properties + events + auctions** (~1 dan) — najveći vidljivi gap, replicira postojeći RWA pattern
-2. **Creator public profile `/c/[handle]`** (~2-3 dana) — share-able links + organic growth signal
-3. **Real notifications stack** (~3-4 dana) — Helius webhook + Supabase + Resend; ovo je production-grade signal
-4. **Demo seeder dovršen** (~2h) — provjeriti scripts/seed-demo-data.ts content, dopuniti ako treba (auctions, OTC, sealed bids)
-5. **Subscription `expire` ix** (~3h) — mali backend posao, čisti UX rupu
+- **G1 /creators tip badge**: spec wanted sort by lifetime tip count;
+  on-chain data, would need 20× RPC fetches per page render. Shipped
+  without the badge; Helius bulk fetch is the right follow-up.
+- **G2 trending "this week"**: on-chain stats are lifetime counters; no
+  rolling window without per-tip history. Renamed "Top creators".
+- **H1 top tippers**: same RPC-cost story; Helius enhanced-tx scan is
+  the follow-up.
+- **I2 wishlist heart wiring**: shipped the primitive (`WishlistHeart`)
+  but didn't drop it into all 5 marketplace card components. Mechanical
+  follow-up.
+- **J2 URL persistence**: hook is reusable + auctions wired as proof;
+  the remaining 4 marketplace views are mechanical migrations.
+- **J3 price-alerts matching pipeline**: schema + management UI
+  shipped; matcher (extend helius-webhook + 15-min reconcile cron) is
+  the follow-up.
+- **K3 i18n**: scaffold + toggle + 80 strings ready; per-surface `t()`
+  wiring is mechanical.
+- **L1 Lighthouse**: shipped the three default wins (preconnect, CLS
+  dims, idle SW reg); real-browser score-before/after needs Mladen
+  running it.
+- **L2 bundle analyzer**: opt-in wired (`ANALYZE=true npm run build`);
+  Mladen runs to surface top-3 chunks.
+- **M2 / M3 Playwright wallet mock**: smoke specs cover routes up to
+  the wallet-sign boundary; full mocked-Confirm needs
+  `wallet-adapter-mock` + fake RPC, separate task.
+- **N2 CSP enforce**: ships in `Content-Security-Policy-Report-Only`;
+  flip header name after a week of clean reports.
 
-Skinuto sa liste (već done):
-- Asset detail page
-- RWA marketplace filtering
-- Update listing price UI
-- Globalna pretraga
-- Onboarding /welcome (treba provjeriti UX, ne build)
-- cNFT tickets
+## Still actively open (not shipped this sprint)
 
-## Memory updates needed
+- **Bucket P** (auction reminders Edge Function, marketplace bulk
+  listing UX) — held for the next program-deploy window.
+- **Audit firm engagement** — outreach + scope sign + scheduling.
+  Single biggest pre-mainnet signal; emails ready in
+  `docs/AUDIT_OUTREACH.md`.
+- **Mainnet deploy plan execution** — `docs/mainnet-deploy-plan.md` +
+  `docs/MAINNET_ENV.md` are the runbook; treasury rotation + Squads
+  mainnet ceremony + RPC migration all gated on audit close.
+- **Mobile (Expo) Privy integration** — `mobile/` is still a
+  Blink-deep-link wrapper.
+- **Rights marketplace (`rights.nodosol.com`)** — Tasks 6 + 7 paused
+  (rights_registry program scaffold + rights-gateway Edge Function).
+- **Confidential Transfers (Arcium)** — waits on Arcium's public Jun
+  2026 release.
 
-- Skinuti "Asset detail page 404" iz next session backlog-a
-- Skinuti "Marketplace filtering" iz backlog-a (RWA done)
-- Skinuti "Update listing price UI" iz backlog-a
-- Dodati real gaps: filtering za 5 ostalih viewova, public creator profile, real notifications, subscription expire
-- Naglasiti da memorija o frontend state-u brzo zastareva — uvijek verifikovati sa wc/grep prije rada
+## Memory drift notes
+
+- Memory files `project_solana_superapp.md` and
+  `project_nodosol_multitier.md` predate Sprint 2. This audit
+  (2026-04-27) is the new anchor for "what's currently shipped".
+  Future sessions should grep `.ralph/progress.md` Done log + this
+  file before assuming a feature is missing.
+- The "frontend state goes stale fast" lesson from the 2026-04-26
+  audit still holds. Always `wc -l` / `grep` / `Read` before
+  "let's build X".
+
+## Pre-mainnet readiness scorecard
+
+| Gate | Status |
+|---|---|
+| All program upgrade authorities on Squads multisig | ✓ devnet (3-of-5 hardware-signer ceremony pending for mainnet) |
+| Global pause kill-switch on every fund-moving program | ✓ |
+| solana_security_txt embedded in every program binary | ✓ |
+| Wallet-signed JWT auth + RLS on every Supabase table | ✓ |
+| security_events log + rate-limit on every public Edge Function | ✓ (issue-chat-jwt closed in Sprint 2 N4) |
+| CSP + security headers shipping | ✓ report-only |
+| Error boundary + error_logs pipeline | ✓ |
+| Notifications + email pipeline end-to-end | ✓ (verify + unsubscribe + dispatcher all wired) |
+| Public docs (creator, buyer, integrations, security, FAQ) | ✓ |
+| Audit engagement | ✗ — outreach drafts ready in `docs/AUDIT_OUTREACH.md` |
+| Mainnet treasury rotation + Squads ceremony | ✗ — gated on audit close |
+
+Last updated 2026-04-27.

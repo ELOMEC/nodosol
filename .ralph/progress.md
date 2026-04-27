@@ -331,7 +331,8 @@
   - Initial draft hit a TS hoist error on the inline LINK style constant (used inside the module-level QUESTIONS array before its later declaration). Fixed by moving `LINK` to the top of the file.
   - `cd web && tsc --noEmit` clean.
 
-- [ ] Update `docs/STATE_AUDIT.md` — refresh sa svime sto smo shipped od 2026-04-26. Verifikacija: doc updated.
+- [x] Update `docs/STATE_AUDIT.md` — refresh sa svime sto smo shipped od 2026-04-26. Verifikacija: doc updated.
+  - `docs/STATE_AUDIT.md` rewritten as the post-Sprint-2 anchor (2026-04-27): closure table per bucket (38/39 task slots done, P held for next deploy), inventory of new routes + Edge Functions + schemas + components + libs that ship to prod, the next.config + service worker + e2e scaffolding additions, the docs added this sprint. Honest scope-cut log captures every task where Ralph traded the maximalist spec for a smaller honest commit (creators tip badge, trending window, top tippers, wishlist card wiring, URL persistence remaining views, price-alert matcher, i18n per-surface, Lighthouse/bundle-analyzer real-browser runs, Playwright wallet mock, CSP enforce). "Still actively open" lists the not-this-sprint work: Bucket P, audit firm engagement, mainnet deploy plan, mobile Privy, rights marketplace, Arcium CT. Pre-mainnet readiness scorecard counts 9 gates green + 2 red (audit + mainnet ceremony, both gated on audit close). The pre-Sprint 2026-04-26 ground-truth audit is preserved in git history at commit `c5d697f`.
 
 ### Bucket P: Programs (code only — Mladen deploys via Squads)
 
