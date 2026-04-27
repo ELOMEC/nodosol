@@ -278,7 +278,9 @@
 
 ### Bucket N: Security ops
 
-- [ ] Cloudflare Turnstile env wire-up doc — `docs/TURNSTILE_SETUP.md`. Step-by-step (CF dashboard → site key + secret key → Vercel env → Supabase function secret → redeploy `post-chat-message`). Reference TurnstileWidget već u `web/components/`. Doc-only. Verifikacija: doc exists.
+- [x] Cloudflare Turnstile env wire-up doc — `docs/TURNSTILE_SETUP.md`. Step-by-step (CF dashboard → site key + secret key → Vercel env → Supabase function secret → redeploy `post-chat-message`). Reference TurnstileWidget već u `web/components/`. Doc-only. Verifikacija: doc exists.
+  - `docs/TURNSTILE_SETUP.md` (new): 5-step guide — CF dashboard site creation, `NEXT_PUBLIC_TURNSTILE_SITE_KEY` on Vercel, `TURNSTILE_SECRET_KEY` on Supabase, `post-chat-message` redeploy, and a SQL smoke check against `security_events`. Troubleshooting matrix for the three common failure modes (widget missing, every send fails, want to disable). Code-pointer table to the three files in the codebase that already implement the hook.
+  - Doc-only — no code change. The `TurnstileWidget` component already gracefully skips when the site-key env is unset (existing behaviour from session 2026-04-24), so this commit unblocks Mladen-driven activation without breaking the existing graceful path.
 
 - [ ] CSP headers — `web/next.config.ts` dodaj `headers()` async funkciju sa `Content-Security-Policy` (default-src 'self', script-src 'self' 'unsafe-inline' Privy + Vercel insights, connect-src Solana RPC + Supabase + Helius, img-src * data:). Test sa CSP report-only prvo, ako čisto onda enforce. Verifikacija: tsc + browser console CSP report.
 
