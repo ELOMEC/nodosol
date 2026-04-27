@@ -493,6 +493,67 @@
   - `web/components/AnnouncementBanner.tsx` (new) + wired into `MarketplaceShell`: async server component renders a colour-coded strip above the topbar (severity dot + label + title + "Details →" link to /announcements). Returns `null` when no qualifying row is active so the common-case DOM is unchanged.
   - Verifikacija: `cd web && tsc --noEmit` clean. Mladen ops: apply migration 025; set `NEXT_PUBLIC_ADMIN_WALLETS` env on Vercel (comma-separated wallet pubkeys) so AdminPill/admin routes resolve.
 
+## Sprint 4 — admin self-service (footer + legal CMS + geo-block panel) (2026-04-27 onwards)
+
+> Goal: pomeriti hardcoded compliance pieces u admin tako da Mladen može
+> da menja legal text + blokirane zemlje bez deploya. Plus prvi pravi
+> footer na sajtu (do sada nije postojao).
+
+### Bucket U: Admin self-service
+
+- [x] U1 Footer komponenta + globalni mount —
+  - `web/components/Footer.tsx` (new): 5-kolonski grid (Brand sa logo + opisom + 4 link kolone: Product / Legal / Resources / Contact) iznad bottom row-a sa copyrightom + Solana devnet pulse badge + verzijom. `auto-fit, minmax(180px,1fr)` grid se sam stack-uje na mobile. Tamna paleta `#0d0f14` background sa `#1f242d` border-top da se odvoji od svetlog shell-a. Externi GitHub link otvara u novom tabu sa `noopener noreferrer`.
+  - `web/app/layout.tsx`: import `Footer` + render ispod `{children}` u `<body>` tako da se vidi i na MarketplaceShell-u (grid `min-height: 100vh`, footer ispod) i na public/marketing stranicama (/privacy, /terms, /security, /, /faq).
+  - Linkovi: /marketplace, /marketplace/tokenize, /marketplace/events, /marketplace/otc, /creator (Product); /privacy, /terms, /security (Legal); /announcements, /faq, GitHub (Resources); support/security/privacy mailto (Contact).
+  - Verifikacija: `cd web && tsc --noEmit` clean.
+
+- [ ] U2 Legal CMS sa Markdown editorom + version history —
+  Migration `026_legal_pages.sql`: `legal_pages` (slug pk,
+  title, body_md, version int, last_updated timestamptz,
+  updated_by_wallet) + `legal_pages_versions` (id pk, slug fk,
+  title, body_md, version, edited_at, edited_by_wallet) immutable
+  history tabela. RLS public SELECT na legal_pages, service-role
+  only writes. Seed: kopiraj trenutni `/privacy` + `/terms`
+  sadržaj iz `PrivacyView.tsx` + `TermsView.tsx` u rows kao
+  Markdown.
+  `web/lib/legalPages.ts`: `fetchLegalPage(slug)`,
+  `fetchLegalVersions(slug)`, `renderMarkdown()` proširen na
+  headings (## ###), lists (-/1.), bold/italic, links, code —
+  HTML escape pre render-a, no script tags allowed.
+  `web/app/{privacy,terms}/page.tsx` zameniti sa DB-backed
+  server component-om koji čita iz `legal_pages` (fallback na
+  hardcoded ako migracija nije primenjena, da prod ne pukne pre
+  Mladenovog ops koraka).
+  `web/app/admin/legal/page.tsx` (lista) +
+  `web/app/admin/legal/[slug]/page.tsx` (editor: textarea +
+  live preview + version history dropdown za revert).
+  `web/app/api/admin/legal/route.ts`: GET/PATCH gated preko
+  `x-nodosol-admin-wallet` header-a + ADMIN_LIST allowlist;
+  PATCH bumpu je version + ubacuje stari row u
+  legal_pages_versions kao audit trail. AdminPill: dodaj "Legal
+  pages" route. Verifikacija: tsc + SQL syntax + manual edit
+  flow. Mladen ops: apply migration 026.
+
+- [ ] U3 Geo-block admin panel (Edge Config + Vercel API) —
+  Refactor `web/middleware.ts` da prvo pokuša Vercel Edge
+  Config read (via `@vercel/edge-config`), pa fallback na
+  postojeći `GEO_BLOCK_COUNTRIES` env var ako Edge Config nije
+  konfigurisan — backwards compat za lokalni dev.
+  `web/app/admin/geo-block/page.tsx` + `GeoBlockView.tsx`:
+  ISO 3166-1 alpha-2 country picker (~250 zemalja, group-ovan
+  po regionu), checkbox grid, dugme "Save" koje POST-uje na
+  admin API. Show last-updated timestamp + ko je menjao.
+  `web/app/api/admin/geo-block/route.ts`: GET čita Edge Config
+  preko @vercel/edge-config; PATCH piše preko Vercel REST API
+  (`PATCH /v1/edge-config/<id>/items`) koristeći
+  `VERCEL_API_TOKEN` env var. AdminPill: dodaj "Geo-block".
+  Doc: `docs/GEO_BLOCK_ADMIN.md` (kako kreirati Edge Config +
+  API token na Vercel-u, propagation latency napomena).
+  Verifikacija: tsc + dev server smoke test sa fallback granom
+  (bez Edge Config-a). Mladen ops: kreiraj Edge Config na
+  Vercel-u, generisi API token, setuj `VERCEL_API_TOKEN`,
+  `VERCEL_EDGE_CONFIG_ID`, `EDGE_CONFIG` env vars na produkciji.
+
 ## Backlog
 
 (taskovi koji nisu prioritet ovog sprint-a — ralph ne dira osim ako ga eksplicitno premestiš gore)

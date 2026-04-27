@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { Analytics } from "@/components/Analytics";
 import { ConsentBanner } from "@/components/ConsentBanner";
+import { Footer } from "@/components/Footer";
 import { InstallPrompt } from "@/components/InstallPrompt";
 
 import "./globals.css";
@@ -65,6 +66,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           Skip to main content
         </a>
         {children}
+        <Footer />
         <InstallPrompt />
         <ConsentBanner />
       </body>
