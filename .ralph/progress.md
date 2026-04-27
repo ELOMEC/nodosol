@@ -320,7 +320,8 @@
 - [x] `docs/CREATOR_GUIDE.md` — kako se postavlja handle, kako se prima tip, kako se kreira plan/event, kako se withdraw revenue. Korak po korak sa screenshot placeholder-ima (Markdown image refs `[creator-handle.png]`). Verifikacija: doc exists.
   - `docs/CREATOR_GUIDE.md` (new): 10-section walkthrough — prerequisites, claim handle, init tip jar, receive tip, withdraw, create subscription plan, withdraw subscription, create event w/ tickets, sell + check in, withdraw event revenue, track everything. Each section ends with the on-chain account or off-chain table that backs the action so creators can verify state directly. 7 image placeholders (`creator-claim-handle.png` etc.) with a note to drop screenshots into `docs/img/` before external publishing. "What you cannot do (yet)" section sets expectations on tip refunds, profile-wallet rotation, and global subscription pause. Surface table at the bottom maps every UI route to its backing program PDA / Supabase table.
 
-- [ ] `docs/BUYER_GUIDE.md` — kako se kupuje ticket, attend event, OTC trade, subscribe na rental. Verifikacija: doc exists.
+- [x] `docs/BUYER_GUIDE.md` — kako se kupuje ticket, attend event, OTC trade, subscribe na rental. Verifikacija: doc exists.
+  - `docs/BUYER_GUIDE.md` (new): mirrors the O1 creator guide structure for the buyer side — tip a creator, buy + check in + resell event tickets, subscribe to creators / rentals (with cancel + manage paths), bid sealed-bid auctions (commit / reveal / settle), trade OTC, save with wishlist, set up notifications + verify email, track everything in /account/history. "What you cannot do (yet)" sets expectations on tip refunds, non-cNFT ticket transfer, OTC finality, USDC-only payment. Closing surface table maps every buyer-facing route to its backing state.
 
 - [ ] `docs/INTEGRATIONS_GUIDE.md` — za partner devs. Blink endpoints reference, on-chain events za webhooks, Helius webhook payload primjer. Verifikacija: doc exists.
 
