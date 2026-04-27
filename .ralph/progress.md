@@ -420,7 +420,7 @@
 
 ### Bucket R: UX fixes (Mladen-flagged)
 
-- [ ] Move admin menu from sidebar to topbar —
+- [x] Move admin menu from sidebar to topbar —
   `web/components/MarketplaceShell.tsx`: remove the `Admin` section
   from the desktop sidebar + mobile menu. Add a small admin pill
   in the topbar next to ThemeToggle / LocaleToggle, visible only
@@ -429,6 +429,12 @@
   add Announcements + Maintenance toggle entries when those land).
   Non-admins see nothing. Verifikacija: tsc + manual visibility
   check on connect/disconnect.
+  - `web/components/AdminPill.tsx` (new): allowlist-gated topbar pill. Reads `NEXT_PUBLIC_ADMIN_WALLETS` at module load into a Set, returns `null` until a connected wallet matches. Amber-tinted pill (matches the rest of the security/ops palette) toggles a 240px dropdown with `Programs` (/admin) + `Issuers` (/admin/issuers) entries — each row has label + 1-line description so admins know which surface they're jumping to. Outside-click closes via `mousedown` listener. `aria-label` + `aria-expanded` + `role="menu"`/`menuitem`. Future Bucket T (announcements) + maintenance toggle drop into the same `ROUTES` array.
+  - `web/components/MarketplaceShell.tsx`:
+    - dropped the `Admin` section from desktop sidebar + mobile-menu drawer + the `adminNav` array + the corresponding `Topbar` prop / signature.
+    - mounted `<AdminPill />` first in the topbar action cluster so it's visually anchored before the universal toggles + bells + wallet pill.
+    - removed the unused `IconShield` helper (was Admin-only); `IconUsers` stays since Creators discovery still uses it.
+  - `cd web && tsc --noEmit` clean. `npm run lint` clean (only the two pre-existing ChatPanel + useSearchParamsState warnings, unrelated).
 
 - [ ] Remove Blinks sidebar entry — the "Creator tools → Blinks"
   link in `MarketplaceShell.tsx` (`href="/"`) currently points at
