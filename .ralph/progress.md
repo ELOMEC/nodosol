@@ -296,7 +296,10 @@
   - **Report-only mode on purpose**: spec says "test report-only first, enforce when clean". Browser console / Vercel logs will surface any unexpected violations from wallet adapters or third-party widgets we missed. Mladen flips the header name (`Content-Security-Policy-Report-Only` → `Content-Security-Policy`) after a week of clean reports — file comment documents this explicitly.
   - `cd web && tsc --noEmit` clean.
 
-- [ ] `/security` disclosure page — `web/app/security/{page.tsx,SecurityView.tsx}`. Statički sadržaj: security_txt summary, audit status, multisig info, contact email, responsible disclosure policy. Verifikacija: tsc.
+- [x] `/security` disclosure page — `web/app/security/{page.tsx,SecurityView.tsx}`. Statički sadržaj: security_txt summary, audit status, multisig info, contact email, responsible disclosure policy. Verifikacija: tsc.
+  - `web/app/security/page.tsx` + `SecurityView.tsx`: standalone route (no MarketplaceShell wrapper — page is linked from program `solana_security_txt!` macro and CSP/CORS preconnect-y bots). Sections: Contact (security@nodosol.com + 48h ack SLA), Responsible disclosure (no-public-posting before patch + discretionary reward), Audit status (OtterSec / Neodyme / Zellic outreach for Q3 2026), On-chain authority model (Squads 2-of-3 + global pause + per-program security_txt), Off-chain hardening (JWT auth, RLS, security_events log, CSP, Turnstile), Program IDs table linked to Solana Explorer devnet, Out of scope.
+  - All 9 program IDs hard-coded with explorer links — keeps `/security` self-contained even when on-chain RPC is down (auditors hit this from incidents).
+  - `cd web && tsc --noEmit` clean.
 
 - [ ] Rate limiting on remaining unprotected endpoints — audit `supabase/functions/*` za one koji nemaju `security_events` rate-limit gate. Konkretno proveri: `verify-email` (kad ga napravimo), `send-notification-email` (server-only, OK), `admin-events` (već ima). Verifikacija: grep + smoke.
 
