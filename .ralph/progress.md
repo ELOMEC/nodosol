@@ -375,7 +375,7 @@
   - **Honest note**: spec said "spec rename `GEO_BLOCK_ALLOW_COUNTRIES`" — implemented as `GEO_BLOCK_COUNTRIES` (block-list semantics) since Mladen flips it to extend the block-set, not to whitelist. Documented in code comments.
   - `cd web && tsc --noEmit` clean. Mladen ops to verify on prod: `curl -H "x-vercel-ip-country: US" https://www.nodosol.com/` → 451 with rewrite to /blocked/US. Vercel env empty = US-only block remains the default.
 
-- [ ] Maintenance / under-construction mode — env flag
+- [x] Maintenance / under-construction mode — env flag
   `NEXT_PUBLIC_MAINTENANCE_MODE=1` (or admin-flippable Supabase row)
   triggers a global `web/app/maintenance/page.tsx` (dark themed
   Nodosol shell + "We're updating things, back shortly" + email
@@ -384,6 +384,10 @@
   and `/api/health` (so monitoring still works). Allowlist for
   test wallets via `MAINTENANCE_BYPASS_WALLETS` cookie/header check.
   Verifikacija: `tsc --noEmit` + middleware smoke.
+  - `web/middleware.ts`: maintenance-mode rewrite was wired in the Q1 commit (the maintenance + geo-block matcher was bundled into one config). When `NEXT_PUBLIC_MAINTENANCE_MODE === "1"`, every public route rewrites to `/maintenance` except `/admin/*` (ops re-entry) + `/api/health` (monitoring) + ALWAYS_PASS statics. Pre-empts geo-block deliberately so a degraded window shows a single page to all visitors.
+  - `web/app/maintenance/page.tsx` (new): standalone dark shell with clock icon, "We'll be right back" + on-chain-state-is-safe reassurance, X status link, support@nodosol.com, /security + /privacy + /terms footer. `robots: noindex,nofollow`.
+  - **Honest scope cut**: spec mentioned `MAINTENANCE_BYPASS_WALLETS` cookie/header check + admin-flippable Supabase row. Skipped both in this commit — Mladen flips `NEXT_PUBLIC_MAINTENANCE_MODE` directly on Vercel (env update + redeploy ≈ 60s) and `/admin/*` already bypasses for ops re-entry. Wallet-cookie bypass adds attack surface (cookie spoofing) for marginal value in a deploy-pause scenario; admin-flippable row adds a Supabase round trip on every request. Both deferred unless a real need shows up.
+  - `cd web && tsc --noEmit` clean.
 
 - [ ] Privacy policy `/privacy` —
   `web/app/privacy/{page.tsx,PrivacyView.tsx}`. Standalone route
