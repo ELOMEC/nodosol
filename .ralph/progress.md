@@ -342,7 +342,10 @@
   - Mladen ops: `supabase functions deploy auction-reminders --no-verify-jwt` then run migration 024 SQL (replace `<ANON_KEY>`).
   - `cd web && tsc --noEmit` clean (no web changes). Deno not installed locally; smoke-checked by visual review against existing helius-webhook + send-notification-email decoder patterns.
 
-- [ ] Marketplace bulk listing UX — `web/app/marketplace/list/page.tsx` form: select N RWA assets, set price each, single submit batches transactions sequentially. Reuse `simulateAndSend` helper. Verifikacija: tsc.
+- [x] Marketplace bulk listing UX — `web/app/marketplace/list/page.tsx` form: select N RWA assets, set price each, single submit batches transactions sequentially. Reuse `simulateAndSend` helper. Verifikacija: tsc.
+  - `web/app/marketplace/list/page.tsx` + `BulkListView.tsx`: connected wallet → loads owned RWA assets via `rwa_mint.asset.all` filtered by owner memcmp at offset 8, filters out fully-burned rows. Table with toggle-all checkbox + per-row select + qty input (defaults to full quantity, capped at it) + price input (whole USDC). Submit validates every selected row up front (price > 0, qty in 1..available) before any tx fires, then runs through queue sequentially — each row is its own `simulateAndSend({createListing})` so the marketplace `create_listing` account-set fits inside Solana's per-tx size limit. Per-row failures isolated (toast + counter, queue continues). Progress indicator shows `Submitting i/N…` while running, then `Batch finished — X listed, Y failed`. Empty state links to `/marketplace/tokenize`.
+  - Reuses the existing `simulateAndSend` helper, `marketplaceProgram` + `mintProgram` lib bindings, `listingPda` + `listingVaultPda` derivations, and `getUsdcMint()` constant — no new lib code, just composition.
+  - `cd web && tsc --noEmit` clean.
 
 ## Backlog
 
