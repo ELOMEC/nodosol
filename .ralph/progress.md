@@ -347,6 +347,131 @@
   - Reuses the existing `simulateAndSend` helper, `marketplaceProgram` + `mintProgram` lib bindings, `listingPda` + `listingVaultPda` derivations, and `getUsdcMint()` constant — no new lib code, just composition.
   - `cd web && tsc --noEmit` clean.
 
+## Sprint 3 — compliance, ops polish, analytics (2026-04-27 onwards)
+
+> Driven by user feedback after Sprint 2 closure: we cannot serve US
+> users yet (legal), need a maintenance/under-construction toggle,
+> need Privacy + Terms, an in-app announcements page, admin entry in
+> the topbar (not the sidebar), Blinks sidebar entry removed (no
+> longer useful), sidebar must scroll on tall content, and visit
+> analytics wired to Google Analytics 4 (or Plausible alt).
+
+### Bucket Q: Compliance gates
+
+- [ ] Geo-block middleware — `web/middleware.ts` reads Vercel's
+  `request.geo.country` (or `x-vercel-ip-country` header), redirects
+  to `/blocked/[country]` when country is in the blocklist. Default
+  blocklist: `["US"]`. Allowlist override via env
+  `GEO_BLOCK_ALLOW_COUNTRIES` (comma-separated CC). New page
+  `web/app/blocked/[country]/page.tsx` with friendly message,
+  reason ("Pre-audit launch — US service requires registration we
+  haven't completed"), email contact for the licencing onboarding
+  flow, `noindex,nofollow`. Skip middleware on `/api/*`, `/sw.js`,
+  `/manifest.json`, `/icon.svg`, `/sitemap.xml`, `/robots.txt`.
+  Verifikacija: `tsc --noEmit` + manual via
+  `curl -H "x-vercel-ip-country: US" https://...`.
+
+- [ ] Maintenance / under-construction mode — env flag
+  `NEXT_PUBLIC_MAINTENANCE_MODE=1` (or admin-flippable Supabase row)
+  triggers a global `web/app/maintenance/page.tsx` (dark themed
+  Nodosol shell + "We're updating things, back shortly" + email
+  contact). When active, `middleware.ts` rewrites every public route
+  to `/maintenance` except `/admin` (so ops can still flip it off)
+  and `/api/health` (so monitoring still works). Allowlist for
+  test wallets via `MAINTENANCE_BYPASS_WALLETS` cookie/header check.
+  Verifikacija: `tsc --noEmit` + middleware smoke.
+
+- [ ] Privacy policy `/privacy` —
+  `web/app/privacy/{page.tsx,PrivacyView.tsx}`. Standalone route
+  (no MarketplaceShell) following `/security` style. Sections:
+  what we collect (wallet pubkey, optional email, IP for rate
+  limit, browser UA), what we don't collect (no PII off-chain
+  beyond verified email, no analytics tied to wallet without
+  consent), retention (security_events 90d, error_logs 30d, JWT
+  15min), Supabase + Helius + Resend + Vercel sub-processors,
+  user rights (export, delete, opt-out), contact
+  `privacy@nodosol.com`. Last-updated stamp. Linked from footer +
+  /security + new sign-up flows. Verifikacija: tsc + doc-only
+  review.
+
+- [ ] Terms of service `/terms` —
+  `web/app/terms/{page.tsx,TermsView.tsx}`. Sections: eligibility
+  (no US/sanctioned countries), services description, wallet =
+  user's responsibility (we never custody), no investment advice,
+  prohibited uses (mixing, sanctioned jurisdictions, scams),
+  intellectual property (creators own their content),
+  account termination, dispute resolution + governing law (UAE
+  DMCC, with a marker that El Salvador is the backup), warranty
+  disclaimer, limitation of liability, changes to terms (30-day
+  notice). Last-updated stamp. Linked from /privacy + footer +
+  Get started flow. Verifikacija: tsc.
+
+### Bucket R: UX fixes (Mladen-flagged)
+
+- [ ] Move admin menu from sidebar to topbar —
+  `web/components/MarketplaceShell.tsx`: remove the `Admin` section
+  from the desktop sidebar + mobile menu. Add a small admin pill
+  in the topbar next to ThemeToggle / LocaleToggle, visible only
+  when the connected wallet is in `NEXT_PUBLIC_ADMIN_WALLETS`.
+  Pill is a dropdown with the admin sub-routes (Programs, Issuers,
+  add Announcements + Maintenance toggle entries when those land).
+  Non-admins see nothing. Verifikacija: tsc + manual visibility
+  check on connect/disconnect.
+
+- [ ] Remove Blinks sidebar entry — the "Creator tools → Blinks"
+  link in `MarketplaceShell.tsx` (`href="/"`) currently points at
+  the landing page and offers no actual blinks UX. Drop the
+  section entirely; the Blink endpoints
+  (`/b/tip/...`, `/b/subscribe/...`, `/b/ticket/...`) are still
+  reachable from creator profile CTAs and direct-link shares.
+  Verifikacija: tsc + sidebar render check.
+
+- [ ] Sidebar scroll fix on small / tall screens —
+  `MarketplaceShell.tsx` aside element currently has no
+  `overflow-y` so when nav grows past viewport (especially after
+  Discovery + Settings sections were added in Sprint 2) the bottom
+  entries clip on shorter desktop windows + tall content. Set
+  `overflow-y: auto`, `max-height: 100vh`, `position: sticky;
+  top: 0` on the sidebar so it scrolls independently of main
+  content. Touch up scrollbar styling so it doesn't look
+  out-of-place against the dark theme. Verifikacija: tsc + manual
+  viewport sweep at 600px / 720px height.
+
+### Bucket S: Analytics
+
+- [ ] Visit analytics — Google Analytics 4 wired in
+  `web/app/layout.tsx` via `next/script` (afterInteractive
+  strategy). Env-gated on `NEXT_PUBLIC_GA_MEASUREMENT_ID`. Defaults
+  to `gtag('consent', 'default', { ad_storage: 'denied',
+  analytics_storage: 'denied' })` and only flips to granted after
+  the user clicks Accept on a small consent banner
+  (`web/components/ConsentBanner.tsx`). Banner state in
+  `localStorage` under `nodosol_analytics_consent`. Plausible
+  alternative documented in `docs/ANALYTICS_SETUP.md` for projects
+  that prefer cookieless. Verifikacija: tsc + smoke
+  (set env, reload, check Network tab for gtag.js firing only
+  after consent).
+
+### Bucket T: Announcements
+
+- [ ] Announcements page `/announcements` + admin CRUD —
+  Migration `025_announcements.sql`:
+  `announcements (id uuid pk, title, body markdown, severity
+  enum 'info'|'warning'|'urgent'|'release', pinned bool,
+  published_at timestamptz, expires_at timestamptz nullable,
+  author_wallet, created_at, updated_at)`. Public RLS read on
+  `published_at <= now() and (expires_at is null or expires_at >
+  now())`. Admin write via service-role only.
+  `web/app/announcements/{page.tsx,AnnouncementsView.tsx}` public
+  feed (newest first, pinned float, severity-coloured badges,
+  Markdown rendered). Admin entry under the new topbar pill →
+  `/admin/announcements/{page.tsx,AdminAnnouncementsView.tsx}`
+  with create/edit/delete + preview. Optional global banner
+  component (mounts in `MarketplaceShell` topbar) when at least
+  one `pinned` + `severity in ('warning','urgent')` row is
+  active. Verifikacija: tsc + SQL syntax. Mladen ops: apply
+  migration 025.
+
 ## Backlog
 
 (taskovi koji nisu prioritet ovog sprint-a — ralph ne dira osim ako ga eksplicitno premestiš gore)
