@@ -323,7 +323,8 @@
 - [x] `docs/BUYER_GUIDE.md` — kako se kupuje ticket, attend event, OTC trade, subscribe na rental. Verifikacija: doc exists.
   - `docs/BUYER_GUIDE.md` (new): mirrors the O1 creator guide structure for the buyer side — tip a creator, buy + check in + resell event tickets, subscribe to creators / rentals (with cancel + manage paths), bid sealed-bid auctions (commit / reveal / settle), trade OTC, save with wishlist, set up notifications + verify email, track everything in /account/history. "What you cannot do (yet)" sets expectations on tip refunds, non-cNFT ticket transfer, OTC finality, USDC-only payment. Closing surface table maps every buyer-facing route to its backing state.
 
-- [ ] `docs/INTEGRATIONS_GUIDE.md` — za partner devs. Blink endpoints reference, on-chain events za webhooks, Helius webhook payload primjer. Verifikacija: doc exists.
+- [x] `docs/INTEGRATIONS_GUIDE.md` — za partner devs. Blink endpoints reference, on-chain events za webhooks, Helius webhook payload primjer. Verifikacija: doc exists.
+  - `docs/INTEGRATIONS_GUIDE.md` (new): partner-developer reference covering 3 surfaces — Solana Blinks (tip / subscribe / buy ticket with GET metadata + POST build-tx examples + open CORS for `dial.to`-style aggregators), on-chain Anchor program access (9-program ID table + read-only example + memcmp query patterns + write-side authorisation note), webhook events (Helius enhanced-tx setup + payload shape + Anchor 8-byte discriminator decoding pointer to `helius-webhook` reference impl + full notification taxonomy with email-eligibility flags + creator-side PDA resolution pattern). Auth + RLS guidance for partner backends, versioning policy, rate-limit notes, contact channel for partner support.
 
 - [ ] FAQ page `/faq` — `web/app/faq/page.tsx`. Top 12 pitanja sa accordion UI: "What is Nodosol?", "Do I need crypto knowledge?", "Is it audited?", "What chains?", "How do tips work?", itd. Verifikacija: tsc.
 
