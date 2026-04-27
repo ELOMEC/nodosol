@@ -326,7 +326,10 @@
 - [x] `docs/INTEGRATIONS_GUIDE.md` — za partner devs. Blink endpoints reference, on-chain events za webhooks, Helius webhook payload primjer. Verifikacija: doc exists.
   - `docs/INTEGRATIONS_GUIDE.md` (new): partner-developer reference covering 3 surfaces — Solana Blinks (tip / subscribe / buy ticket with GET metadata + POST build-tx examples + open CORS for `dial.to`-style aggregators), on-chain Anchor program access (9-program ID table + read-only example + memcmp query patterns + write-side authorisation note), webhook events (Helius enhanced-tx setup + payload shape + Anchor 8-byte discriminator decoding pointer to `helius-webhook` reference impl + full notification taxonomy with email-eligibility flags + creator-side PDA resolution pattern). Auth + RLS guidance for partner backends, versioning policy, rate-limit notes, contact channel for partner support.
 
-- [ ] FAQ page `/faq` — `web/app/faq/page.tsx`. Top 12 pitanja sa accordion UI: "What is Nodosol?", "Do I need crypto knowledge?", "Is it audited?", "What chains?", "How do tips work?", itd. Verifikacija: tsc.
+- [x] FAQ page `/faq` — `web/app/faq/page.tsx`. Top 12 pitanja sa accordion UI: "What is Nodosol?", "Do I need crypto knowledge?", "Is it audited?", "What chains?", "How do tips work?", itd. Verifikacija: tsc.
+  - `web/app/faq/page.tsx` + `FaqView.tsx`: standalone route with `<details>`/`<summary>` accordion (native browser behaviour, no JS state needed). 12 questions covering what Nodosol is, no-crypto-experience path via Privy, Solana-only chain support, audit pre-engagement status, how tips work, fee posture (0% on devnet, post-audit ramp), ticket transferability, lapsed-creator subscription behaviour, refund finality, OTC use cases, issuer onboarding, bug reporting. First question expands by default; the rest start collapsed. Footer links to /security + the three doc guides.
+  - Initial draft hit a TS hoist error on the inline LINK style constant (used inside the module-level QUESTIONS array before its later declaration). Fixed by moving `LINK` to the top of the file.
+  - `cd web && tsc --noEmit` clean.
 
 - [ ] Update `docs/STATE_AUDIT.md` — refresh sa svime sto smo shipped od 2026-04-26. Verifikacija: doc updated.
 
