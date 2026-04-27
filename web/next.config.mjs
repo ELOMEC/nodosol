@@ -104,6 +104,7 @@ const nextConfig = {
                 "https://*.privy.io https://privy.io",
                 "https://*.vercel-insights.com https://*.vercel-scripts.com",
                 "https://va.vercel-scripts.com",
+                "https://*.googletagmanager.com",
               ].join(" "),
               [
                 "connect-src 'self'",
@@ -119,6 +120,8 @@ const nextConfig = {
                 "https://api.github.com",
                 "https://arweave.net https://*.arweave.net",
                 "https://ipfs.io https://*.ipfs.io",
+                "https://*.google-analytics.com https://*.analytics.google.com",
+                "https://*.googletagmanager.com",
               ].join(" "),
               [
                 "frame-src 'self'",

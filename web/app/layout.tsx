@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
+import { Analytics } from "@/components/Analytics";
+import { ConsentBanner } from "@/components/ConsentBanner";
 import { InstallPrompt } from "@/components/InstallPrompt";
 
 import "./globals.css";
@@ -54,6 +56,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <link rel="dns-prefetch" href="https://devnet.helius-rpc.com" />
         <link rel="preconnect" href="https://xvgxaodxylrolkpyuszx.supabase.co" crossOrigin="" />
         <link rel="dns-prefetch" href="https://xvgxaodxylrolkpyuszx.supabase.co" />
+        {/* GA4 — beforeInteractive snippet sets default-denied consent
+            BEFORE the loader fires; ConsentBanner flips it on accept. */}
+        <Analytics />
       </head>
       <body>
         <a href="#main-content" className="nds-skip-link">
@@ -61,6 +66,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </a>
         {children}
         <InstallPrompt />
+        <ConsentBanner />
       </body>
     </html>
   );

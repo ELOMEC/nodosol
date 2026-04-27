@@ -462,7 +462,7 @@
 
 ### Bucket S: Analytics
 
-- [ ] Visit analytics — Google Analytics 4 wired in
+- [x] Visit analytics — Google Analytics 4 wired in
   `web/app/layout.tsx` via `next/script` (afterInteractive
   strategy). Env-gated on `NEXT_PUBLIC_GA_MEASUREMENT_ID`. Defaults
   to `gtag('consent', 'default', { ad_storage: 'denied',
@@ -474,6 +474,12 @@
   that prefer cookieless. Verifikacija: tsc + smoke
   (set env, reload, check Network tab for gtag.js firing only
   after consent).
+  - `web/components/Analytics.tsx` (new): two `next/script` tags rendered into `<head>`. `gtag-init` is `beforeInteractive` and runs the boilerplate `dataLayer`/`gtag` setup + `gtag('consent', 'default', { ad_*, analytics_storage: 'denied', wait_for_update: 500 })` BEFORE `gtag-load` (afterInteractive) pulls `googletagmanager.com/gtag/js`. `anonymize_ip: true` set on the config call. Returns `null` (no scripts emitted at all) when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is unset, so the bundle stays clean for projects that don't want GA.
+  - `web/components/ConsentBanner.tsx` (new): mounts only when GA env is set + DNT inactive + no fresh prior choice. Accept → `gtag('consent', 'update', { analytics_storage: 'granted' })` (ad signals stay denied always — we don't run ads). Decline → keeps denied + persists for 14 days; Accept persists 365 days. localStorage key `nodosol_analytics_consent`. DNT browsers stay denied with no banner painted. 600ms delay before mount so banner doesn't fight first paint.
+  - `web/app/layout.tsx`: `<Analytics />` mounted inside `<head>` (Next 15 requires beforeInteractive scripts to live in the root layout head); `<ConsentBanner />` mounted in `<body>` after `<InstallPrompt />`.
+  - `web/next.config.mjs` CSP: added `*.googletagmanager.com` to script-src; added `*.google-analytics.com`, `*.analytics.google.com`, `*.googletagmanager.com` to connect-src so the GA collect endpoint isn't blocked when consent flips.
+  - `docs/ANALYTICS_SETUP.md` (new): activation steps (GA console → Vercel env → redeploy → smoke test), consent semantics table, what we measure (page_view, anonymise_ip, no ads, no wallet join), Plausible drop-in alternative with code snippet + privacy policy update note. Cross-references `/privacy` to keep retention story consistent.
+  - `cd web && tsc --noEmit` clean. Mladen ops: create GA4 property, set `NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX` on Vercel, redeploy.
 
 ### Bucket T: Announcements
 
