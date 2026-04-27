@@ -23,6 +23,7 @@ const ROUTES: Array<{ href: string; label: string; description?: string }> = [
   { href: "/admin/issuers", label: "Issuers", description: "RWA issuer registry — approve / suspend / revoke" },
   { href: "/admin/announcements", label: "Announcements", description: "Publish news / status / release notes" },
   { href: "/admin/legal", label: "Legal pages", description: "Edit /privacy and /terms in Markdown with version history" },
+  { href: "/admin/geo-block", label: "Geo-block", description: "Choose which countries see the 451 page" },
 ];
 
 export function AdminPill() {

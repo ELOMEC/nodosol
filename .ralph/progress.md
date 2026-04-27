@@ -518,25 +518,15 @@
   - `web/components/AdminPill.tsx`: dodat `/admin/legal` entry "Legal pages".
   - Verifikacija: `cd web && tsc --noEmit` clean. Mladen ops: apply migracija 026 u Supabase, otvori `/admin/legal/privacy` i `/admin/legal/terms` da paste-uješ trenutni tekst i save-uješ v1.
 
-- [ ] U3 Geo-block admin panel (Edge Config + Vercel API) —
-  Refactor `web/middleware.ts` da prvo pokuša Vercel Edge
-  Config read (via `@vercel/edge-config`), pa fallback na
-  postojeći `GEO_BLOCK_COUNTRIES` env var ako Edge Config nije
-  konfigurisan — backwards compat za lokalni dev.
-  `web/app/admin/geo-block/page.tsx` + `GeoBlockView.tsx`:
-  ISO 3166-1 alpha-2 country picker (~250 zemalja, group-ovan
-  po regionu), checkbox grid, dugme "Save" koje POST-uje na
-  admin API. Show last-updated timestamp + ko je menjao.
-  `web/app/api/admin/geo-block/route.ts`: GET čita Edge Config
-  preko @vercel/edge-config; PATCH piše preko Vercel REST API
-  (`PATCH /v1/edge-config/<id>/items`) koristeći
-  `VERCEL_API_TOKEN` env var. AdminPill: dodaj "Geo-block".
-  Doc: `docs/GEO_BLOCK_ADMIN.md` (kako kreirati Edge Config +
-  API token na Vercel-u, propagation latency napomena).
-  Verifikacija: tsc + dev server smoke test sa fallback granom
-  (bez Edge Config-a). Mladen ops: kreiraj Edge Config na
-  Vercel-u, generisi API token, setuj `VERCEL_API_TOKEN`,
-  `VERCEL_EDGE_CONFIG_ID`, `EDGE_CONFIG` env vars na produkciji.
+- [x] U3 Geo-block admin panel (Edge Config + Vercel API) —
+  - `web/middleware.ts`: 3-fallback chain za blocklist — Edge Config (`get<string[]>("geo_block")` preko `@vercel/edge-config`) → `GEO_BLOCK_COUNTRIES` env → hardcoded `["US"]`. Edge Config errors swallow-uje i pada dalje, tako da misread ne ruši sajt. Middleware sada async (Next 15 ok).
+  - `web/app/api/admin/geo-block/route.ts`: GET čita preko Vercel REST `/v1/edge-config/{id}/item/geo_block` (sa team query param-om ako je `VERCEL_TEAM_ID` set), tako da admin uvek vidi current value bez SDK cache-a. Fallback na env reflection ako Edge Config nije konfigurisan, sa `source: "env"` flag-om u response-u tako da UI prikazuje warning. PATCH preko `/v1/edge-config/{id}/items` sa `operation: "upsert"`. Wallet allowlist gate.
+  - `web/lib/countryList.ts`: ISO 3166-1 alpha-2 lista grupisana po regionima (Americas / Europe / Asia & Pacific / Middle East / Africa) — ~120 zemalja, dovoljno za realne compliance scenarije bez 250-row buke. `findCountry()` lookup helper.
+  - `web/app/admin/geo-block/{page.tsx,GeoBlockView.tsx}`: client component, wallet+allowlist double gate, filter input, region-grupisan checkbox grid (auto-fill 240px), "Save"/"Reset" dugme aktivni samo kad je dirty. Posle save-a prikazuje "propagation ~60s" note. Yellow banner kad je `source === "env"` da podseti Mladena da Edge Config još nije setovan.
+  - `web/components/AdminPill.tsx`: dodat `/admin/geo-block` entry "Geo-block".
+  - `docs/GEO_BLOCK_ADMIN.md`: 5-step Vercel setup (Edge Config → connect → API token → env vars → first save), day-to-day workflow, cost note (1M reads/mo free tier), troubleshooting (451 doesn't fire / 503 / 502 / cache lag).
+  - `web/package.json`: dodat `@vercel/edge-config@^1.4.3`.
+  - Verifikacija: `cd web && tsc --noEmit` clean; middleware fallback grana radi bez Edge Config-a (lokalni dev nema `EDGE_CONFIG` → preskače try block, koristi env path). Mladen ops: kreiraj Edge Config na Vercel-u i poveži ga na nodosol projekat, generiši personal API token sa edge-config:write scope-om, setuj `VERCEL_API_TOKEN` + `VERCEL_EDGE_CONFIG_ID` (+ `VERCEL_TEAM_ID` ako team account) env vars na Production + Preview, redeploy → prvi save iz `/admin/geo-block` prebacuje source-of-truth sa env-a na Edge Config.
 
 ## Backlog
 

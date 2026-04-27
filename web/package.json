@@ -26,6 +26,7 @@
     "@solana/wallet-adapter-react-ui": "^0.9.39",
     "@solana/web3.js": "^1.98.4",
     "@supabase/supabase-js": "^2.104.1",
+    "@vercel/edge-config": "^1.4.3",
     "bs58": "^6.0.0",
     "js-sha3": "^0.9.3",
     "next": "^15.1.6",
