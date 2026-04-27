@@ -358,7 +358,7 @@
 
 ### Bucket Q: Compliance gates
 
-- [ ] Geo-block middleware — `web/middleware.ts` reads Vercel's
+- [x] Geo-block middleware — `web/middleware.ts` reads Vercel's
   `request.geo.country` (or `x-vercel-ip-country` header), redirects
   to `/blocked/[country]` when country is in the blocklist. Default
   blocklist: `["US"]`. Allowlist override via env
@@ -370,6 +370,10 @@
   `/manifest.json`, `/icon.svg`, `/sitemap.xml`, `/robots.txt`.
   Verifikacija: `tsc --noEmit` + manual via
   `curl -H "x-vercel-ip-country: US" https://...`.
+  - `web/middleware.ts` (new): edge middleware reads `x-vercel-ip-country` (Vercel attaches on every deployed request — `request.geo` typed shortcut was removed in Next 15). Default blocklist `["US"]`, override via `GEO_BLOCK_COUNTRIES` env (comma-separated ISO codes; chose this name over the spec's `GEO_BLOCK_ALLOW_COUNTRIES` because it's a blocklist, not an allowlist — the env replaces the default rather than allowing-around it). `NextResponse.rewrite` to `/blocked/<CC>` with HTTP 451 status. Same middleware also handles Q2 maintenance mode (env-gated, /admin + /api/health bypass) so we ship one matcher config instead of two. `ALWAYS_PASS` covers static + PWA + sitemap + robots + the gate pages themselves to avoid loops.
+  - `web/app/blocked/[country]/page.tsx` (new): standalone dark-themed gate page with country-name lookup table, per-country reason text (US gets the pre-audit-licencing explanation; OFAC-sanctioned jurisdictions get a generic line), `licencing@nodosol.com` contact, footer links to /security + /privacy + /terms, HTTP 451 reference, `robots: noindex,nofollow`.
+  - **Honest note**: spec said "spec rename `GEO_BLOCK_ALLOW_COUNTRIES`" — implemented as `GEO_BLOCK_COUNTRIES` (block-list semantics) since Mladen flips it to extend the block-set, not to whitelist. Documented in code comments.
+  - `cd web && tsc --noEmit` clean. Mladen ops to verify on prod: `curl -H "x-vercel-ip-country: US" https://www.nodosol.com/` → 451 with rewrite to /blocked/US. Vercel env empty = US-only block remains the default.
 
 - [ ] Maintenance / under-construction mode — env flag
   `NEXT_PUBLIC_MAINTENANCE_MODE=1` (or admin-flippable Supabase row)
