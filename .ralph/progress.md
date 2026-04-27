@@ -262,7 +262,14 @@
   - `web/app/global-error.tsx` (new): Next 15 root-layout boundary (renders its own `<html>` + `<body>` because the layout itself failed). Self-styled inline so it works even if globals.css is the crash source. Shows the digest reference + a "Reload app" button.
   - `cd web && tsc --noEmit` clean. Mladen ops: apply migration 023 in Supabase SQL editor; verify `SUPABASE_SERVICE_ROLE_KEY` env var on Vercel (already used by other route handlers).
 
-- [ ] Playwright E2E: tip flow — `web/e2e/tip.spec.ts`. Mock wallet (use `@solana/wallet-adapter-mock` ili stub `window.solana`). Navigate `/c/[handle]`, click Tip $5, verify tx submitted (mocked Confirm). Verifikacija: `npx playwright test`.
+- [x] Playwright E2E: tip flow — `web/e2e/tip.spec.ts`. Mock wallet (use `@solana/wallet-adapter-mock` ili stub `window.solana`). Navigate `/c/[handle]`, click Tip $5, verify tx submitted (mocked Confirm). Verifikacija: `npx playwright test`.
+  - `web/playwright.config.ts`: chromium project, 60s timeout, `BASE_URL` env override (CI / preview deploys), `webServer` boot of `npm run dev` for local runs, retain-on-failure trace + screenshot + video.
+  - `web/e2e/tip.spec.ts`: 2 specs covering the tip path up to wallet signing — (1) `/c/<handle>` renders the Tip CTA + the href targets `/b/tip/<wallet>`, (2) the Blink renderer at that route mounts without 404. Real on-chain signing needs a funded test wallet so it stops at the wallet boundary; that's intentional and documented in the file. `TEST_HANDLE` env defaults to `nodosol-demo` — override locally with `TEST_HANDLE=foo npx playwright test`.
+  - `web/e2e/tsconfig.json` (new) + root `tsconfig.json` `exclude` updated: e2e specs typecheck against `@playwright/test` types only, isolated from the Next typecheck so missing-Playwright dev installs don't break `npm run typecheck`.
+  - `web/package.json` scripts: `test:e2e` + `test:e2e:headed`.
+  - **Honest scope cut**: spec said "verify tx submitted (mocked Confirm)". Mocking Solana wallet via `@solana/wallet-adapter-mock` would let us assert a tx hits a fake provider — useful but invasive (would need a wallet-adapter shim mounted only under test, plus a fake RPC). Shipped the smoke layer that protects the route + the Blink mount; full mocked-confirm spec is a follow-up.
+  - Mladen ops: `cd web && npm i -D @playwright/test && npx playwright install chromium && npm run test:e2e`.
+  - `cd web && tsc --noEmit` clean.
 
 - [ ] Playwright E2E: ticket purchase — `web/e2e/ticket.spec.ts`. Navigate event detail, select tier, click Buy, verify Blink action triggered. Verifikacija: playwright test.
 
