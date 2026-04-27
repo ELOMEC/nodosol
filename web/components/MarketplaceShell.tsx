@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { AdminPill } from "./AdminPill";
+import { AnnouncementBanner } from "./AnnouncementBanner";
 import { ChatBell } from "./ChatBell";
 import { LocaleToggle } from "./LocaleToggle";
 import { NotificationsBell } from "./NotificationsBell";
@@ -217,6 +218,10 @@ export function MarketplaceShell({
       </aside>
 
       <div style={{ minWidth: 0 }}>
+        {/* T1 — global pinned warning/urgent announcement strip. Renders
+            null (no DOM) when no qualifying row is active, so this is a
+            no-op in the common case. */}
+        <AnnouncementBanner />
         <Topbar
           nav={nav}
           creatorNav={creatorNav}

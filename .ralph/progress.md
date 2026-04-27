@@ -483,23 +483,15 @@
 
 ### Bucket T: Announcements
 
-- [ ] Announcements page `/announcements` + admin CRUD —
-  Migration `025_announcements.sql`:
-  `announcements (id uuid pk, title, body markdown, severity
-  enum 'info'|'warning'|'urgent'|'release', pinned bool,
-  published_at timestamptz, expires_at timestamptz nullable,
-  author_wallet, created_at, updated_at)`. Public RLS read on
-  `published_at <= now() and (expires_at is null or expires_at >
-  now())`. Admin write via service-role only.
-  `web/app/announcements/{page.tsx,AnnouncementsView.tsx}` public
-  feed (newest first, pinned float, severity-coloured badges,
-  Markdown rendered). Admin entry under the new topbar pill →
-  `/admin/announcements/{page.tsx,AdminAnnouncementsView.tsx}`
-  with create/edit/delete + preview. Optional global banner
-  component (mounts in `MarketplaceShell` topbar) when at least
-  one `pinned` + `severity in ('warning','urgent')` row is
-  active. Verifikacija: tsc + SQL syntax. Mladen ops: apply
-  migration 025.
+- [x] Announcements page `/announcements` + admin CRUD —
+  - `supabase/025_announcements.sql`: `announcements` (id uuid pk, title, body markdown, severity enum 'info'|'release'|'warning'|'urgent' via CHECK, pinned bool, published_at, expires_at nullable, author_wallet, created_at, updated_at). RLS on: public SELECT gated on `published_at <= now() AND (expires_at IS NULL OR expires_at > now())`; INSERT/UPDATE/DELETE service-role only. Indexes on `(pinned DESC, published_at DESC)` + active subset.
+  - `web/lib/announcements.ts`: `fetchAnnouncements` (active feed), `fetchActiveBanner` (top pinned warning/urgent), `severityPalette()` returning {bg,fg,border,label} per severity, `renderBody()` tiny Markdown-ish renderer (escapeHtml → inline `code` / **bold** / [link](href) → `<p>` split on blank lines). HTML escaped before any inline tag substitution.
+  - `web/app/announcements/{page.tsx,AnnouncementsView.tsx}`: server component public feed, pinned-first ordering, severity-coloured badge pill, ISO timestamp, body via `dangerouslySetInnerHTML` of the lib's escaped renderer output. Linked from `/privacy` (changes notice) + `/terms` (fee notice).
+  - `web/app/api/admin/announcements/route.ts`: GET/POST/PATCH/DELETE handlers. `x-nodosol-admin-wallet` header gated against `NEXT_PUBLIC_ADMIN_WALLETS` allowlist; service-role Supabase client; severity validated against {info, release, warning, urgent}; title clamped 200 chars, body 8000; ISO datestamp parse for published_at/expires_at.
+  - `web/app/admin/announcements/{page.tsx,AdminAnnouncementsView.tsx}`: connected-wallet → admin allowlist double gate. Form (title, severity, publish_at, expires_at, pinned, body textarea) + live preview pane + list of all rows (drafts/scheduled/expired flagged) with Edit/Delete. Calls the admin API with the wallet header.
+  - `web/components/AdminPill.tsx`: added `/admin/announcements` entry to ROUTES dropdown alongside Programs + Issuers.
+  - `web/components/AnnouncementBanner.tsx` (new) + wired into `MarketplaceShell`: async server component renders a colour-coded strip above the topbar (severity dot + label + title + "Details →" link to /announcements). Returns `null` when no qualifying row is active so the common-case DOM is unchanged.
+  - Verifikacija: `cd web && tsc --noEmit` clean. Mladen ops: apply migration 025; set `NEXT_PUBLIC_ADMIN_WALLETS` env on Vercel (comma-separated wallet pubkeys) so AdminPill/admin routes resolve.
 
 ## Backlog
 
