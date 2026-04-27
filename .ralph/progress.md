@@ -389,7 +389,7 @@
   - **Honest scope cut**: spec mentioned `MAINTENANCE_BYPASS_WALLETS` cookie/header check + admin-flippable Supabase row. Skipped both in this commit — Mladen flips `NEXT_PUBLIC_MAINTENANCE_MODE` directly on Vercel (env update + redeploy ≈ 60s) and `/admin/*` already bypasses for ops re-entry. Wallet-cookie bypass adds attack surface (cookie spoofing) for marginal value in a deploy-pause scenario; admin-flippable row adds a Supabase round trip on every request. Both deferred unless a real need shows up.
   - `cd web && tsc --noEmit` clean.
 
-- [ ] Privacy policy `/privacy` —
+- [x] Privacy policy `/privacy` —
   `web/app/privacy/{page.tsx,PrivacyView.tsx}`. Standalone route
   (no MarketplaceShell) following `/security` style. Sections:
   what we collect (wallet pubkey, optional email, IP for rate
@@ -401,6 +401,8 @@
   `privacy@nodosol.com`. Last-updated stamp. Linked from footer +
   /security + new sign-up flows. Verifikacija: tsc + doc-only
   review.
+  - `web/app/privacy/page.tsx` + `PrivacyView.tsx`: standalone dark route mirroring /security style. 10 sections covering Who we are (ELOMEC UAE DMCC, El Salvador backup), What we collect (wallet pubkey, optional email, IP+UA for rate-limit/error-log paths, profile content, on-chain footprint, consent-gated analytics), What we don't collect (no KYC, no private keys, no tracking pixels, no analytics-to-wallet join), Retention (security_events 90d, error_logs 30d, JWT 15min, on-chain permanent), Sub-processors (Vercel, Supabase, Helius, Resend, Privy, Cloudflare Turnstile, GA4), Cookies + localStorage breakdown, Analytics consent default-denied policy, Your rights (export / delete / email opt-out / analytics opt-out, 30d response SLA), Children (<16 not directed), Changes (30d notice via /announcements). LAST_UPDATED stamp = 2026-04-27. Linked back to /security + /terms + privacy@nodosol.com.
+  - `cd web && tsc --noEmit` clean.
 
 - [ ] Terms of service `/terms` —
   `web/app/terms/{page.tsx,TermsView.tsx}`. Sections: eligibility
