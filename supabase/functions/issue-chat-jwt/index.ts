@@ -69,12 +69,59 @@ async function logSecurityEvent(
   }
 }
 
+// N4 — IP rate-limit. ed25519 verify is CPU-bound; without a per-IP
+// gate a single client can keep the worker pinned by spamming garbage
+// signatures. 30 attempts per 5min per IP is generous for a real user
+// (one signature per session normally) and tight enough to make CPU
+// exhaustion attacks unprofitable.
+const RATE_LIMIT_WINDOW_MS = 5 * 60 * 1000;
+const RATE_LIMIT_MAX = 30;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
   if (req.method !== "POST") {
     return jsonResp({ error: "POST only" }, 405);
+  }
+
+  // IP rate-limit BEFORE signature verify so we don't burn CPU on
+  // garbage-sig floods. Service-role client only used for the count
+  // query + the rate_limit_hit log; doesn't affect the JWT signing
+  // path below.
+  const sbUrl = Deno.env.get("SUPABASE_URL") ?? "";
+  const sbKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+  const clientIp =
+    req.headers.get("cf-connecting-ip") ??
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    null;
+  if (sbUrl && sbKey && clientIp) {
+    const admin = createClient(sbUrl, sbKey, { auth: { persistSession: false } });
+    const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS).toISOString();
+    const { count, error } = await admin
+      .from("security_events")
+      .select("id", { count: "exact", head: true })
+      .eq("client_ip", clientIp)
+      .in("event_type", ["sig_verify_fail", "jwt_issued"])
+      .gte("created_at", windowStart);
+    if (error) {
+      console.warn("issue-chat-jwt rate-limit count failed:", error.message);
+      // Fail open — better to mint than 500 on transient supabase blip.
+    } else if ((count ?? 0) >= RATE_LIMIT_MAX) {
+      await logSecurityEvent(sbUrl, sbKey, req, {
+        type: "rate_limit_hit",
+        severity: "warn",
+        details: {
+          endpoint: "issue-chat-jwt",
+          windowMin: RATE_LIMIT_WINDOW_MS / 60_000,
+          cap: RATE_LIMIT_MAX,
+        },
+      });
+      return jsonResp(
+        { error: `Too many requests — try again in ${RATE_LIMIT_WINDOW_MS / 60_000} min` },
+        429,
+      );
+    }
   }
 
   let payload: Payload;

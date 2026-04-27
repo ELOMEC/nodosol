@@ -301,7 +301,19 @@
   - All 9 program IDs hard-coded with explorer links — keeps `/security` self-contained even when on-chain RPC is down (auditors hit this from incidents).
   - `cd web && tsc --noEmit` clean.
 
-- [ ] Rate limiting on remaining unprotected endpoints — audit `supabase/functions/*` za one koji nemaju `security_events` rate-limit gate. Konkretno proveri: `verify-email` (kad ga napravimo), `send-notification-email` (server-only, OK), `admin-events` (već ima). Verifikacija: grep + smoke.
+- [x] Rate limiting on remaining unprotected endpoints — audit `supabase/functions/*` za one koji nemaju `security_events` rate-limit gate. Konkretno proveri: `verify-email` (kad ga napravimo), `send-notification-email` (server-only, OK), `admin-events` (već ima). Verifikacija: grep + smoke.
+  - **Audit summary across 10 Edge Functions**:
+    - `post-chat-message`: ✓ 30 msgs / 5 min per wallet via `chat_messages` count (existing).
+    - `verify-email`: ✓ 1 token / 1h per wallet via `email_verification_sent_at` column (F2).
+    - `waitlist-signup`: ✓ 10 signups / 1h per IP via `security_events` count (existing).
+    - `admin-events`: skipped — ed25519 sig + ADMIN_WALLETS allowlist gate; no IP limit needed because allowlist is the constraint (existing).
+    - `charge-due` / `gc-tier-seats` / `send-notification-email`: cron-triggered via pg_net only, no public POST surface.
+    - `helius-webhook`: Bearer-secret authenticated; abuse path is Helius itself.
+    - `unsubscribe-email`: HS256 JWT token gate; brute-force infeasible (32-byte secret).
+    - `issue-chat-jwt`: **had no IP rate-limit** — fixed in this commit.
+  - `supabase/functions/issue-chat-jwt/index.ts`: added 30 reqs / 5 min per-IP gate using `security_events` count over `event_type IN ('sig_verify_fail', 'jwt_issued')` (counts all attempts, good or bad). Check runs BEFORE the ed25519 verify so garbage-sig floods can't pin the CPU. Fails open on count-query errors so a transient Supabase blip doesn't 500. Logs `rate_limit_hit` with `endpoint: "issue-chat-jwt"` for ops visibility in the admin security widget.
+  - Edge Function visual review only (no deno locally); pattern mirrors the proven waitlist-signup path. Web `tsc --noEmit` clean (no web changes).
+  - Mladen ops: `supabase functions deploy issue-chat-jwt --no-verify-jwt` to ship the gate to production.
 
 ### Bucket O: Documentation
 
