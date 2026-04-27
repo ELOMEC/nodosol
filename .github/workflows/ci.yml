@@ -43,15 +43,21 @@ jobs:
         run: |
           sh -c "$(curl -sSfL https://release.anza.xyz/v${SOLANA_VERSION}/install)"
           echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+          # Cargo bin (anchor lands here after `cargo install`) — explicit
+          # so subsequent steps don't depend on dtolnay/rust-toolchain
+          # leaking it. Idempotent if it's already there.
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
       # Cache the compiled anchor-cli binary across runs — building it
       # from source takes ~5 minutes; a cache hit drops that to ~2s.
+      # Cache key includes a `v2` suffix to bust the previous cache that
+      # restored an unusable binary on some runners.
       - name: Cache Anchor CLI
         id: cache-anchor
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin/anchor
-          key: anchor-cli-${{ env.ANCHOR_TAG }}-${{ runner.os }}
+          key: anchor-cli-${{ env.ANCHOR_TAG }}-${{ runner.os }}-v2
 
       - name: Install Anchor CLI (build from source)
         if: steps.cache-anchor.outputs.cache-hit != 'true'
@@ -64,9 +70,12 @@ jobs:
 
       - name: Verify tool versions
         run: |
-          rustc --version
-          solana --version
-          anchor --version
+          set -x
+          echo "PATH=$PATH"
+          which rustc && rustc --version
+          which solana && solana --version
+          ls -la "$HOME/.cargo/bin/anchor" || true
+          which anchor && anchor --version
 
       - name: Anchor build
         run: anchor build
