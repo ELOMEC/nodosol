@@ -404,7 +404,7 @@
   - `web/app/privacy/page.tsx` + `PrivacyView.tsx`: standalone dark route mirroring /security style. 10 sections covering Who we are (ELOMEC UAE DMCC, El Salvador backup), What we collect (wallet pubkey, optional email, IP+UA for rate-limit/error-log paths, profile content, on-chain footprint, consent-gated analytics), What we don't collect (no KYC, no private keys, no tracking pixels, no analytics-to-wallet join), Retention (security_events 90d, error_logs 30d, JWT 15min, on-chain permanent), Sub-processors (Vercel, Supabase, Helius, Resend, Privy, Cloudflare Turnstile, GA4), Cookies + localStorage breakdown, Analytics consent default-denied policy, Your rights (export / delete / email opt-out / analytics opt-out, 30d response SLA), Children (<16 not directed), Changes (30d notice via /announcements). LAST_UPDATED stamp = 2026-04-27. Linked back to /security + /terms + privacy@nodosol.com.
   - `cd web && tsc --noEmit` clean.
 
-- [ ] Terms of service `/terms` —
+- [x] Terms of service `/terms` —
   `web/app/terms/{page.tsx,TermsView.tsx}`. Sections: eligibility
   (no US/sanctioned countries), services description, wallet =
   user's responsibility (we never custody), no investment advice,
@@ -415,6 +415,8 @@
   disclaimer, limitation of liability, changes to terms (30-day
   notice). Last-updated stamp. Linked from /privacy + footer +
   Get started flow. Verifikacija: tsc.
+  - `web/app/terms/page.tsx` + `TermsView.tsx`: standalone dark route mirroring /privacy + /security style. 13 numbered sections — Eligibility (≥18 for paid flows, US block enforced at edge, OFAC list, sanctions warranties), What Nodosol provides (super-app + non-custodial), Wallets + self-custody (you own keys, no MSB/exchange status, no transaction reversal), No investment advice, Prohibited uses (mixing/laundering/sanctions evasion, scams, brute-force, geo-block bypass via VPN, impersonation, unlicenced securities), Creator content + IP (you retain ownership, narrow licence to display, no ML training, RWA legal title via issuer), Fees (devnet 0%, mainnet capped at 10% on-chain Config PDA, 14d announcement notice via /announcements), Account termination, Warranty disclaimer (as-is), Limitation of liability (capped at $100 or 12-month fees), Governing law UAE DMCC + DIAC arbitration with El Salvador backup marker (30d notice on shift), Changes to terms (30d notice + acceptance-by-continued-use), Contact (support / privacy / security / licencing emails). LAST_UPDATED stamp = 2026-04-27. Linked back to /privacy + /security + footer.
+  - `cd web && tsc --noEmit` clean.
 
 ### Bucket R: UX fixes (Mladen-flagged)
 
