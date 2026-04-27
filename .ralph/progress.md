@@ -446,7 +446,7 @@
   - `web/components/MarketplaceShell.tsx`: dropped the "Creator tools" `SectionLabel` + the single Blinks `<Link href="/">` row + the now-unused `IconZap` helper. Sidebar ends with the Settings section before the devnet badge — no orphaned `Creator tools` heading. Blink endpoints `/b/tip/<creator>`, `/b/subscribe/<creator>/<planId>`, `/b/ticket/<creator>/<eventId>` still ship and are still linked from `/c/<handle>` CTAs + the integrations guide.
   - `cd web && tsc --noEmit` clean.
 
-- [ ] Sidebar scroll fix on small / tall screens —
+- [x] Sidebar scroll fix on small / tall screens —
   `MarketplaceShell.tsx` aside element currently has no
   `overflow-y` so when nav grows past viewport (especially after
   Discovery + Settings sections were added in Sprint 2) the bottom
@@ -456,6 +456,9 @@
   content. Touch up scrollbar styling so it doesn't look
   out-of-place against the dark theme. Verifikacija: tsc + manual
   viewport sweep at 600px / 720px height.
+  - `web/components/MarketplaceShell.tsx`: aside now also sets `maxHeight: "100vh"` + `overflowY: "auto"` alongside the existing `position: sticky; top: 0; height: 100vh` so the aside scrolls independently when total nav (RWA + Creator + Community + Discovery + Settings + dev-net badge with `marginTop: auto`) exceeds the viewport. Comment block in the inline style documents the why for future maintainers.
+  - `web/app/globals.css`: `.nds-shell-sidebar` scrollbar styling — `scrollbar-width: thin` + `scrollbar-color` for Firefox, `::-webkit-scrollbar` rules for WebKit/Blink (8px width, transparent track, border-token thumb, hover bumps to border-strong). Keeps the rail visually tied to the dark theme instead of a default OS-white track painting across.
+  - `cd web && tsc --noEmit` clean. Sidebar still hidden at ≤900px (existing media query) so mobile drawer behaviour is untouched.
 
 ### Bucket S: Analytics
 

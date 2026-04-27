@@ -93,7 +93,17 @@ export function MarketplaceShell({
           padding: "1.75rem 1rem",
           position: "sticky",
           top: 0,
+          // R3 — `height: 100vh` + the new `overflowY: "auto"` make the
+          // sidebar scroll independently when total nav exceeds the
+          // viewport (Discovery + Settings sections push the dev-net
+          // badge below the fold on shorter desktop windows).
           height: "100vh",
+          maxHeight: "100vh",
+          overflowY: "auto",
+          // Force the column to behave as a single scroll container —
+          // children stay laid out top-to-bottom and `marginTop: auto`
+          // on the dev-net badge still pins it to the bottom of the
+          // scroll content.
           display: "flex",
           flexDirection: "column",
         }}

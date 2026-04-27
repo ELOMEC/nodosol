@@ -200,6 +200,28 @@ pre {
   }
 }
 
+/* R3 — sidebar scroll polish. The aside scrolls when content (5 nav
+   sections + dev-net badge) overflows on shorter desktop heights;
+   restyle the scrollbar so it doesn't paint a white default rail
+   over the dark surface. */
+.nds-shell-sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--shell-border, #2a2f3a) transparent;
+}
+.nds-shell-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+.nds-shell-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.nds-shell-sidebar::-webkit-scrollbar-thumb {
+  background: var(--shell-border, #2a2f3a);
+  border-radius: 4px;
+}
+.nds-shell-sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--shell-border-strong, #3a3f4a);
+}
+
 /* Horizontal scroll escape for wide tables / filter bars. */
 .nds-overflow-x {
   overflow-x: auto;
