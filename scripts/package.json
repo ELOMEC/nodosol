@@ -1,0 +1,34 @@
+{
+  "name": "@nodosol/scripts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "init-demo": "tsx init-demo.ts",
+    "init-fee-config": "tsx init-fee-config.ts",
+    "init-rwa": "tsx init-rwa.ts",
+    "init-marketplace": "tsx init-marketplace.ts",
+    "init-otc": "tsx init-otc.ts",
+    "init-event-tickets": "tsx init-event-tickets.ts",
+    "init-auctions": "tsx init-auctions.ts",
+    "fund-user": "tsx fund-user.ts --",
+    "fund-user-ct": "tsx fund-user-ct.ts",
+    "seed-demo": "tsx seed-demo-data.ts",
+    "seed-plans": "tsx seed-demo-plans.ts",
+    "seed-rentals": "tsx seed-demo-rentals.ts",
+    "seed-auctions": "tsx seed-demo-auctions.ts",
+    "seed-tiers": "tsx seed-event-tiers.ts",
+    "retry-tree": "tsx retry-event-tree.ts"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.31.1",
+    "@solana/spl-token": "^0.4.12",
+    "@solana/web3.js": "^1.98.0",
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  }
+}

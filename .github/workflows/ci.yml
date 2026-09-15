@@ -1,0 +1,132 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  SOLANA_VERSION: "2.2.21"
+  ANCHOR_TAG: "v1.0.1"
+
+jobs:
+  rust:
+    name: Anchor build + program tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # Pin toolchain to the channel in rust-toolchain.toml.
+      # dtolnay/rust-toolchain doesn't support a toolchain-file input.
+      - uses: dtolnay/rust-toolchain@1.89.0
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+
+      # Install Solana CLI directly from Anza (release.solana.com was
+      # decommissioned). The install script writes to
+      # ~/.local/share/solana/install/active_release/bin which we add
+      # to PATH for subsequent steps.
+      - name: Install Solana CLI
+        run: |
+          sh -c "$(curl -sSfL https://release.anza.xyz/v${SOLANA_VERSION}/install)"
+          echo "$HOME/.local/share/solana/install/active_release/bin" >> "$GITHUB_PATH"
+          # Cargo bin (anchor lands here after `cargo install`) — explicit
+          # so subsequent steps don't depend on dtolnay/rust-toolchain
+          # leaking it. Idempotent if it's already there.
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+
+      # Cache the compiled anchor-cli binary across runs — building it
+      # from source takes ~5 minutes; a cache hit drops that to ~2s.
+      # Cache key includes a `v2` suffix to bust the previous cache that
+      # restored an unusable binary on some runners.
+      - name: Cache Anchor CLI
+        id: cache-anchor
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/anchor
+          key: anchor-cli-${{ env.ANCHOR_TAG }}-${{ runner.os }}-v2
+
+      - name: Install Anchor CLI (build from source)
+        if: steps.cache-anchor.outputs.cache-hit != 'true'
+        run: |
+          cargo install --git https://github.com/coral-xyz/anchor \
+            --tag "${ANCHOR_TAG}" \
+            anchor-cli \
+            --locked \
+            --force
+
+      - name: Verify tool versions
+        run: |
+          set -x
+          echo "PATH=$PATH"
+          which rustc && rustc --version
+          which solana && solana --version
+          ls -la "$HOME/.cargo/bin/anchor" || true
+          which anchor && anchor --version
+
+      # `--ignore-keys` skips the program-ID-vs-keypair check that
+      # Anchor 1.0 added. CI generates a fresh random keypair into
+      # target/deploy/ on every run (target/ is gitignored), so it
+      # will never match the `declare_id!` baked into source. We
+      # don't deploy from CI — this step only verifies the workspace
+      # compiles + the IDLs generate.
+      - name: Anchor build
+        run: anchor build --ignore-keys
+
+      # Self-audit Phase 1 (F-004): strict clippy on the workspace.
+      # The workspace allowlist in Cargo.toml suppresses 3 known
+      # Anchor false positives + 1 aesthetic lint; everything else
+      # fails the build. Catches new findings the moment they land.
+      - name: Clippy strict
+        run: cargo clippy --workspace --all-targets -- -D warnings
+
+      - name: Cargo test (workspace programs)
+        run: cargo test
+
+  web:
+    name: Web typecheck + lint + build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Typecheck
+        working-directory: web
+        run: npm run typecheck
+
+      - name: Lint
+        working-directory: web
+        run: npm run lint
+
+      - name: Build
+        working-directory: web
+        run: npm run build
+        env:
+          NEXT_PUBLIC_APP_NAME: nodosol
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          NEXT_PUBLIC_USDC_MINT: Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key-for-ci
+          SOLANA_RPC_URL: https://api.devnet.solana.com

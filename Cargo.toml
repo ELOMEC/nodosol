@@ -1,0 +1,40 @@
+[workspace]
+members = [
+    "programs/*"
+]
+resolver = "2"
+
+# Self-audit Phase 1 (F-004): suppress two known clippy false
+# positives that fire on Anchor 1.0 macro expansion. Both are
+# inherent to the macros, not user code:
+#   * diverging_sub_expression — fires on every `#[program]` block
+#     because the dispatcher synthesises an unreachable!() arm.
+#   * result_large_err — fires on `#[error_code]` enums because the
+#     anchor-derived ProgramError variant is naturally large; we
+#     can't shrink it without giving up the macro.
+# Allowing them lets CI run clippy in `-D warnings` mode and still
+# catch real findings. Re-evaluate when Anchor publishes a fix.
+[workspace.lints.clippy]
+# Anchor 1.0 macro false positives — see comment above.
+diverging_sub_expression = "allow"
+result_large_err = "allow"
+# 8-9 parameters is normal for Anchor instructions that take a Context
+# plus several typed args. Bundling into a struct (audit Phase 2 follow-up
+# F-001) is aesthetic, not security. Track in docs/SELF_AUDIT_PHASE1.md.
+too_many_arguments = "allow"
+
+# `target_os = "solana"` cfg used by anchor-spl. Each program had this
+# locally; centralised so adding `[lints] workspace = true` per crate
+# doesn't conflict with a per-crate [lints.rust] block.
+[workspace.lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(target_os, values("solana"))'] }
+
+[profile.release]
+overflow-checks = true
+lto = "fat"
+codegen-units = 1
+
+[profile.release.build-override]
+opt-level = 3
+incremental = false
+codegen-units = 1

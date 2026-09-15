@@ -1,0 +1,821 @@
+{
+  "address": "7BCWTrD7rcedAg3zpvtvNdManv39kzr3eHBjWyomCbdT",
+  "metadata": {
+    "name": "rwa_registry",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Nodosol RWA issuer registry — tracks licenced issuers and their asset class permissions"
+  },
+  "instructions": [
+    {
+      "name": "close_issuer",
+      "discriminator": [
+        108,
+        132,
+        238,
+        33,
+        244,
+        99,
+        191,
+        178
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "issuer",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  115,
+                  115,
+                  117,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "issuer.owner",
+                "account": "Issuer"
+              }
+            ]
+          }
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initialize_registry",
+      "discriminator": [
+        189,
+        181,
+        20,
+        17,
+        174,
+        57,
+        249,
+        59
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "register_issuer",
+      "discriminator": [
+        145,
+        117,
+        52,
+        59,
+        189,
+        27,
+        127,
+        18
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "issuer",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  115,
+                  115,
+                  117,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "owner"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "owner",
+          "type": "pubkey"
+        },
+        {
+          "name": "jurisdictions",
+          "type": {
+            "vec": {
+              "array": [
+                "u8",
+                3
+              ]
+            }
+          }
+        },
+        {
+          "name": "asset_classes",
+          "type": "u16"
+        },
+        {
+          "name": "kyc_ref",
+          "type": "string"
+        },
+        {
+          "name": "initial_status",
+          "type": {
+            "defined": {
+              "name": "IssuerStatus"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "update_issuer_metadata",
+      "discriminator": [
+        167,
+        77,
+        168,
+        94,
+        175,
+        115,
+        147,
+        33
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "issuer",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  115,
+                  115,
+                  117,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "issuer.owner",
+                "account": "Issuer"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "jurisdictions",
+          "type": {
+            "vec": {
+              "array": [
+                "u8",
+                3
+              ]
+            }
+          }
+        },
+        {
+          "name": "asset_classes",
+          "type": "u16"
+        },
+        {
+          "name": "kyc_ref",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "update_issuer_status",
+      "discriminator": [
+        195,
+        23,
+        57,
+        227,
+        104,
+        23,
+        73,
+        224
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "issuer",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  105,
+                  115,
+                  115,
+                  117,
+                  101,
+                  114
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "issuer.owner",
+                "account": "Issuer"
+              }
+            ]
+          }
+        }
+      ],
+      "args": [
+        {
+          "name": "new_status",
+          "type": {
+            "defined": {
+              "name": "IssuerStatus"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "update_registry_authority",
+      "discriminator": [
+        36,
+        103,
+        15,
+        149,
+        117,
+        134,
+        26,
+        41
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "signer": true,
+          "relations": [
+            "config"
+          ]
+        },
+        {
+          "name": "config",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  111,
+                  110,
+                  102,
+                  105,
+                  103
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "name": "new_authority"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Issuer",
+      "discriminator": [
+        216,
+        19,
+        83,
+        230,
+        108,
+        53,
+        80,
+        14
+      ]
+    },
+    {
+      "name": "RegistryConfig",
+      "discriminator": [
+        23,
+        118,
+        10,
+        246,
+        173,
+        231,
+        243,
+        156
+      ]
+    }
+  ],
+  "events": [
+    {
+      "name": "IssuerClosed",
+      "discriminator": [
+        131,
+        228,
+        165,
+        220,
+        66,
+        246,
+        92,
+        178
+      ]
+    },
+    {
+      "name": "IssuerMetadataUpdated",
+      "discriminator": [
+        142,
+        186,
+        79,
+        31,
+        33,
+        84,
+        177,
+        251
+      ]
+    },
+    {
+      "name": "IssuerRegistered",
+      "discriminator": [
+        98,
+        108,
+        156,
+        224,
+        9,
+        0,
+        195,
+        21
+      ]
+    },
+    {
+      "name": "IssuerStatusChanged",
+      "discriminator": [
+        130,
+        171,
+        24,
+        46,
+        255,
+        61,
+        237,
+        157
+      ]
+    },
+    {
+      "name": "RegistryAuthorityUpdated",
+      "discriminator": [
+        49,
+        49,
+        137,
+        63,
+        54,
+        195,
+        212,
+        154
+      ]
+    },
+    {
+      "name": "RegistryInitialized",
+      "discriminator": [
+        144,
+        138,
+        62,
+        105,
+        58,
+        38,
+        100,
+        177
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "Unauthorized",
+      "msg": "Only the registry authority may perform this action"
+    },
+    {
+      "code": 6001,
+      "name": "TooManyJurisdictions",
+      "msg": "Too many jurisdictions (max 8)"
+    },
+    {
+      "code": 6002,
+      "name": "InvalidJurisdictionCode",
+      "msg": "Jurisdiction code must be exactly 3 ASCII uppercase bytes"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidAssetClasses",
+      "msg": "Asset classes bitmap contains unsupported flags"
+    },
+    {
+      "code": 6004,
+      "name": "NoAssetClasses",
+      "msg": "Asset classes bitmap must be non-zero"
+    },
+    {
+      "code": 6005,
+      "name": "KycRefTooLong",
+      "msg": "KYC reference string is too long"
+    },
+    {
+      "code": 6006,
+      "name": "InvalidStatusTransition",
+      "msg": "Issuer status transition not allowed"
+    },
+    {
+      "code": 6007,
+      "name": "IssuerNotActive",
+      "msg": "Issuer is not active"
+    }
+  ],
+  "types": [
+    {
+      "name": "Issuer",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "IssuerStatus"
+              }
+            }
+          },
+          {
+            "name": "jurisdictions",
+            "type": {
+              "vec": {
+                "array": [
+                  "u8",
+                  3
+                ]
+              }
+            }
+          },
+          {
+            "name": "asset_classes",
+            "type": "u16"
+          },
+          {
+            "name": "kyc_ref",
+            "type": "string"
+          },
+          {
+            "name": "registered_at",
+            "type": "i64"
+          },
+          {
+            "name": "updated_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "IssuerClosed",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "IssuerMetadataUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "asset_classes",
+            "type": "u16"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "IssuerRegistered",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "IssuerStatus"
+              }
+            }
+          },
+          {
+            "name": "asset_classes",
+            "type": "u16"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "IssuerStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Pending"
+          },
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Suspended"
+          },
+          {
+            "name": "Revoked"
+          }
+        ]
+      }
+    },
+    {
+      "name": "IssuerStatusChanged",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "owner",
+            "type": "pubkey"
+          },
+          {
+            "name": "previous",
+            "type": {
+              "defined": {
+                "name": "IssuerStatus"
+              }
+            }
+          },
+          {
+            "name": "next",
+            "type": {
+              "defined": {
+                "name": "IssuerStatus"
+              }
+            }
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RegistryAuthorityUpdated",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "previous",
+            "type": "pubkey"
+          },
+          {
+            "name": "next",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RegistryConfig",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "issuer_count",
+            "type": "u64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "reserved",
+            "type": {
+              "array": [
+                "u8",
+                63
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "RegistryInitialized",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "pubkey"
+          },
+          {
+            "name": "timestamp",
+            "type": "i64"
+          }
+        ]
+      }
+    }
+  ]
+}

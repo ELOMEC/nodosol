@@ -1,0 +1,51 @@
+{
+  "name": "@nodosol/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.32.1",
+    "@dialectlabs/blinks": "^0.22.5",
+    "@marsidev/react-turnstile": "^0.4.1",
+    "@privy-io/react-auth": "^2.0.0",
+    "@react-google-maps/api": "^2.20.8",
+    "@solana/actions": "^1.6.6",
+    "@solana/spl-token": "^0.4.14",
+    "@solana/wallet-adapter-backpack": "^0.1.14",
+    "@solana/wallet-adapter-base": "^0.9.27",
+    "@solana/wallet-adapter-phantom": "^0.9.29",
+    "@solana/wallet-adapter-react": "^0.15.39",
+    "@solana/wallet-adapter-react-ui": "^0.9.39",
+    "@solana/web3.js": "^1.98.4",
+    "@supabase/supabase-js": "^2.104.1",
+    "@tanstack/react-query": "^5.100.6",
+    "@tanstack/react-query-devtools": "^5.100.6",
+    "@vercel/edge-config": "^1.4.3",
+    "bs58": "^6.0.0",
+    "js-sha3": "^0.9.3",
+    "next": "^15.1.6",
+    "qrcode.react": "^4.2.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "tweetnacl": "^1.0.3"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.5",
+    "@types/node": "^22.10.10",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^9.39.4",
+    "eslint-config-next": "^16.2.4",
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.5"
+  }
+}

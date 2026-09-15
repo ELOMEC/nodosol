@@ -1,0 +1,70 @@
+{
+  "nav": {
+    "marketplace": "Tržište",
+    "tokenize": "Tokenizuj",
+    "stats": "Statistika",
+    "investors": "Investitori",
+    "creators": "Kreatori",
+    "settings": "Podešavanja",
+    "get_started": "Započni",
+    "sign_in": "Prijava"
+  },
+  "actions": {
+    "tip": "Daj napojnicu",
+    "subscribe": "Pretplati se",
+    "buy_ticket": "Kupi ulaznicu",
+    "buy": "Kupi",
+    "sell": "Prodaj",
+    "list": "Izlistaj",
+    "place_bid": "Daj ponudu",
+    "withdraw": "Povuci",
+    "cancel": "Otkaži",
+    "save": "Sačuvaj",
+    "back": "Nazad",
+    "next": "Dalje",
+    "skip": "Preskoči",
+    "done": "Gotovo",
+    "refresh": "Osveži",
+    "remove": "Ukloni",
+    "connect_wallet": "Poveži novčanik",
+    "disconnect": "Prekini vezu",
+    "send": "Pošalji"
+  },
+  "common": {
+    "loading": "Učitavanje…",
+    "saving": "Snimam…",
+    "error": "Nešto je pošlo po zlu",
+    "empty": "Još ništa",
+    "search": "Pretraga",
+    "all": "Sve",
+    "newest": "Najnovije",
+    "active": "Aktivno",
+    "paused": "Pauzirano",
+    "expired": "Isteklo",
+    "verified": "Verifikovano",
+    "unverified": "Nije verifikovano",
+    "yes": "Da",
+    "no": "Ne"
+  },
+  "landing": {
+    "tagline": "Regulatorno usaglašena RWA + creator economy na Solani",
+    "explore_marketplace": "Istraži tržište",
+    "tokenize_an_asset": "Tokenizuj imovinu",
+    "get_early_access": "Rani pristup",
+    "live_network_state": "Stanje mreže uživo (devnet)",
+    "trending_now": "U trendu",
+    "top_creators": "Top kreatori",
+    "auctions_ending": "Aukcije ističu uskoro",
+    "recent_sales": "Najnovije prodate ulaznice"
+  },
+  "settings": {
+    "notifications_title": "Podešavanja obaveštenja",
+    "email_address": "Email adresa",
+    "send_verification": "Pošalji verifikacioni email",
+    "money_in": "Prilivi",
+    "activity": "Aktivnost",
+    "confirmations": "Potvrde",
+    "manage_preferences": "Upravljaj podešavanjima",
+    "unsubscribe_all": "Otkaži sve"
+  }
+}

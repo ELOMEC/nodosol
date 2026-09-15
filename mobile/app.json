@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "nodosol",
+    "slug": "nodosol",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "scheme": "nodosol",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nodosol.app"
+    },
+    "android": {
+      "package": "com.nodosol.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#0A0A0A"
+      }
+    },
+    "extra": {
+      "apiBaseUrl": "http://localhost:3000"
+    }
+  }
+}

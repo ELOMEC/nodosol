@@ -1,0 +1,36 @@
+# Rust / Anchor
+target/
+.anchor/
+test-ledger/
+**/*.rs.bk
+
+# Node
+node_modules/
+.pnpm-store/
+dist/
+build/
+.next/
+.expo/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Keypairs (NEVER commit)
+*-keypair.json
+!id-devnet-sample.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+supabase/.temp/
+
+# Ralph autonomous loop — secrets, runtime logs, budget state

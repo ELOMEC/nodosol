@@ -1,0 +1,56 @@
+[package]
+name = "event_tickets"
+version = "0.1.0"
+description = "Nodosol event tickets — compressed NFT tickets via Metaplex Bubblegum with on-chain fee split"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "event_tickets"
+
+[features]
+default = []
+cpi = ["no-entrypoint"]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
+anchor-debug = []
+custom-heap = []
+custom-panic = []
+
+[dependencies]
+anchor-lang = "1.0.1"
+anchor-spl = { version = "1.0.1", features = ["token_2022"] }
+solana-security-txt = "1.1.2"
+solana-program = "2"
+# mpl-bubblegum adoption (self-audit P2-005 / F-003 mitigation).
+# `anchor` feature makes MetadataArgs / MintV1 / Transfer use Anchor's
+# (Anchor|Borsh)-Serialize derives so the struct layout tracks the
+# upstream published types via Cargo version pinning. Removes the
+# need to hand-serialize discriminators + arg structs at every CPI
+# site. We keep `create_tree` hand-rolled because the deployed
+# Bubblegum binary still dispatches on the legacy ix name; the
+# crate uses `create_tree_config` (Kinobi rename) which currently
+# returns InstructionFallbackNotFound on devnet/mainnet.
+mpl-bubblegum = { version = "3.0.0", features = ["anchor"] }
+
+[dev-dependencies]
+litesvm = "0.11.0"
+litesvm-token = { version = "0.11.0", features = ["token-2022"] }
+anchor-spl = { version = "1.0.1", features = ["token_2022"] }
+solana-message = "3.0.1"
+solana-transaction = "3.0.2"
+solana-signer = "3.0.0"
+solana-keypair = "3.0.1"
+solana-pubkey = "3.0.0"
+solana-clock = "3.0.0"
+# Off-chain merkle proof generation for resale tests (Phase 3 P2-008).
+# Mirrors the on-chain Bubblegum tree so we can compute valid root +
+# proof bytes to feed into list_ticket_resale / buy_ticket_resale /
+# close_expired_resale.
+spl-merkle-tree-reference = "1.0.0"
+
+
+[lints]
+workspace = true

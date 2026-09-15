@@ -1,0 +1,44 @@
+{
+  "name": "Nodosol",
+  "short_name": "Nodosol",
+  "description": "Solana super-app for compliant RWA + creator payments.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0d12",
+  "theme_color": "#0b0d12",
+  "scope": "/",
+  "id": "/",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["finance", "shopping", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Marketplace",
+      "url": "/marketplace",
+      "description": "Browse RWA listings, auctions, rentals, and tickets."
+    },
+    {
+      "name": "Tip jar",
+      "url": "/creator/tips",
+      "description": "Withdraw tips and view jar stats."
+    },
+    {
+      "name": "Notifications",
+      "url": "/settings/notifications",
+      "description": "Manage email + on-chain alerts."
+    }
+  ]
+}

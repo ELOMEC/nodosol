@@ -1,0 +1,37 @@
+[toolchain]
+package_manager = "npm"
+
+[features]
+resolution = true
+skip-lint = false
+
+[programs.localnet]
+tip_jar = "C2bM3p1Cco4bDj6gQe29k7UWcepxLCrVgiPPoidh549P"
+subscription = "8G2hbD1qJUcaVAEdfVxaHfbCgxyEzQdrpjhDMM9pSL4w"
+events = "4q4KxCcvY7vswq3tXgr448ghXWBtz4PzNfoddZu282Ax"
+rwa_registry = "7BCWTrD7rcedAg3zpvtvNdManv39kzr3eHBjWyomCbdT"
+rwa_mint = "HLCCfvp99Z1Rnix64mC6w6dYL9EkEjVmPCL7rr27evsU"
+marketplace = "69ZFM7nHUTXcHp8TZpRtX4qr3ERK2VGxRdqXvNtbfJkZ"
+otc_deals = "FmXBAWoSGanaFfP8p9gekgrFn7buEn1XUSFWebDr3Pwz"
+event_tickets = "FDUwvXRETURbe2JN2PJNCKt6RPAsSLeSi7A4pFMGmtrE"
+auctions = "6c95kxTWCXacsAev4xnvNbKnLYWFGPpJT5zwT4SnWh5v"
+
+[programs.devnet]
+tip_jar = "C2bM3p1Cco4bDj6gQe29k7UWcepxLCrVgiPPoidh549P"
+subscription = "8G2hbD1qJUcaVAEdfVxaHfbCgxyEzQdrpjhDMM9pSL4w"
+events = "4q4KxCcvY7vswq3tXgr448ghXWBtz4PzNfoddZu282Ax"
+rwa_registry = "7BCWTrD7rcedAg3zpvtvNdManv39kzr3eHBjWyomCbdT"
+rwa_mint = "HLCCfvp99Z1Rnix64mC6w6dYL9EkEjVmPCL7rr27evsU"
+marketplace = "69ZFM7nHUTXcHp8TZpRtX4qr3ERK2VGxRdqXvNtbfJkZ"
+otc_deals = "FmXBAWoSGanaFfP8p9gekgrFn7buEn1XUSFWebDr3Pwz"
+event_tickets = "FDUwvXRETURbe2JN2PJNCKt6RPAsSLeSi7A4pFMGmtrE"
+auctions = "6c95kxTWCXacsAev4xnvNbKnLYWFGPpJT5zwT4SnWh5v"
+
+[provider]
+cluster = "localnet"
+wallet = "~/.config/solana/id.json"
+
+[scripts]
+test = "cargo test"
+
+[hooks]
